@@ -16,11 +16,13 @@ create index if not exists math_worm_scores_class_name_score_idx on public.math_
 alter table public.math_worm_scores enable row level security;
 
 -- 4. 정책 설정 (익명 사용자의 데이터 삽입 및 조회 허용)
+drop policy if exists "Allow anonymous inserts" on public.math_worm_scores;
 create policy "Allow anonymous inserts"
   on public.math_worm_scores
   for insert
   with check (true);
 
+drop policy if exists "Allow anonymous selects" on public.math_worm_scores;
 create policy "Allow anonymous selects"
   on public.math_worm_scores
   for select
