@@ -38,7 +38,7 @@ interface ScoreRecord {
 const GRID_COLS = 20;
 const GRID_ROWS = 15;
 const CELL_SIZE = 40;
-const MAX_WORMS = 8;
+const MAX_WORMS = 12;
 
 function playSound(type: "correct" | "wrong" | "gameover" | "spawn" | "click") {
   if (typeof window === "undefined") return;
@@ -315,11 +315,11 @@ export default function WormMaticsGame() {
         setTimeout(triggerSpawn, i * 400 + 500);
       }
 
-      // 시간에 따라 속도가 빨라지는 백그라운드 정기 스폰 (초반 10초 시작, 최소 5초)
+      // 시간에 따라 속도가 빨라지는 백그라운드 정기 스폰 (초반 13초 시작, 최소 8초)
       const scheduleNextSpawn = () => {
         let currentPlayTime = 0;
         setPlayTime((t) => { currentPlayTime = t; return t; });
-        const delay = Math.max(5000, 10000 - currentPlayTime * 10 + Math.random() * 2000);
+        const delay = Math.max(8000, 13000 - currentPlayTime * 10 + Math.random() * 2000);
         spawnTimerRef.current = setTimeout(() => {
           triggerSpawn();
           scheduleNextSpawn();
@@ -501,9 +501,9 @@ export default function WormMaticsGame() {
             setHoles((prev) => prev.filter((h) => h.id !== targetHole!.id));
             
             // 삭제 시점으로부터 유연한 랜덤 간격으로 리젠 (한 번에 2마리씩)
-            // 첫 리젠은 무조건 최소 4초 이상 보장, 두 번째 리젠은 최소 5.5초 이상 보장
-            const nextSpawnDelay1 = Math.max(4000, 5000 - playTime * 5 + Math.random() * 1000);
-            const nextSpawnDelay2 = Math.max(5500, 7000 - playTime * 10 + Math.random() * 2000);
+            // 첫 리젠은 무조건 최소 7초 이상 보장, 두 번째 리젠은 최소 8.5초 이상 보장
+            const nextSpawnDelay1 = Math.max(7000, 8000 - playTime * 5 + Math.random() * 1000);
+            const nextSpawnDelay2 = Math.max(8500, 10000 - playTime * 10 + Math.random() * 2000);
             setTimeout(triggerSpawn, nextSpawnDelay1);
             setTimeout(triggerSpawn, nextSpawnDelay2);
 
