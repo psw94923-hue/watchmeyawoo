@@ -38,7 +38,7 @@ interface ScoreRecord {
 const GRID_COLS = 20;
 const GRID_ROWS = 15;
 const CELL_SIZE = 40;
-const MAX_WORMS = 12;
+const MAX_WORMS = 8;
 
 function playSound(type: "correct" | "wrong" | "gameover" | "spawn" | "click") {
   if (typeof window === "undefined") return;
@@ -191,6 +191,7 @@ export default function WormMaticsGame() {
   const [tutorialHole, setTutorialHole] = useState<Hole | null>(null);
 
   const timeIntervalRef = useRef<any>(null);
+  const spawnTimerRef = useRef<any>(null);
 
   // 이벤트 주도 스폰 함수
   const triggerSpawn = useCallback(() => {
@@ -309,9 +310,22 @@ export default function WormMaticsGame() {
       setWorms([]);
       setHoles([]);
 
-      // 최초 스폰 2마리
-      setTimeout(triggerSpawn, 1000);
-      setTimeout(triggerSpawn, 2000);
+      // 최초 스폰 5마리
+      for (let i = 0; i < 5; i++) {
+        setTimeout(triggerSpawn, i * 400 + 500);
+      }
+
+      // 시간에 따라 속도가 빨라지는 백그라운드 정기 스폰
+      const scheduleNextSpawn = () => {
+        let currentPlayTime = 0;
+        setPlayTime((t) => { currentPlayTime = t; return t; });
+        const delay = Math.max(1000, 6000 - currentPlayTime * 50 + Math.random() * 1000);
+        spawnTimerRef.current = setTimeout(() => {
+          triggerSpawn();
+          scheduleNextSpawn();
+        }, delay);
+      };
+      scheduleNextSpawn();
 
       timeIntervalRef.current = setInterval(() => {
         setPlayTime((prev) => prev + 1);
@@ -319,6 +333,7 @@ export default function WormMaticsGame() {
 
       return () => {
         if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+        if (spawnTimerRef.current) clearTimeout(spawnTimerRef.current);
       };
     }
   }, [gameState, triggerSpawn]);
@@ -335,6 +350,7 @@ export default function WormMaticsGame() {
       playSound("gameover");
       setGameState("GAMEOVER");
       if (timeIntervalRef.current) clearInterval(timeIntervalRef.current);
+      if (spawnTimerRef.current) clearTimeout(spawnTimerRef.current);
       submitScore();
     }
   }, [worms, gameState]);
@@ -484,9 +500,11 @@ export default function WormMaticsGame() {
             setWorms((prev) => prev.filter((w) => w.id !== draggingWormId));
             setHoles((prev) => prev.filter((h) => h.id !== targetHole!.id));
             
-            // 삭제 시점으로부터 유연한 간격으로 리젠 (이벤트 기반 스폰)
-            const nextSpawnDelay = Math.max(500, 3000 - playTime * 30 + Math.random() * 1500);
-            setTimeout(triggerSpawn, nextSpawnDelay);
+            // 삭제 시점으로부터 유연한 랜덤 간격으로 리젠 (한 번에 2마리씩)
+            const nextSpawnDelay1 = Math.max(500, 2500 - playTime * 20 + Math.random() * 1000);
+            const nextSpawnDelay2 = Math.max(1000, 3500 - playTime * 30 + Math.random() * 1500);
+            setTimeout(triggerSpawn, nextSpawnDelay1);
+            setTimeout(triggerSpawn, nextSpawnDelay2);
 
           } else {
             playSound("wrong");
