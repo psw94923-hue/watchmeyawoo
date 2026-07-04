@@ -214,9 +214,9 @@ export default function MathWormGame() {
   const [tutorialHole, setTutorialHole] = useState<Hole | null>(null);
 
   // 실시간 타이머 및 루프 레퍼런스
-  const gameIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const timeIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const spawnerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const gameIntervalRef = useRef<any>(null);
+  const timeIntervalRef = useRef<any>(null);
+  const spawnerIntervalRef = useRef<any>(null);
 
   // --- 튜토리얼 초기화 ---
   useEffect(() => {
