@@ -1009,6 +1009,7 @@ export default function MathWormGame() {
                   ))}
                   {/* 지렁이 머리 */}
                   {(() => {
+                    if (!tutorialWorm) return null;
                     const head = tutorialWorm.segments[0];
                     return (
                       <g>
@@ -1102,7 +1103,7 @@ export default function MathWormGame() {
           <div className="w-full flex flex-wrap justify-between items-center bg-black text-white p-3 border-b-4 border-black mb-4 font-retro select-none text-xs gap-3">
             <div className="flex gap-4">
               <span className="text-green-400">SCORE: {String(score).padStart(5, "0")}</span>
-              <span className="text-cyan-400">TIME: {Math.floor(playTime / 60)}:{String(playTime % 60).padStart(2, "0")}</span>
+              <span className="text-cyan-400">TIME: {`${Math.floor(playTime / 60)}:${String(playTime % 60).padStart(2, "0")}`}</span>
             </div>
             
             {/* 지렁이 포화 상태 모니터 */}
@@ -1189,7 +1190,7 @@ export default function MathWormGame() {
                         width="32"
                         height="32"
                         className={isRainbow ? "bg-rainbow fill-transparent" : ""}
-                        fill={isRainbow ? undefined : worm.color}
+                        fill={isRainbow ? "none" : worm.color}
                         stroke="#000000"
                         strokeWidth="2"
                         rx="4"
@@ -1208,7 +1209,7 @@ export default function MathWormGame() {
                           width="36"
                           height="36"
                           className={isRainbow ? "bg-rainbow fill-transparent" : ""}
-                          fill={isRainbow ? undefined : worm.color}
+                          fill={isRainbow ? "none" : worm.color}
                           stroke="#000000"
                           strokeWidth="3"
                           rx="6"
