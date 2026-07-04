@@ -975,7 +975,7 @@ export default function WormMaticsGame() {
             <button onClick={() => { playSound("click"); setGameState("LOBBY"); }} className="flex-1 retro-btn py-3 text-xs sm:text-sm">
               로비로 가기
             </button>
-            <button onClick={handleRestart} className="flex-1 retro-btn retro-btn-primary py-3 text-xs sm:text-sm">
+            <button onClick={() => { playSound("click"); setGameState("PLAYING"); }} className="flex-1 retro-btn retro-btn-primary py-3 text-xs sm:text-sm">
               다시 시작
             </button>
           </div>
