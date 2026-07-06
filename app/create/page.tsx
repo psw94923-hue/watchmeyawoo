@@ -12,12 +12,7 @@ const EGGS = [
   { id: "red", name: "붉은색 알", color: "#ef4444" },
 ];
 
-const EggIcon = ({ color }: { color: string }) => (
-  <svg width="80" height="100" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
-    <ellipse cx="50" cy="65" rx="40" ry="50" fill={color} stroke="#1a1a1a" strokeWidth="6"/>
-    <path d="M 35 40 Q 50 25 65 40" stroke="rgba(255,255,255,0.6)" strokeWidth="6" fill="none" strokeLinecap="round" />
-  </svg>
-);
+// SVG EggIcon removed in favor of actual sprite images
 
 const PERSONALITIES = {
   따뜻함: ["다정한", "친절한", "배려심 깊은", "남을 잘 돕는", "선한"],
@@ -175,7 +170,9 @@ export default function CreateCharacterPage() {
                   onClick={() => setSelectedEgg(egg.id)}
                   className={`flex flex-col items-center justify-center p-6 h-40 cursor-pointer rounded-2xl transition-all ${selectedEgg === egg.id ? 'bg-blue-100 retro-border scale-105' : 'hover:bg-gray-100 retro-border-sm'}`}
                 >
-                  <EggIcon color={egg.color} />
+                  <div className="relative w-20 h-20 mb-2">
+                    <Image src={`/images/dragons/${egg.id}_dragon_lv1.png`} alt={egg.name} fill style={{ objectFit: 'contain', imageRendering: 'pixelated' }} />
+                  </div>
                   {selectedEgg === egg.id && (
                     <span className="mt-4 font-bold text-lg text-blue-700 animate-pulse">{egg.name}</span>
                   )}
@@ -259,7 +256,11 @@ export default function CreateCharacterPage() {
             <div className="bg-gray-100 p-6 retro-border-sm rounded-xl w-full text-left flex flex-col gap-4">
               <div className="flex items-center gap-4 border-b-2 border-gray-300 pb-4">
                 <div className="relative w-16 h-16 flex items-center justify-center">
-                  {selectedEgg && <EggIcon color={EGGS.find(e => e.id === selectedEgg)?.color!} />}
+                  {selectedEgg && (
+                    <div className="relative w-full h-full">
+                      <Image src={`/images/dragons/${selectedEgg}_dragon_lv1.png`} alt="Selected Egg" fill style={{ objectFit: 'contain', imageRendering: 'pixelated' }} />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">내가 고른 알</div>
