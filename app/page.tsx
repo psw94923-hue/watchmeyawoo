@@ -2,8 +2,32 @@
 
 import React, { useEffect, useRef } from "react";
 
+const PixelStar = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    className={className} 
+    style={{ shapeRendering: "crispEdges", ...style }} 
+    fill="currentColor" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect x="8" y="8" width="8" height="8" />
+    <rect x="10" y="2" width="4" height="6" />
+    <rect x="10" y="16" width="4" height="6" />
+    <rect x="2" y="10" width="6" height="4" />
+    <rect x="16" y="10" width="6" height="4" />
+    <rect x="6" y="6" width="4" height="4" />
+    <rect x="14" y="6" width="4" height="4" />
+    <rect x="6" y="14" width="4" height="4" />
+    <rect x="14" y="14" width="4" height="4" />
+    <rect x="8" y="6" width="8" height="2" />
+    <rect x="8" y="16" width="8" height="2" />
+    <rect x="6" y="8" width="2" height="8" />
+    <rect x="16" y="8" width="2" height="8" />
+  </svg>
+);
+
 export default function Home() {
-  const ringsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const layersRef = useRef<(HTMLDivElement | null)[]>([]);
   const mousePos = useRef({ x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0, y: typeof window !== 'undefined' ? window.innerHeight / 2 : 0 });
 
   useEffect(() => {
@@ -13,47 +37,46 @@ export default function Home() {
       mousePos.current = { x: e.clientX, y: e.clientY };
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
+    const handleTouch = (e: TouchEvent) => {
       if (e.touches.length > 0) {
         mousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchmove", handleTouch, { passive: true });
+    window.addEventListener("touchstart", handleTouch, { passive: true });
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchmove", handleTouch);
+      window.removeEventListener("touchstart", handleTouch);
     };
   }, []);
 
   useEffect(() => {
     let animationFrameId: number;
-    const ringPositions = Array(6).fill(null).map(() => ({ x: window.innerWidth / 2, y: window.innerHeight / 2 }));
+    const layerPositions = Array(10).fill(null).map(() => ({ x: window.innerWidth / 2, y: window.innerHeight / 2 }));
 
     const render = () => {
-      // Add a slight wobble based on time to make the rings feel alive even when stationary
       const time = Date.now() * 0.001;
       
-      ringsRef.current.forEach((ring, index) => {
-        if (!ring) return;
+      layersRef.current.forEach((layer, index) => {
+        if (!layer) return;
 
         const targetX = mousePos.current.x;
         const targetY = mousePos.current.y;
 
-        // Easing determines how fast the ring catches up to the cursor. 
-        // Inner rings follow closely, outer rings lag behind creating 3D depth.
-        const easing = 0.25 - (index * 0.035); 
+        const easing = parseFloat(layer.dataset.easing || "0.2");
         
-        // Add subtle breathing/wobble effect based on index to enhance 3D perspective
-        const wobbleX = Math.sin(time + index * 0.5) * (index * 2);
-        const wobbleY = Math.cos(time + index * 0.5) * (index * 2);
+        // Subtle wobble for organic 3D feel
+        const wobbleX = Math.sin(time + index * 0.5) * (index * 1.0);
+        const wobbleY = Math.cos(time + index * 0.5) * (index * 1.0);
 
-        ringPositions[index].x += (targetX - ringPositions[index].x) * easing;
-        ringPositions[index].y += (targetY - ringPositions[index].y) * easing;
+        layerPositions[index].x += (targetX - layerPositions[index].x) * easing;
+        layerPositions[index].y += (targetY - layerPositions[index].y) * easing;
 
-        ring.style.transform = `translate(${ringPositions[index].x + wobbleX}px, ${ringPositions[index].y + wobbleY}px) translate(-50%, -50%)`;
+        layer.style.transform = `translate(${layerPositions[index].x + wobbleX}px, ${layerPositions[index].y + wobbleY}px) translate(-50%, -50%)`;
       });
 
       animationFrameId = requestAnimationFrame(render);
@@ -64,34 +87,40 @@ export default function Home() {
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
 
-  // Ring configurations imitating the dot graphic image's layered effect
-  const rings = [
-    { size: 40, color: "border-white", opacity: "opacity-100", width: "border-[2px]" },
-    { size: 80, color: "border-cyan-300", opacity: "opacity-90", width: "border-[4px]" },
-    { size: 140, color: "border-cyan-400", opacity: "opacity-80", width: "border-[6px]" },
-    { size: 220, color: "border-indigo-400", opacity: "opacity-60", width: "border-[10px]" },
-    { size: 320, color: "border-purple-500", opacity: "opacity-40", width: "border-[14px]" },
-    { size: 440, color: "border-cyan-900", opacity: "opacity-20", width: "border-[20px]" },
+  // Dense, radiating pixel star layers (ordered back to front)
+  const layers = [
+    { size: 160, color: "text-indigo-950", opacity: "opacity-20", easing: 0.1 },
+    { size: 140, color: "text-indigo-900", opacity: "opacity-30", easing: 0.12 },
+    { size: 120, color: "text-purple-800", opacity: "opacity-40", easing: 0.14 },
+    { size: 100, color: "text-purple-600", opacity: "opacity-50", easing: 0.16 },
+    { size: 85, color: "text-blue-500", opacity: "opacity-60", easing: 0.18 },
+    { size: 70, color: "text-cyan-500", opacity: "opacity-75", easing: 0.20 },
+    { size: 55, color: "text-cyan-300", opacity: "opacity-90", easing: 0.23 },
+    { size: 40, color: "text-cyan-100", opacity: "opacity-100", easing: 0.26 },
+    { size: 25, color: "text-white", opacity: "opacity-100", easing: 0.30 },
+    { size: 10, color: "text-white", opacity: "opacity-100", easing: 0.35 },
   ];
 
   return (
     <main className="relative min-h-screen w-full bg-[#050508] flex flex-col items-center justify-center overflow-hidden cursor-crosshair">
       
-      {/* 3D Cursor Tracking Rings */}
+      {/* 3D Pixel Halo Cursor Tracker */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden mix-blend-screen">
-        {rings.map((ring, index) => (
+        {layers.map((layer, index) => (
           <div
             key={index}
             ref={(el) => {
-              ringsRef.current[index] = el;
+              layersRef.current[index] = el;
             }}
-            className={`absolute top-0 left-0 rounded-full ${ring.color} ${ring.opacity} ${ring.width} will-change-transform shadow-[0_0_15px_rgba(255,255,255,0.1)]`}
+            data-easing={layer.easing}
+            className={`absolute top-0 left-0 will-change-transform ${layer.color} ${layer.opacity}`}
             style={{
-              width: `${ring.size}px`,
-              height: `${ring.size}px`,
-              borderStyle: "dashed", // Gives a slightly retro/fragmented feeling
+              width: `${layer.size}px`,
+              height: `${layer.size}px`,
             }}
-          />
+          >
+            <PixelStar className="w-full h-full drop-shadow-[0_0_10px_rgba(255,255,255,0.15)]" />
+          </div>
         ))}
       </div>
 
