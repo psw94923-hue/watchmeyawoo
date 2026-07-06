@@ -5,12 +5,19 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-const DRAGONS = [
-  { id: "black", name: "흑룡", img: "/images/black_dragon.png" },
-  { id: "blue", name: "청룡", img: "/images/blue_dragon.png" },
-  { id: "silver", name: "은룡", img: "/images/silver_dragon.png" },
-  { id: "red", name: "적룡", img: "/images/red_dragon.png" },
+const EGGS = [
+  { id: "black", name: "검은색 알", color: "#333333" },
+  { id: "blue", name: "푸른색 알", color: "#3b82f6" },
+  { id: "silver", name: "흰색 알", color: "#f8fafc" },
+  { id: "red", name: "붉은색 알", color: "#ef4444" },
 ];
+
+const EggIcon = ({ color }: { color: string }) => (
+  <svg width="80" height="100" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+    <ellipse cx="50" cy="65" rx="40" ry="50" fill={color} stroke="#1a1a1a" strokeWidth="6"/>
+    <path d="M 35 40 Q 50 25 65 40" stroke="rgba(255,255,255,0.6)" strokeWidth="6" fill="none" strokeLinecap="round" />
+  </svg>
+);
 
 const PERSONALITIES = {
   따뜻함: ["다정한", "친절한", "배려심 깊은", "남을 잘 돕는", "선한"],
@@ -33,7 +40,7 @@ export default function CreateCharacterPage() {
   const router = useRouter();
   
   const [step, setStep] = useState(1);
-  const [selectedDragon, setSelectedDragon] = useState<string | null>(null);
+  const [selectedEgg, setSelectedEgg] = useState<string | null>(null);
   const [selectedPersonalities, setSelectedPersonalities] = useState<string[]>([]);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   
@@ -63,7 +70,7 @@ export default function CreateCharacterPage() {
 
   const resetFlow = () => {
     setStep(1);
-    setSelectedDragon(null);
+    setSelectedEgg(null);
     setSelectedPersonalities([]);
     setSelectedJob(null);
     setShowModal(false);
@@ -79,7 +86,7 @@ export default function CreateCharacterPage() {
       {
         student_id: studentId,
         password: password,
-        dragon_type: selectedDragon,
+        dragon_type: selectedEgg, // DB에는 black, blue, silver, red 로 저장됨 (추후 용으로 진화할 때 사용)
         personality: selectedPersonalities,
         job_group: selectedJob,
         level: 1,
@@ -117,7 +124,7 @@ export default function CreateCharacterPage() {
   }
 
   const isNextDisabled = () => {
-    if (step === 1) return !selectedDragon;
+    if (step === 1) return !selectedEgg;
     if (step === 2) return selectedPersonalities.length !== 3;
     if (step === 3) return !selectedJob;
     return false;
@@ -143,24 +150,20 @@ export default function CreateCharacterPage() {
         
         {step === 1 && (
           <div className="animate-fade-in text-center h-full flex flex-col justify-center">
-            <h3 className="text-xl mb-8 font-bold text-black">나만의 용을 선택하세요!</h3>
+            <h3 className="text-xl mb-8 font-bold text-black">함께할 알을 선택하세요!</h3>
             <div className="grid grid-cols-2 gap-6">
-              {DRAGONS.map(d => {
-                let imgScale = "scale-100";
-                if (d.id === "blue" || d.id === "red") imgScale = "scale-150";
-                
-                return (
-                  <div 
-                    key={d.id} 
-                    onClick={() => setSelectedDragon(d.id)}
-                    className={`flex items-center justify-center p-6 h-32 cursor-pointer rounded-2xl transition-all ${selectedDragon === d.id ? 'bg-blue-100 retro-border scale-105' : 'hover:bg-gray-100 retro-border-sm'}`}
-                  >
-                    <div className={`relative w-20 h-20 ${imgScale}`}>
-                      <Image src={d.img} alt={d.name} fill className="object-contain" style={{ imageRendering: 'pixelated' }} />
-                    </div>
-                  </div>
-                );
-              })}
+              {EGGS.map(egg => (
+                <div 
+                  key={egg.id} 
+                  onClick={() => setSelectedEgg(egg.id)}
+                  className={`flex flex-col items-center justify-center p-6 h-40 cursor-pointer rounded-2xl transition-all ${selectedEgg === egg.id ? 'bg-blue-100 retro-border scale-105' : 'hover:bg-gray-100 retro-border-sm'}`}
+                >
+                  <EggIcon color={egg.color} />
+                  {selectedEgg === egg.id && (
+                    <span className="mt-4 font-bold text-lg text-blue-700 animate-pulse">{egg.name}</span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -238,12 +241,12 @@ export default function CreateCharacterPage() {
             
             <div className="bg-gray-100 p-6 retro-border-sm rounded-xl w-full text-left flex flex-col gap-4">
               <div className="flex items-center gap-4 border-b-2 border-gray-300 pb-4">
-                <div className="relative w-16 h-16">
-                  {selectedDragon && <Image src={DRAGONS.find(d => d.id === selectedDragon)?.img!} alt="Dragon" fill className="object-contain" />}
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                  {selectedEgg && <EggIcon color={EGGS.find(e => e.id === selectedEgg)?.color!} />}
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500">내가 고른 용</div>
-                  <div className="font-bold text-xl">{DRAGONS.find(d => d.id === selectedDragon)?.name}</div>
+                  <div className="text-sm text-gray-500">내가 고른 알</div>
+                  <div className="font-bold text-xl">{EGGS.find(e => e.id === selectedEgg)?.name}</div>
                 </div>
               </div>
               
