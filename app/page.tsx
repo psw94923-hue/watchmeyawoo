@@ -39,7 +39,10 @@ export default function Home() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.trim() === "") return;
+    if (password !== "000000") {
+      alert("암호가 틀렸습니다.");
+      return;
+    }
     
     // 단순 모의 로그인
     setShowModal(false);
