@@ -142,21 +142,25 @@ export default function CreateCharacterPage() {
       <div className="w-full max-w-md my-6 p-4 sm:p-6 bg-white/90 rounded-2xl retro-border shadow-xl min-h-[400px] flex flex-col justify-center relative">
         
         {step === 1 && (
-          <div className="animate-fade-in text-center">
-            <h3 className="text-xl mb-6 font-bold text-black">나만의 용을 선택하세요!</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {DRAGONS.map(d => (
-                <div 
-                  key={d.id} 
-                  onClick={() => setSelectedDragon(d.id)}
-                  className={`flex flex-col items-center p-4 cursor-pointer rounded-xl transition-all ${selectedDragon === d.id ? 'bg-blue-100 retro-border scale-105' : 'hover:bg-gray-100 retro-border-sm'}`}
-                >
-                  <div className="relative w-24 h-24 mb-2">
-                    <Image src={d.img} alt={d.name} fill className="object-contain" style={{ imageRendering: 'pixelated' }} />
+          <div className="animate-fade-in text-center h-full flex flex-col justify-center">
+            <h3 className="text-xl mb-8 font-bold text-black">나만의 용을 선택하세요!</h3>
+            <div className="grid grid-cols-2 gap-6">
+              {DRAGONS.map(d => {
+                let imgScale = "scale-100";
+                if (d.id === "blue" || d.id === "red") imgScale = "scale-150";
+                
+                return (
+                  <div 
+                    key={d.id} 
+                    onClick={() => setSelectedDragon(d.id)}
+                    className={`flex items-center justify-center p-6 h-32 cursor-pointer rounded-2xl transition-all ${selectedDragon === d.id ? 'bg-blue-100 retro-border scale-105' : 'hover:bg-gray-100 retro-border-sm'}`}
+                  >
+                    <div className={`relative w-20 h-20 ${imgScale}`}>
+                      <Image src={d.img} alt={d.name} fill className="object-contain" style={{ imageRendering: 'pixelated' }} />
+                    </div>
                   </div>
-                  <span className="font-bold text-lg">{d.name}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

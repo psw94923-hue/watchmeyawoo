@@ -38,8 +38,10 @@ export default function ClassVillagePage() {
       .like('student_id', `${prefix}%`);
 
     if (data && data.length > 0) {
-      setProfiles(data);
-      determineTheme(data);
+      // 45번 슬롯 숨김 처리 (student_id가 '45'로 끝나는 학생은 렌더링 제외)
+      const visibleData = data.filter(p => !p.student_id.endsWith('45'));
+      setProfiles(visibleData);
+      determineTheme(visibleData);
     } else {
       // 더미 데이터 추가 (테스트용)
       const dummy = Array.from({ length: 5 }, (_, i) => ({
