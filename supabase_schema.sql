@@ -27,3 +27,30 @@ create policy "Allow anonymous selects"
   on public.math_worm_scores
   for select
   using (true);
+
+-- 5. 프로필 테이블 생성 (Phase 3)
+create table if not exists public.profiles (
+  student_id text primary key,
+  created_at timestamptz default now() not null,
+  password text not null,
+  dragon_type text not null,
+  personality text[] not null,
+  job_group text not null,
+  level integer default 1,
+  exp integer default 0
+);
+
+-- 6. 프로필 테이블 RLS 활성화 및 정책 설정
+alter table public.profiles enable row level security;
+
+drop policy if exists "Allow anonymous inserts profiles" on public.profiles;
+create policy "Allow anonymous inserts profiles"
+  on public.profiles
+  for insert
+  with check (true);
+
+drop policy if exists "Allow anonymous selects profiles" on public.profiles;
+create policy "Allow anonymous selects profiles"
+  on public.profiles
+  for select
+  using (true);
