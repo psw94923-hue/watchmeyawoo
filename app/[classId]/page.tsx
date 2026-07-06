@@ -124,7 +124,8 @@ export default function ClassVillagePage() {
 
   const renderMannequin = (p: Profile) => {
     // 흑룡(black), 청룡(blue), 은룡(silver), 적룡(red)
-    const baseImage = `/images/${p.dragon_type}_dragon.png`;
+    const humanImage = `/images/humans/${p.dragon_type}_human_front.png`;
+    const dragonImage = `/images/dragons/${p.dragon_type}_dragon_lv${p.level}.png`;
     const hasAura = p.level >= 4;
 
     return (
@@ -135,18 +136,28 @@ export default function ClassVillagePage() {
       >
         <div className={`relative w-12 h-12 sm:w-16 sm:h-16 mb-2 bg-white rounded-full retro-border-sm p-1 ${hasAura ? 'shadow-[0_0_15px_#FFD700] ring-2 ring-yellow-400' : ''}`}>
           {hasAura && (
-            <div className="absolute -top-3 -right-3 text-xl animate-bounce">✨</div>
+            <div className="absolute -top-3 -right-3 text-xl animate-bounce z-20">✨</div>
           )}
           <Image 
-            src={baseImage} 
+            src={humanImage} 
             alt={p.student_id}
             fill
-            className="object-contain rounded-full"
+            className="object-contain rounded-full relative z-10"
             style={{ imageRendering: 'pixelated' }}
             onError={(e) => { e.currentTarget.src = "/images/student_avatar.png" }}
           />
+          {/* Dragon Pet */}
+          <div className="absolute -bottom-2 -right-4 w-8 h-8 sm:w-10 sm:h-10 animate-float z-20 pointer-events-none drop-shadow-md">
+            <Image 
+              src={dragonImage}
+              alt="Dragon Pet"
+              fill
+              className="object-contain"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </div>
         </div>
-        <span className="text-[10px] sm:text-xs bg-white/80 px-2 py-1 rounded retro-border-sm shadow-sm whitespace-nowrap">
+        <span className="text-[10px] sm:text-xs bg-white/80 px-2 py-1 rounded retro-border-sm shadow-sm whitespace-nowrap mt-2 z-10 relative">
           {p.student_id}
         </span>
       </div>
@@ -261,15 +272,24 @@ export default function ClassVillagePage() {
               ×
             </button>
             <div className="flex flex-col items-center">
-              <div className="relative w-24 h-24 mb-4 bg-white rounded-full retro-border-sm p-2 shadow-inner">
+              <div className="relative w-32 h-32 mb-4 bg-white rounded-full retro-border-sm p-2 shadow-inner flex items-center justify-center">
                 <Image 
-                  src={`/images/${selectedStudent.dragon_type}_dragon.png`} 
+                  src={`/images/humans/${selectedStudent.dragon_type}_human_front.png`} 
                   alt={selectedStudent.student_id}
                   fill
                   className="object-contain"
                   style={{ imageRendering: 'pixelated' }}
                   onError={(e) => { e.currentTarget.src = "/images/student_avatar.png" }}
                 />
+                <div className="absolute -bottom-4 -right-4 w-16 h-16 animate-float z-20 pointer-events-none drop-shadow-md">
+                  <Image 
+                    src={`/images/dragons/${selectedStudent.dragon_type}_dragon_lv${selectedStudent.level}.png`}
+                    alt="Dragon Pet"
+                    fill
+                    className="object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </div>
               </div>
               <h3 className="text-2xl font-bold text-black mb-2">{selectedStudent.student_id}</h3>
               <div className="bg-white/50 w-full p-4 rounded retro-border-sm text-left flex flex-col gap-2">

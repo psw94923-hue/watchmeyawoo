@@ -69,6 +69,20 @@ export default function Home() {
       <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #554838 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a140f] to-transparent opacity-80 pointer-events-none"></div>
 
+      {/* Floating Dragons Background */}
+      <div className="absolute top-10 left-10 w-32 h-32 md:w-48 md:h-48 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '0s' }}>
+        <Image src="/images/dragons/black_dragon_lv5.png" alt="Black Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} priority />
+      </div>
+      <div className="absolute top-20 right-10 w-32 h-32 md:w-56 md:h-56 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '1.5s' }}>
+        <Image src="/images/dragons/red_dragon_lv5.png" alt="Red Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} priority />
+      </div>
+      <div className="absolute bottom-10 left-20 w-32 h-32 md:w-40 md:h-40 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '3s' }}>
+        <Image src="/images/dragons/blue_dragon_lv5.png" alt="Blue Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} />
+      </div>
+      <div className="absolute bottom-20 right-20 w-32 h-32 md:w-48 md:h-48 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '4.5s' }}>
+        <Image src="/images/dragons/silver_dragon_lv5.png" alt="Silver Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} />
+      </div>
+
       <div className="relative z-10 w-full text-center py-8 mb-4 animate-fade-in-up pointer-events-none">
         <h1 className="text-4xl md:text-6xl font-bold tracking-widest text-[#F2E5C8] drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] mb-2">
           수학 마을
@@ -155,7 +169,7 @@ export default function Home() {
                   <div className="mt-4 border-t-2 border-gray-300 pt-4">
                     <button 
                       type="button"
-                      onClick={() => router.push('/create')}
+                      onClick={() => router.push(`/create?classId=${selectedCard.id}`)}
                       className="w-full bg-[#4ade80] text-black p-4 text-xl retro-border-interactive font-bold"
                     >
                       새로운 캐릭터 생성

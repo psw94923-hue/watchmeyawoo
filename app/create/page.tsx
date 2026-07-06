@@ -47,6 +47,7 @@ export default function CreateCharacterPage() {
   const [showModal, setShowModal] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
+  const [testLevel, setTestLevel] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -82,6 +83,22 @@ export default function CreateCharacterPage() {
     
     setIsSubmitting(true);
     
+    // Validate studentId based on classId
+    if (typeof window !== 'undefined') {
+      const classId = new URLSearchParams(window.location.search).get('classId');
+      if (classId && classId !== 'teacher') {
+        const classNum = classId.replace('class-', '');
+        const expectedPrefix = `2${classNum}`;
+        if (!studentId.startsWith(expectedPrefix)) {
+          alert(`${classNum}반 학생은 ${expectedPrefix}로 시작하는 학번만 생성할 수 있습니다!`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+    }
+    
+    const finalLevel = studentId.endsWith('45') ? testLevel : 1;
+    
     const { error } = await supabase.from('profiles').insert([
       {
         student_id: studentId,
@@ -89,7 +106,7 @@ export default function CreateCharacterPage() {
         dragon_type: selectedEgg, // DB에는 black, blue, silver, red 로 저장됨 (추후 용으로 진화할 때 사용)
         personality: selectedPersonalities,
         job_group: selectedJob,
-        level: 1,
+        level: finalLevel,
         exp: 0
       }
     ]);
@@ -318,6 +335,18 @@ export default function CreateCharacterPage() {
                   placeholder="숫자 4자리"
                 />
               </div>
+              {studentId.endsWith('45') && (
+                <div>
+                  <label className="block text-sm font-bold text-black mb-1">초기 레벨 (테스트용)</label>
+                  <select 
+                    value={testLevel} 
+                    onChange={(e) => setTestLevel(Number(e.target.value))}
+                    className="w-full p-4 text-xl retro-border-sm focus:outline-none focus:ring-4 focus:ring-blue-500/50 text-center bg-white"
+                  >
+                    {[1,2,3,4,5].map(l => <option key={l} value={l}>Lv {l}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold text-black mb-1">비밀번호</label>
                 <input
