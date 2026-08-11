@@ -1,209 +1,63 @@
-"use client";
+import Link from "next/link";
 
-import React, { useState, useRef } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+export const metadata = {
+  title: "세원쌤의 작은 마을 | 공사 중",
+  description: "수학 마을이 새로운 디자인과 재미있는 서비스로 새단장 중입니다.",
+};
 
-const CLASSES = [
-  { id: 'class-1', name: '1반', icon: '/images/class_cabin.png' },
-  { id: 'class-2', name: '2반', icon: '/images/class_cabin.png' },
-  { id: 'class-3', name: '3반', icon: '/images/class_cabin.png' },
-  { id: 'teacher', name: '선생님 연구소', icon: '/images/teacher_spellbook.png', isSpecial: true },
-  { id: 'class-4', name: '4반', icon: '/images/class_cabin.png' },
-  { id: 'class-5', name: '5반', icon: '/images/class_cabin.png' },
-  { id: 'class-6', name: '6반', icon: '/images/class_cabin.png' },
-];
-
-export default function Home() {
-  const router = useRouter();
-  const sliderRef = useRef<HTMLDivElement>(null);
-  
-  const [selectedCard, setSelectedCard] = useState<typeof CLASSES[0] | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [studentId, setStudentId] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  const handleCardClick = (card: typeof CLASSES[0]) => {
-    setSelectedCard(card);
-    setStudentId("");
-    setPassword("");
-    setShowModal(true);
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (selectedCard?.id === 'teacher') {
-      if (password === "000000") {
-        router.push('/teacher');
-      } else {
-        alert("비밀번호가 틀렸습니다.");
-      }
-      return;
-    }
-
-    if (!studentId || !password) return;
-    
-    setIsLoggingIn(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('student_id', studentId)
-      .eq('password', password)
-      .single();
-      
-    setIsLoggingIn(false);
-
-    if (error || !data) {
-      alert("학번이나 암호가 틀렸습니다.");
-      return;
-    }
-    
-    router.push(`/${selectedCard?.id}`);
-  };
-
+export default function ComingSoonPage() {
   return (
-    <main className="relative min-h-screen w-full bg-[#2A231C] text-[#E8DCC4] flex flex-col items-center justify-center overflow-hidden font-retro">
-      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #554838 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a140f] to-transparent opacity-80 pointer-events-none"></div>
+    <main className="relative min-h-screen w-full bg-[#020617] text-slate-100 flex flex-col items-center justify-center overflow-hidden font-sans select-none">
+      {/* Background patterns */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] opacity-40"></div>
+      
+      {/* Glowing atmospheric circles */}
+      <div className="absolute top-1/4 left-1/4 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none animate-pulse"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-violet-600/10 rounded-full blur-[140px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-      {/* Floating Dragons Background */}
-      <div className="absolute top-10 left-10 w-32 h-32 md:w-48 md:h-48 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '0s' }}>
-        <Image src="/images/dragons/black_dragon_lv5.png" alt="Black Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} priority />
-      </div>
-      <div className="absolute top-20 right-10 w-32 h-32 md:w-56 md:h-56 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '1.5s' }}>
-        <Image src="/images/dragons/red_dragon_lv5.png" alt="Red Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} priority />
-      </div>
-      <div className="absolute bottom-10 left-20 w-32 h-32 md:w-40 md:h-40 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '3s' }}>
-        <Image src="/images/dragons/blue_dragon_lv5.png" alt="Blue Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} />
-      </div>
-      <div className="absolute bottom-20 right-20 w-32 h-32 md:w-48 md:h-48 animate-float opacity-60 pointer-events-none hidden sm:block" style={{ animationDelay: '4.5s' }}>
-        <Image src="/images/dragons/silver_dragon_lv5.png" alt="Silver Dragon" fill className="object-contain" style={{ imageRendering: 'pixelated' }} />
-      </div>
-
-      <div className="relative z-10 w-full text-center py-8 mb-4 animate-fade-in-up pointer-events-none">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-widest text-[#F2E5C8] drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] mb-2">
-          수학 마을
-        </h1>
-        <p className="mt-2 text-[#C1B295] text-sm md:text-base">어느 마을로 입장할까요?</p>
-      </div>
-
-      <div className="relative z-10 w-full flex items-center justify-center pb-12">
-        <div 
-          ref={sliderRef}
-          className="flex overflow-x-auto gap-4 md:gap-8 px-8 py-8 w-full max-w-6xl no-scrollbar snap-x snap-mandatory touch-pan-x"
+      {/* Top Left Navigation Link */}
+      <div className="absolute top-6 left-6 z-20">
+        <Link 
+          href="/previous" 
+          id="btn-previous-page"
+          className="group flex items-center gap-2 px-5 py-2.5 rounded-full border border-slate-800 bg-slate-900/60 backdrop-blur-md text-xs sm:text-sm text-slate-300 hover:text-white hover:border-slate-700 transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] active:scale-95"
         >
-          {CLASSES.map((c) => (
-            <div 
-              key={c.id} 
-              onClick={() => handleCardClick(c)}
-              className={`snap-center shrink-0 w-64 h-80 md:w-72 md:h-96 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 transform hover:-translate-y-4 shadow-[8px_8px_0_0_rgba(0,0,0,1)] border-4 border-black ${c.isSpecial ? 'bg-gradient-to-br from-[#8B5A2B] to-[#5C3A21]' : 'bg-[#E8DCC4]'}`}
-            >
-              <div className="relative w-32 h-32 md:w-40 md:h-40 mb-6 drop-shadow-xl hover:scale-110 transition-transform">
-                <Image 
-                  src={c.icon} 
-                  alt={c.name} 
-                  fill 
-                  className="object-contain"
-                  style={{ imageRendering: 'pixelated' }}
-                  priority
-                />
-              </div>
-              <h2 className={`text-3xl md:text-4xl font-bold tracking-wider drop-shadow-md ${c.isSpecial ? 'text-[#FFD700]' : 'text-[#3B2C1A]'}`}>
-                {c.name}
-              </h2>
-            </div>
-          ))}
-        </div>
+          <span className="inline-block transition-transform duration-300 group-hover:-translate-x-1">←</span>
+          <span>이전 페이지 살펴보기</span>
+        </Link>
       </div>
 
-      {showModal && selectedCard && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#E8DCC4] w-full max-w-sm rounded-lg p-6 retro-border shadow-2xl animate-scale-up relative">
-            <button 
-              onClick={() => setShowModal(false)}
-              className="absolute top-2 right-4 text-black hover:text-red-600 font-bold text-2xl w-8 h-8 flex items-center justify-center"
-            >
-              ×
-            </button>
-            <h3 className="text-2xl font-bold text-black mb-4 border-b-4 border-black pb-2 text-center">
-              {selectedCard.name} 접속
-            </h3>
-            
-            <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              {selectedCard.id !== 'teacher' ? (
-                <>
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-1">학번 (예: 2119)</label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={4}
-                      value={studentId}
-                      onChange={(e) => setStudentId(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full bg-white text-black p-4 text-center text-xl retro-border-sm focus:outline-none focus:ring-4 focus:ring-blue-500/50"
-                      placeholder="학번 4자리"
-                      autoFocus
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-1">비밀번호</label>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-white text-black p-4 text-center text-xl retro-border-sm focus:outline-none focus:ring-4 focus:ring-blue-500/50"
-                      placeholder="******"
-                    />
-                  </div>
-                  <button 
-                    type="submit"
-                    disabled={isLoggingIn}
-                    className="w-full bg-[#3b82f6] text-white p-4 text-xl retro-border-interactive mt-2 font-bold"
-                  >
-                    {isLoggingIn ? '접속 중...' : '로그인'}
-                  </button>
-                  <div className="mt-4 border-t-2 border-gray-300 pt-4">
-                    <button 
-                      type="button"
-                      onClick={() => router.push(`/create?classId=${selectedCard.id}`)}
-                      className="w-full bg-[#4ade80] text-black p-4 text-xl retro-border-interactive font-bold"
-                    >
-                      새로운 캐릭터 생성
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-bold text-gray-700 mb-2 text-center">선생님 전용 로그인입니다.</p>
-                  <div>
-                    <label className="block text-sm font-bold text-black mb-1">비밀번호</label>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-white text-black p-4 text-center text-xl retro-border-sm focus:outline-none focus:ring-4 focus:ring-blue-500/50"
-                      placeholder="******"
-                      autoFocus
-                    />
-                  </div>
-                  <button 
-                    type="submit"
-                    className="w-full bg-[#3b82f6] text-white p-4 text-xl retro-border-interactive mt-4 font-bold"
-                  >
-                    관리자 로그인
-                  </button>
-                </>
-              )}
-            </form>
+      {/* Main Content Card */}
+      <div className="relative z-10 text-center px-6 max-w-xl animate-fade-in-up">
+        {/* Decorative Glowing Icon */}
+        <div className="mx-auto w-24 h-24 mb-10 rounded-3xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[1.5px] shadow-[0_0_40px_rgba(99,102,241,0.25)] hover:scale-105 transition-transform duration-500">
+          <div className="w-full h-full bg-[#020617] rounded-3xl flex items-center justify-center">
+            <svg className="w-12 h-12 text-indigo-400 animate-spin" style={{ animationDuration: '4s' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           </div>
         </div>
-      )}
 
+        {/* Construction Title */}
+        <h1 className="text-5xl md:text-7xl font-black tracking-widest mb-6 bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+          &lt;공사중&gt;
+        </h1>
+
+        {/* Renovating Subtitle */}
+        <p className="text-slate-400 text-sm sm:text-base md:text-lg mb-10 leading-relaxed font-light">
+          수학 마을이 새로운 디자인과 풍성한 콘텐츠로 새단장 중입니다.<br className="hidden sm:inline" />
+          더욱 유익하고 흥미진진한 서비스로 곧 찾아뵙겠습니다.
+        </p>
+
+        {/* Modern Infinite Loading Bar */}
+        <div className="max-w-xs mx-auto bg-slate-950 border border-slate-800/80 rounded-full h-2.5 p-[2px] overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] mb-3">
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full rounded-full w-1/3 animate-progress-infinite"></div>
+        </div>
+        <span className="text-[10px] text-slate-600 uppercase tracking-[0.25em] font-mono font-medium block">
+          SYSTEM MAINTENANCE IN PROGRESS
+        </span>
+      </div>
     </main>
   );
 }
