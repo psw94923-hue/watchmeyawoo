@@ -436,17 +436,11 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     return subFaces.length > 1 && subFaces.every((f) => f.isTriangle);
   }, [subFaces, userCuts]);
 
-  // PERMANENT NODE HIDING CALCULATION
+  // PERMANENT NODE HIDING CALCULATION (Center node C is fully enabled for diagram cuts!)
   const permanentlyHiddenNodeIds = useMemo(() => {
     const hiddenSet = new Set<number>();
-    const centerId = 2 * polygonSides;
 
     nodes.forEach((nodeX) => {
-      if (nodeX.id === centerId && selectedStartNode !== centerId) {
-        hiddenSet.add(centerId);
-        return;
-      }
-
       const activeFaces = subFaces.filter(
         (f) => !f.isTriangle && f.nodeIds.includes(nodeX.id)
       );
@@ -508,22 +502,17 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return hiddenSet;
-  }, [nodes, subFaces, allEdges, userCuts, polygonSides, selectedStartNode]);
+  }, [nodes, subFaces, allEdges, userCuts]);
 
-  // Target nodes visible when a start node is selected
+  // Target nodes visible when a start node is selected (Center node C is fully enabled!)
   const validTargetNodes = useMemo(() => {
     if (selectedStartNode === null) return new Set<number>();
 
     const validSet = new Set<number>();
     const startNode = nodes.find((n) => n.id === selectedStartNode)!;
-    const centerId = 2 * polygonSides;
 
     nodes.forEach((targetNode) => {
       if (targetNode.id === selectedStartNode) return;
-
-      if (selectedStartNode !== centerId && targetNode.id === centerId) {
-        return;
-      }
 
       const edgeExists = allEdges.some(
         (e) =>
@@ -574,22 +563,66 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return validSet;
-  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces, polygonSides]);
+  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces]);
 
-  // Reset when polygon shape changes
-  const handlePolygonChange = (sides: PolygonType) => {
+  // COMPLETE FRESH RESET WHEN SWITCHING SHAPES OR MODES
+  const handleSwitchToShape = (sides: PolygonType) => {
     setPolygonSides(sides);
     setSelectedStartNode(null);
     setUserCuts([]);
     setFreeCuts([]);
     setActiveSlices([]);
     setAppStep("cut");
+    setAppMode("explore");
     setShowVictoryModal(false);
     setClickedTriangles(new Set());
     setDeductedExtraAngles(new Set());
+
+    // Generate new base vertices for chosen polygon sides
+    const center = { x: 200, y: 200 };
+    const radius = 140;
+    const newVertices: Point[] = [];
+    for (let i = 0; i < sides; i++) {
+      const angle = -Math.PI / 2 + (2 * Math.PI * i) / sides;
+      newVertices.push({
+        x: center.x + radius * Math.cos(angle),
+        y: center.y + radius * Math.sin(angle),
+      });
+    }
+
+    const initialCentroid = getCentroid(newVertices);
+    setFreePieces([
+      {
+        id: `piece-init-${sides}-${Date.now()}`,
+        points: newVertices,
+        centroid: initialCentroid,
+        offset: { x: 0, y: 0 },
+      },
+    ]);
   };
 
-  // Reset current cutting
+  const handleSwitchToPractice = () => {
+    setSelectedStartNode(null);
+    setUserCuts([]);
+    setFreeCuts([]);
+    setActiveSlices([]);
+    setAppStep("cut");
+    setAppMode("practice");
+    setShowVictoryModal(false);
+    setClickedTriangles(new Set());
+    setDeductedExtraAngles(new Set());
+
+    const initialCentroid = getCentroid(baseVertices);
+    setFreePieces([
+      {
+        id: `piece-init-${polygonSides}-${Date.now()}`,
+        points: baseVertices,
+        centroid: initialCentroid,
+        offset: { x: 0, y: 0 },
+      },
+    ]);
+  };
+
   const handleResetCuts = () => {
     setSelectedStartNode(null);
     setUserCuts([]);
@@ -603,7 +636,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     const initialCentroid = getCentroid(baseVertices);
     setFreePieces([
       {
-        id: `piece-init-${polygonSides}`,
+        id: `piece-init-${polygonSides}-${Date.now()}`,
         points: baseVertices,
         centroid: initialCentroid,
         offset: { x: 0, y: 0 },
@@ -901,7 +934,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       const allDeducted = extraAngleGroups.every((g) => next.has(g.id));
       if (allDeducted) {
         setAppStep("complete");
-        // DELAY VICTORY POPUP BY 1.8 SECONDS so students can view their completed cheese cut & angles first!
+        // DELAY VICTORY POPUP BY 1.8 SECONDS
         setTimeout(() => {
           setShowVictoryModal(true);
         }, 1800);
@@ -911,7 +944,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
   };
 
-  // Immediate completion handling when no midpoint/center node was used
   useEffect(() => {
     if (
       appStep === "step1" &&
@@ -919,7 +951,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       rawPieceSum === actualInteriorAngleSum
     ) {
       setAppStep("complete");
-      // DELAY VICTORY POPUP BY 1.8 SECONDS
       const timer = setTimeout(() => {
         setShowVictoryModal(true);
       }, 1800);
@@ -955,7 +986,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         selectedStartNode !== null ? "cursor-crosshair" : ""
       }`}
     >
-      {/* HEADER NAVIGATION (Clean top bar) */}
+      {/* HEADER NAVIGATION */}
       <header className="bg-amber-100/80 backdrop-blur-md border-b border-amber-200/80 px-4 py-3 flex items-center justify-between shadow-sm z-30">
         <button
           onClick={onBack}
@@ -967,7 +998,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
         <div className="flex items-center gap-2">
           <span className="text-sm font-extrabold text-amber-950">
-            🧀 치즈 커팅 : {appMode === "practice" ? "자유 연습" : "다각형 내각의 합"}
+            🧀 치즈 커팅 : {polygonSides}각형 ({appMode === "practice" ? "자유 연습" : "내각 탐구"})
           </span>
         </div>
 
@@ -1314,7 +1345,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 );
               })}
 
-            {/* INTERACTIVE NODES (ONLY SHOWN IN EXPLORE MODE) */}
+            {/* INTERACTIVE NODES (Center node C is fully active for center cuts!) */}
             {appMode === "explore" &&
               appStep === "cut" &&
               nodes.map((node) => {
@@ -1407,7 +1438,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   치즈 위를 손가락이나 마우스로 마음껏 <strong>드래그해서 칼로 잘라보세요!</strong> 잘린 치즈 조각들이 자유롭게 분리됩니다.
                 </p>
 
-                {/* THE ONLY PROMINENT EXPLORATION BUTTON IN PRACTICE MODE */}
                 <button
                   onClick={() => setAppMode("explore")}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold text-sm shadow-md hover:from-amber-600 hover:to-amber-700 active:scale-98 transition-all flex items-center justify-center gap-2 animate-bounce cursor-pointer"
@@ -1500,7 +1530,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         </div>
       </main>
 
-      {/* DELAYED VICTORY POPUP MODAL WITH MULTI-OPTION NAVIGATION */}
+      {/* DELAYED VICTORY POPUP MODAL WITH FRESH RESET OPTIONS */}
       {showVictoryModal && (
         <div className="fixed inset-0 z-50 bg-amber-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-scale-up flex flex-col items-center">
@@ -1530,41 +1560,32 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
               {/* Option 1: Inspect current cut cheese board */}
               <button
                 onClick={() => setShowVictoryModal(false)}
-                className="w-full py-3 rounded-2xl bg-amber-100 border border-amber-300 text-amber-950 font-extrabold text-xs sm:text-sm shadow hover:bg-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                className="w-full py-3.5 rounded-2xl bg-amber-100 border border-amber-300 text-amber-950 font-extrabold text-xs sm:text-sm shadow hover:bg-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
                 <span>🔍 내가 자른 치즈 더 살펴보기</span>
               </button>
 
-              {/* Option 2: Select other cheese shapes to cut */}
-              <div className="pt-2 border-t border-amber-100 flex flex-col gap-2">
-                <span className="text-[11px] font-bold text-amber-800 text-left px-1">
-                  🧀 다른 모양의 치즈 잘라보기:
+              {/* Option 2: Select other cheese shapes with fresh reset */}
+              <div className="pt-3 border-t border-amber-100 flex flex-col gap-2">
+                <span className="text-xs font-extrabold text-amber-900 text-left px-1">
+                  🧀 다른 모양의 치즈 잘라보기 (새로 시작):
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={() => {
-                      setAppMode("explore");
-                      handlePolygonChange(5);
-                    }}
-                    className="py-2.5 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
+                    onClick={() => handleSwitchToShape(5)}
+                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
                   >
                     5각형 잘라보기
                   </button>
                   <button
-                    onClick={() => {
-                      setAppMode("explore");
-                      handlePolygonChange(6);
-                    }}
-                    className="py-2.5 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
+                    onClick={() => handleSwitchToShape(6)}
+                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
                   >
                     6각형 잘라보기
                   </button>
                   <button
-                    onClick={() => {
-                      setAppMode("practice");
-                      handleResetCuts();
-                    }}
-                    className="py-2.5 rounded-xl bg-amber-600 text-white font-extrabold text-xs shadow hover:bg-amber-700 active:scale-95 transition-all"
+                    onClick={handleSwitchToPractice}
+                    className="py-3 rounded-xl bg-amber-600 text-white font-extrabold text-xs shadow hover:bg-amber-700 active:scale-95 transition-all"
                   >
                     🖐️ 자유 자르기
                   </button>
