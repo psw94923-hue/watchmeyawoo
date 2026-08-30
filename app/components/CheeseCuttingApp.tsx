@@ -35,6 +35,13 @@ interface FreeCutLine {
   p2: Point;
 }
 
+interface FreePolygonPiece {
+  id: string;
+  points: Point[];
+  centroid: Point;
+  offset: Point;
+}
+
 interface SubFace {
   id: string;
   nodeIds: number[];
@@ -102,12 +109,29 @@ function segmentsIntersect(a: Point, b: Point, c: Point, d: Point): boolean {
   return ccw1 * ccw2 < 0 && ccw3 * ccw4 < 0;
 }
 
+function segmentIntersection(
+  p1: Point,
+  p2: Point,
+  p3: Point,
+  p4: Point
+): Point | null {
+  const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+  if (Math.abs(d) < 1e-6) return null;
+  const u = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
+  const v = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
+
+  if (u >= -0.01 && u <= 1.01 && v >= -0.01 && v <= 1.01) {
+    return { x: p1.x + u * (p2.x - p1.x), y: p1.y + u * (p2.y - p1.y) };
+  }
+  return null;
+}
+
 function getCentroid(pts: Point[]): Point {
   const sum = pts.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), {
     x: 0,
     y: 0,
   });
-  return { x: sum.x / pts.length, y: sum.y / pts.length };
+  return { x: sum.x / (pts.length || 1), y: sum.y / (pts.length || 1) };
 }
 
 function simplifyCollinearPoints(pts: Point[]): Point[] {
@@ -131,7 +155,72 @@ function simplifyCollinearPoints(pts: Point[]): Point[] {
   return result.length >= 3 ? result : pts;
 }
 
-// Face Splitter
+// Line-Polygon Splitter for Practice Drag Cutting
+function splitPolygonByLine(
+  poly: Point[],
+  p1: Point,
+  p2: Point
+): Point[][] | null {
+  const n = poly.length;
+  const intersections: { idx: number; pt: Point }[] = [];
+
+  for (let i = 0; i < n; i++) {
+    const a = poly[i];
+    const b = poly[(i + 1) % n];
+    const hit = segmentIntersection(p1, p2, a, b);
+    if (hit) {
+      intersections.push({ idx: i, pt: hit });
+    }
+  }
+
+  if (intersections.length < 2) return null;
+
+  // Take first 2 distinct edge intersections
+  const hit1 = intersections[0];
+  let hit2 = intersections[1];
+  for (let i = 1; i < intersections.length; i++) {
+    if (
+      Math.hypot(
+        intersections[i].pt.x - hit1.pt.x,
+        intersections[i].pt.y - hit1.pt.y
+      ) > 5
+    ) {
+      hit2 = intersections[i];
+      break;
+    }
+  }
+
+  if (
+    Math.hypot(hit2.pt.x - hit1.pt.x, hit2.pt.y - hit1.pt.y) < 5 ||
+    hit1.idx === hit2.idx
+  ) {
+    return null;
+  }
+
+  const minHit = hit1.idx < hit2.idx ? hit1 : hit2;
+  const maxHit = hit1.idx < hit2.idx ? hit2 : hit1;
+
+  // Cycle 1: minHit.pt -> poly[minHit.idx + 1] ... poly[maxHit.idx] -> maxHit.pt
+  const sub1: Point[] = [minHit.pt];
+  for (let i = minHit.idx + 1; i <= maxHit.idx; i++) {
+    sub1.push(poly[i]);
+  }
+  sub1.push(maxHit.pt);
+
+  // Cycle 2: maxHit.pt -> poly[maxHit.idx + 1] ... poly[end] -> poly[0] ... poly[minHit.idx] -> minHit.pt
+  const sub2: Point[] = [maxHit.pt];
+  for (let i = maxHit.idx + 1; i < n; i++) {
+    sub2.push(poly[i]);
+  }
+  for (let i = 0; i <= minHit.idx; i++) {
+    sub2.push(poly[i]);
+  }
+  sub2.push(minHit.pt);
+
+  return [sub1, sub2];
+}
+
+// Sub-polygon Face Splitter for Formal Math Mode
 function computeSubFaces(
   nodes: NodeItem[],
   polygonSides: PolygonType,
@@ -204,8 +293,8 @@ function computeSubFaces(
     const dist = Math.hypot(dx, dy) || 1;
 
     const offsetVector = {
-      x: (dx / dist) * 9,
-      y: (dy / dist) * 9,
+      x: (dx / dist) * 12,
+      y: (dy / dist) * 12,
     };
 
     return {
@@ -232,7 +321,8 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
   const [userCuts, setUserCuts] = useState<EdgeItem[]>([]);
   const [activeSlices, setActiveSlices] = useState<SliceEffect[]>([]);
 
-  // Free Drag Slicing (Practice Mode)
+  // Free Drag Slicing Pieces (Practice Mode)
+  const [freePieces, setFreePieces] = useState<FreePolygonPiece[]>([]);
   const [freeCuts, setFreeCuts] = useState<FreeCutLine[]>([]);
   const [dragCurrentPath, setDragCurrentPath] = useState<Point[] | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -249,8 +339,8 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     new Set()
   );
 
-  // Generate nodes for selected polygon
-  const { nodes, outerEdges, boundaryCycle } = useMemo(() => {
+  // Generate nodes & initial base vertices for selected polygon
+  const { nodes, outerEdges, baseVertices } = useMemo(() => {
     const n = polygonSides;
     const center = { x: 200, y: 200 };
     const radius = 140;
@@ -297,15 +387,10 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     const edgeList: EdgeItem[] = [];
-    const bCycle: number[] = [];
-
     for (let i = 0; i < n; i++) {
       const vCurr = i;
       const mCurr = n + i;
       const vNext = (i + 1) % n;
-
-      bCycle.push(vCurr);
-      bCycle.push(mCurr);
 
       edgeList.push({
         id: `outer-${vCurr}-${mCurr}`,
@@ -321,8 +406,22 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       });
     }
 
-    return { nodes: nodeList, outerEdges: edgeList, boundaryCycle: bCycle };
+    return { nodes: nodeList, outerEdges: edgeList, baseVertices: vertices };
   }, [polygonSides]);
+
+  // Initialize Free Polygon Pieces whenever polygon shape resets
+  useEffect(() => {
+    const initialCentroid = getCentroid(baseVertices);
+    setFreePieces([
+      {
+        id: `piece-init-${polygonSides}`,
+        points: baseVertices,
+        centroid: initialCentroid,
+        offset: { x: 0, y: 0 },
+      },
+    ]);
+    setFreeCuts([]);
+  }, [baseVertices, polygonSides]);
 
   const allEdges = useMemo(() => {
     return [...outerEdges, ...userCuts];
@@ -338,31 +437,25 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
   }, [subFaces, userCuts]);
 
   // PERMANENT NODE HIDING CALCULATION
-  // Calculate which nodes should remain permanently hidden because they have 0 valid potential cuts
   const permanentlyHiddenNodeIds = useMemo(() => {
     const hiddenSet = new Set<number>();
     const centerId = 2 * polygonSides;
 
-    // Check each node X: Does it have any valid target Y in any untriangulated face?
     nodes.forEach((nodeX) => {
-      // Center node rule: Center is hidden unless selected as start or active
       if (nodeX.id === centerId && selectedStartNode !== centerId) {
         hiddenSet.add(centerId);
         return;
       }
 
-      // Find untriangulated sub-faces containing nodeX
       const activeFaces = subFaces.filter(
         (f) => !f.isTriangle && f.nodeIds.includes(nodeX.id)
       );
 
       if (activeFaces.length === 0) {
-        // Node X is part of fully triangulated faces only -> hide permanently!
         hiddenSet.add(nodeX.id);
         return;
       }
 
-      // Check if nodeX has at least 1 valid cut target Y
       let hasValidTarget = false;
       for (const face of activeFaces) {
         const len = face.nodeIds.length;
@@ -372,12 +465,10 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
           const targetId = face.nodeIds[i];
           if (targetId === nodeX.id) continue;
 
-          // Cannot cut adjacent boundary neighbors in that face
           const isAdjacent =
             (idxX + 1) % len === i || (i + 1) % len === idxX;
           if (isAdjacent) continue;
 
-          // Check existing edge
           const edgeExists = allEdges.some(
             (e) =>
               (e.from === nodeX.id && e.to === targetId) ||
@@ -385,7 +476,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
           );
           if (edgeExists) continue;
 
-          // Check line intersection
           const targetNode = nodes.find((n) => n.id === targetId)!;
           let intersects = false;
           for (const e of userCuts) {
@@ -507,6 +597,16 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     setAppStep("cut");
     setClickedTriangles(new Set());
     setDeductedExtraAngles(new Set());
+
+    const initialCentroid = getCentroid(baseVertices);
+    setFreePieces([
+      {
+        id: `piece-init-${polygonSides}`,
+        points: baseVertices,
+        centroid: initialCentroid,
+        offset: { x: 0, y: 0 },
+      },
+    ]);
   };
 
   // FREE DRAG SLICING INTERACTION (Practice Mode)
@@ -547,6 +647,40 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
           p2,
         };
         setFreeCuts((prev) => [...prev, newFreeCut]);
+
+        // REAL POLYGON-LINE CLIPPING: Split freePieces by line segment p1 p2!
+        setFreePieces((prevPieces) => {
+          const nextPieces: FreePolygonPiece[] = [];
+
+          prevPieces.forEach((piece, pIdx) => {
+            const splitResult = splitPolygonByLine(piece.points, p1, p2);
+            if (splitResult && splitResult.length === 2) {
+              splitResult.forEach((pts, subIdx) => {
+                const centroid = getCentroid(pts);
+                const dx = centroid.x - 200;
+                const dy = centroid.y - 200;
+                const dist = Math.hypot(dx, dy) || 1;
+
+                // Shift piece outward by 16px along vector from center
+                const offset = {
+                  x: (dx / dist) * 16,
+                  y: (dy / dist) * 16,
+                };
+
+                nextPieces.push({
+                  id: `piece-${Date.now()}-${pIdx}-${subIdx}`,
+                  points: pts,
+                  centroid,
+                  offset,
+                });
+              });
+            } else {
+              nextPieces.push(piece);
+            }
+          });
+
+          return nextPieces;
+        });
 
         // Trigger Fruit-Ninja Slice Effect Animation
         const midX = (p1.x + p2.x) / 2;
@@ -814,7 +948,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         selectedStartNode !== null ? "cursor-crosshair" : ""
       }`}
     >
-      {/* HEADER NAVIGATION */}
+      {/* HEADER NAVIGATION (Cleaned up: NO duplicate exploration button in header!) */}
       <header className="bg-amber-100/80 backdrop-blur-md border-b border-amber-200/80 px-4 py-3 flex items-center justify-between shadow-sm z-30">
         <button
           onClick={onBack}
@@ -830,24 +964,12 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {appMode === "practice" ? (
-            <button
-              onClick={() => setAppMode("explore")}
-              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-extrabold shadow hover:from-amber-600 hover:to-amber-700 active:scale-95 transition-all flex items-center gap-1 animate-pulse"
-            >
-              <span>📐 수학으로 탐구해보기</span>
-              <span>➔</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleResetCuts}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold shadow hover:bg-amber-600 active:scale-95 transition-all"
-            >
-              🔄 초기화
-            </button>
-          )}
-        </div>
+        <button
+          onClick={handleResetCuts}
+          className="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold shadow hover:bg-amber-600 active:scale-95 transition-all"
+        >
+          🔄 초기화
+        </button>
       </header>
 
       {/* DYNAMIC GUIDANCE PROMPT BANNER */}
@@ -956,164 +1078,184 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
               {/* BASE POLYGON SHAPE */}
               <polygon
-                points={nodes
-                  .filter((n) => n.type === "vertex")
-                  .map((n) => `${n.x},${n.y}`)
-                  .join(" ")}
+                points={baseVertices.map((n) => `${n.x},${n.y}`).join(" ")}
                 fill="url(#cheesePattern)"
                 stroke="#d97706"
                 strokeWidth="4"
                 strokeLinejoin="round"
-                className="drop-shadow-md opacity-40"
+                className="drop-shadow-md opacity-30"
               />
 
-              {/* SUB-POLYGONS (CHEESE PIECES WITH PULL-APART SLICE SEPARATION EFFECT) */}
-              {subFaces.map((face) => {
-                const isClicked = clickedTriangles.has(face.id);
-                const isSeparated =
-                  appMode === "practice"
-                    ? freeCuts.length > 0
-                    : isTriangulated || appStep !== "cut";
-
-                const transformStr = isSeparated
-                  ? `translate(${face.offsetVector.x}px, ${face.offsetVector.y}px)`
-                  : "translate(0px, 0px)";
-
-                return (
+              {/* PRACTICE MODE: DYNAMIC SPLIT FREE POLYGON PIECES */}
+              {appMode === "practice" &&
+                freePieces.map((piece) => (
                   <g
-                    key={face.id}
+                    key={piece.id}
                     style={{
-                      transform: transformStr,
-                      transition: "transform 0.45s cubic-bezier(0.17, 0.67, 0.83, 0.67)",
+                      transform: `translate(${piece.offset.x}px, ${piece.offset.y}px)`,
+                      transition: "transform 0.4s ease-out",
                     }}
                   >
                     <polygon
-                      points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                      points={piece.points.map((p) => `${p.x},${p.y}`).join(" ")}
                       fill="url(#cheesePattern)"
                       stroke="#d97706"
-                      strokeWidth="2.5"
+                      strokeWidth="3"
                       strokeLinejoin="round"
-                      className={
-                        appMode === "explore" && appStep === "step1"
-                          ? "cursor-pointer hover:opacity-90 transition-opacity"
-                          : ""
-                      }
-                      onClick={() => handleTriangleClick(face.id)}
+                      className="drop-shadow-md"
                     />
+                  </g>
+                ))}
 
-                    {appMode === "explore" && appStep === "step1" && isClicked && (
+              {/* EXPLORE MODE: SUB-POLYGONS */}
+              {appMode === "explore" &&
+                subFaces.map((face) => {
+                  const isClicked = clickedTriangles.has(face.id);
+                  const isSeparated = isTriangulated || appStep !== "cut";
+
+                  const transformStr = isSeparated
+                    ? `translate(${face.offsetVector.x}px, ${face.offsetVector.y}px)`
+                    : "translate(0px, 0px)";
+
+                  return (
+                    <g
+                      key={face.id}
+                      style={{
+                        transform: transformStr,
+                        transition:
+                          "transform 0.45s cubic-bezier(0.17, 0.67, 0.83, 0.67)",
+                      }}
+                    >
                       <polygon
                         points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                        fill="rgba(251, 191, 36, 0.35)"
-                        stroke="#b45309"
-                        strokeWidth="2"
-                        strokeDasharray="4 3"
-                        className="pointer-events-none"
+                        fill="url(#cheesePattern)"
+                        stroke="#d97706"
+                        strokeWidth="2.5"
+                        strokeLinejoin="round"
+                        className={
+                          appStep === "step1"
+                            ? "cursor-pointer hover:opacity-90 transition-opacity"
+                            : ""
+                        }
+                        onClick={() => handleTriangleClick(face.id)}
                       />
-                    )}
 
-                    {appMode === "explore" &&
-                      (appStep === "step1" ||
+                      {appStep === "step1" && isClicked && (
+                        <polygon
+                          points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                          fill="rgba(251, 191, 36, 0.35)"
+                          stroke="#b45309"
+                          strokeWidth="2"
+                          strokeDasharray="4 3"
+                          className="pointer-events-none"
+                        />
+                      )}
+
+                      {(appStep === "step1" ||
                         appStep === "step2" ||
                         appStep === "complete") &&
-                      isClicked && (
-                        <g className="pointer-events-none">
-                          <g transform={`translate(${face.centroid.x}, ${face.centroid.y})`}>
-                            <circle
-                              r="16"
-                              fill="#fff"
-                              stroke="#d97706"
-                              strokeWidth="2"
-                              className="shadow-md"
-                            />
-                            <text
-                              textAnchor="middle"
-                              dy="4"
-                              fontSize="11"
-                              fontWeight="bold"
-                              fill="#78350f"
+                        isClicked && (
+                          <g className="pointer-events-none">
+                            <g
+                              transform={`translate(${face.centroid.x}, ${face.centroid.y})`}
                             >
-                              180°
-                            </text>
-                          </g>
-
-                          {face.cornerPoints.map((pt, pIdx) => {
-                            const prevPt =
-                              face.cornerPoints[
-                                (pIdx + 2) % face.cornerPoints.length
-                              ];
-                            const nextPt =
-                              face.cornerPoints[
-                                (pIdx + 1) % face.cornerPoints.length
-                              ];
-                            const a1 = Math.atan2(
-                              prevPt.y - pt.y,
-                              prevPt.x - pt.x
-                            );
-                            const a2 = Math.atan2(
-                              nextPt.y - pt.y,
-                              nextPt.x - pt.x
-                            );
-
-                            const r = 22;
-                            const x1 = pt.x + r * Math.cos(a1);
-                            const y1 = pt.y + r * Math.sin(a1);
-                            const x2 = pt.x + r * Math.cos(a2);
-                            const y2 = pt.y + r * Math.sin(a2);
-
-                            let turn = a2 - a1;
-                            while (turn < 0) turn += 2 * Math.PI;
-                            const sweepFlag = turn < Math.PI ? 1 : 0;
-
-                            return (
-                              <path
-                                key={pIdx}
-                                d={`M ${x1} ${y1} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${y2} L ${pt.x} ${pt.y} Z`}
-                                fill="rgba(217, 119, 6, 0.3)"
-                                stroke="#b45309"
-                                strokeWidth="1.5"
+                              <circle
+                                r="16"
+                                fill="#fff"
+                                stroke="#d97706"
+                                strokeWidth="2"
+                                className="shadow-md"
                               />
-                            );
-                          })}
-                        </g>
-                      )}
-                  </g>
-                );
-              })}
+                              <text
+                                textAnchor="middle"
+                                dy="4"
+                                fontSize="11"
+                                fontWeight="bold"
+                                fill="#78350f"
+                              >
+                                180°
+                              </text>
+                            </g>
 
-              {/* USER DRAWN FORMAL CUT LINES */}
-              {userCuts.map((cut) => {
-                const nFrom = nodes.find((n) => n.id === cut.from)!;
-                const nTo = nodes.find((n) => n.id === cut.to)!;
-                return (
-                  <line
-                    key={cut.id}
-                    x1={nFrom.x}
-                    y1={nFrom.y}
-                    x2={nTo.x}
-                    y2={nTo.y}
-                    stroke="#78350f"
-                    strokeWidth="3.5"
-                    strokeDasharray="6 3"
-                    strokeLinecap="round"
-                  />
-                );
-              })}
+                            {face.cornerPoints.map((pt, pIdx) => {
+                              const prevPt =
+                                face.cornerPoints[
+                                  (pIdx + 2) % face.cornerPoints.length
+                                ];
+                              const nextPt =
+                                face.cornerPoints[
+                                  (pIdx + 1) % face.cornerPoints.length
+                                ];
+                              const a1 = Math.atan2(
+                                prevPt.y - pt.y,
+                                prevPt.x - pt.x
+                              );
+                              const a2 = Math.atan2(
+                                nextPt.y - pt.y,
+                                nextPt.x - pt.x
+                              );
+
+                              const r = 22;
+                              const x1 = pt.x + r * Math.cos(a1);
+                              const y1 = pt.y + r * Math.sin(a1);
+                              const x2 = pt.x + r * Math.cos(a2);
+                              const y2 = pt.y + r * Math.sin(a2);
+
+                              let turn = a2 - a1;
+                              while (turn < 0) turn += 2 * Math.PI;
+                              const sweepFlag = turn < Math.PI ? 1 : 0;
+
+                              return (
+                                <path
+                                  key={pIdx}
+                                  d={`M ${x1} ${y1} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${y2} L ${pt.x} ${pt.y} Z`}
+                                  fill="rgba(217, 119, 6, 0.3)"
+                                  stroke="#b45309"
+                                  strokeWidth="1.5"
+                                />
+                              );
+                            })}
+                          </g>
+                        )}
+                    </g>
+                  );
+                })}
+
+              {/* FORMAL CUT LINES (EXPLORE MODE) */}
+              {appMode === "explore" &&
+                userCuts.map((cut) => {
+                  const nFrom = nodes.find((n) => n.id === cut.from)!;
+                  const nTo = nodes.find((n) => n.id === cut.to)!;
+                  return (
+                    <line
+                      key={cut.id}
+                      x1={nFrom.x}
+                      y1={nFrom.y}
+                      x2={nTo.x}
+                      y2={nTo.y}
+                      stroke="#78350f"
+                      strokeWidth="3.5"
+                      strokeDasharray="6 3"
+                      strokeLinecap="round"
+                    />
+                  );
+                })}
 
               {/* FREE CUT LINES (PRACTICE MODE) */}
-              {freeCuts.map((cut) => (
-                <line
-                  key={cut.id}
-                  x1={cut.p1.x}
-                  y1={cut.p1.y}
-                  x2={cut.p2.x}
-                  y2={cut.p2.y}
-                  stroke="#78350f"
-                  strokeWidth="4"
-                  strokeDasharray="5 3"
-                  strokeLinecap="round"
-                />
-              ))}
+              {appMode === "practice" &&
+                freeCuts.map((cut) => (
+                  <line
+                    key={cut.id}
+                    x1={cut.p1.x}
+                    y1={cut.p1.y}
+                    x2={cut.p2.x}
+                    y2={cut.p2.y}
+                    stroke="#78350f"
+                    strokeWidth="4"
+                    strokeDasharray="5 3"
+                    strokeLinecap="round"
+                  />
+                ))}
 
               {/* ACTIVE FREE DRAG PATH TRAIL */}
               {dragCurrentPath && dragCurrentPath.length >= 2 && (
@@ -1218,12 +1360,10 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   const isSelected = selectedStartNode === node.id;
                   const isTargetPhase = selectedStartNode !== null;
 
-                  // HIDE NODES PERMANENTLY ONCE USAGE EXHAUSTED OR INVALID!
                   if (permanentlyHiddenNodeIds.has(node.id) && !isSelected) {
                     return null;
                   }
 
-                  // IF A START NODE IS PICKED, HIDE ANY NODE NOT IN VALID TARGETS!
                   if (isTargetPhase && !isSelected && !validTargetNodes.has(node.id)) {
                     return null;
                   }
@@ -1307,6 +1447,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   치즈 위를 손가락이나 마우스로 마음껏 <strong>드래그해서 칼로 잘라보세요!</strong> 잘린 치즈 조각들이 자유롭게 분리됩니다.
                 </p>
 
+                {/* THE ONLY PROMINENT EXPLORATION BUTTON */}
                 <button
                   onClick={() => setAppMode("explore")}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold text-sm shadow-md hover:from-amber-600 hover:to-amber-700 active:scale-98 transition-all flex items-center justify-center gap-2 animate-bounce cursor-pointer"
