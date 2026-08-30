@@ -217,7 +217,7 @@ function splitPolygonByLine(
   return [sub1, sub2];
 }
 
-// Sub-polygon Face Splitter for Formal Math Mode
+// Sub-polygon Face Splitter for Formal Math Mode (Supports Center Node 2N!)
 function computeSubFaces(
   nodes: NodeItem[],
   polygonSides: PolygonType,
@@ -267,6 +267,17 @@ function computeSubFaces(
 
         nextCycles.push(sub1);
         nextCycles.push(sub2);
+        splitDone = true;
+      } else if (idxU !== -1 && idxV === -1) {
+        // Cut connecting an outer node u to an inner node v (e.g. Center Node 2N)
+        const sub = [...cycle];
+        sub.splice(idxU + 1, 0, v);
+        nextCycles.push(sub);
+        splitDone = true;
+      } else if (idxV !== -1 && idxU === -1) {
+        const sub = [...cycle];
+        sub.splice(idxV + 1, 0, u);
+        nextCycles.push(sub);
         splitDone = true;
       } else {
         nextCycles.push(cycle);
@@ -378,6 +389,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       });
     }
 
+    // CENTER NODE (ID: 2 * n)
     nodeList.push({
       id: 2 * n,
       type: "center",
@@ -436,11 +448,33 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     return subFaces.length > 1 && subFaces.every((f) => f.isTriangle);
   }, [subFaces, userCuts]);
 
-  // PERMANENT NODE HIDING CALCULATION (Center node C is fully enabled for diagram cuts!)
+  // AUTOMATIC TRANSITION TO STEP1 (ANGLE EXPLORATION) UPON TRIANGULATION
+  useEffect(() => {
+    if (appStep === "cut" && isTriangulated) {
+      const timer = setTimeout(() => {
+        setAppStep("step1");
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [appStep, isTriangulated]);
+
+  // PERMANENT NODE HIDING CALCULATION (Center node C is fully visible on initial board!)
   const permanentlyHiddenNodeIds = useMemo(() => {
     const hiddenSet = new Set<number>();
+    const centerId = 2 * polygonSides;
+
+    // Check if any untriangulated face exists
+    const hasUntriangulatedFace = subFaces.some((f) => !f.isTriangle);
 
     nodes.forEach((nodeX) => {
+      // Center node C is ALWAYS visible as long as untriangulated faces exist!
+      if (nodeX.id === centerId) {
+        if (!hasUntriangulatedFace) {
+          hiddenSet.add(centerId);
+        }
+        return;
+      }
+
       const activeFaces = subFaces.filter(
         (f) => !f.isTriangle && f.nodeIds.includes(nodeX.id)
       );
@@ -502,14 +536,15 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return hiddenSet;
-  }, [nodes, subFaces, allEdges, userCuts]);
+  }, [nodes, subFaces, allEdges, userCuts, polygonSides]);
 
-  // Target nodes visible when a start node is selected (Center node C is fully enabled!)
+  // TARGET NODES VISIBLE WHEN A START NODE IS SELECTED (Center node C is selectable!)
   const validTargetNodes = useMemo(() => {
     if (selectedStartNode === null) return new Set<number>();
 
     const validSet = new Set<number>();
     const startNode = nodes.find((n) => n.id === selectedStartNode)!;
+    const centerId = 2 * polygonSides;
 
     nodes.forEach((targetNode) => {
       if (targetNode.id === selectedStartNode) return;
@@ -540,6 +575,12 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       }
       if (intersects) return;
 
+      // Allow cuts to/from Center Node C if segment doesn't intersect existing cuts!
+      if (startNode.id === centerId || targetNode.id === centerId) {
+        validSet.add(targetNode.id);
+        return;
+      }
+
       const sharedFace = subFaces.find(
         (f) =>
           !f.isTriangle &&
@@ -563,7 +604,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return validSet;
-  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces]);
+  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces, polygonSides]);
 
   // COMPLETE FRESH RESET WHEN SWITCHING SHAPES OR MODES
   const handleSwitchToShape = (sides: PolygonType) => {
@@ -578,7 +619,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     setClickedTriangles(new Set());
     setDeductedExtraAngles(new Set());
 
-    // Generate new base vertices for chosen polygon sides
     const center = { x: 200, y: 200 };
     const radius = 140;
     const newVertices: Point[] = [];
@@ -847,11 +887,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const handleStartStep1 = () => {
-    if (!isTriangulated) return;
-    setAppStep("step1");
-  };
-
   const handleTriangleClick = (faceId: string) => {
     if (appStep !== "step1") return;
 
@@ -934,7 +969,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       const allDeducted = extraAngleGroups.every((g) => next.has(g.id));
       if (allDeducted) {
         setAppStep("complete");
-        // DELAY VICTORY POPUP BY 1.8 SECONDS
         setTimeout(() => {
           setShowVictoryModal(true);
         }, 1800);
@@ -958,7 +992,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     }
   }, [appStep, allTrianglesClicked, rawPieceSum, actualInteriorAngleSum]);
 
-  // Guidance Banner Text
+  // Dynamic Banner Prompt Text
   const currentPromptMessage = useMemo(() => {
     if (appMode === "practice") {
       return "🖐️ 자유롭게 치즈를 잘라봅시다!";
@@ -1345,7 +1379,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 );
               })}
 
-            {/* INTERACTIVE NODES (Center node C is fully active for center cuts!) */}
+            {/* INTERACTIVE NODES (Center node C is fully visible right from initial board!) */}
             {appMode === "explore" &&
               appStep === "cut" &&
               nodes.map((node) => {
@@ -1480,21 +1514,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
-                  {appStep === "cut" && (
-                    <button
-                      onClick={handleStartStep1}
-                      disabled={!isTriangulated}
-                      className={`w-full py-3.5 rounded-2xl font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
-                        isTriangulated
-                          ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 active:scale-98 cursor-pointer animate-pulse"
-                          : "bg-amber-200/60 text-amber-800/60 cursor-not-allowed"
-                      }`}
-                    >
-                      <span>내각의 합 알아보기</span>
-                      <span>➔</span>
-                    </button>
-                  )}
-
                   {appStep === "step1" && hasAngleMismatch && (
                     <button
                       onClick={handleStartStep2}
@@ -1557,7 +1576,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
             {/* ACTION OPTIONS IN MODAL */}
             <div className="flex flex-col gap-2.5 w-full">
-              {/* Option 1: Inspect current cut cheese board */}
               <button
                 onClick={() => setShowVictoryModal(false)}
                 className="w-full py-3.5 rounded-2xl bg-amber-100 border border-amber-300 text-amber-950 font-extrabold text-xs sm:text-sm shadow hover:bg-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
@@ -1565,7 +1583,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 <span>🔍 내가 자른 치즈 더 살펴보기</span>
               </button>
 
-              {/* Option 2: Select other cheese shapes with fresh reset */}
               <div className="pt-3 border-t border-amber-100 flex flex-col gap-2">
                 <span className="text-xs font-extrabold text-amber-900 text-left px-1">
                   🧀 다른 모양의 치즈 잘라보기 (새로 시작):
