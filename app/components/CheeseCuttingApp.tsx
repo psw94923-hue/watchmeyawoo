@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from "react";
 // ----------------------------------------------------------------------
 // Types & Interfaces
 // ----------------------------------------------------------------------
-type PolygonType = 5 | 6 | 7 | 8;
+type PolygonType = 5 | 6;
 
 interface Point {
   x: number;
@@ -28,13 +28,14 @@ interface EdgeItem {
   isCut: boolean;
 }
 
-interface TriangleFace {
+interface SubFace {
   id: string;
-  nodeIds: [number, number, number];
-  points: [Point, Point, Point];
+  nodeIds: number[];
+  points: Point[];
+  cornerPoints: Point[];
+  isTriangle: boolean;
   centroid: Point;
-  clicked: boolean;
-  angles: [number, number, number];
+  offsetVector: Point; // Shift vector for pull-apart slice separation
 }
 
 interface ExtraAngleGroup {
@@ -70,7 +71,7 @@ interface SliceEffect {
 }
 
 // ----------------------------------------------------------------------
-// Geometry Utility Functions
+// Geometry Helpers
 // ----------------------------------------------------------------------
 function ccw(p1: Point, p2: Point, p3: Point): number {
   return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
@@ -102,130 +103,124 @@ function getCentroid(pts: Point[]): Point {
   return { x: sum.x / pts.length, y: sum.y / pts.length };
 }
 
-function getAngleDegrees(p1: Point, pVertex: Point, p2: Point): number {
-  const v1 = { x: p1.x - pVertex.x, y: p1.y - pVertex.y };
-  const v2 = { x: p2.x - pVertex.x, y: p2.y - pVertex.y };
+// Simplify face vertices by removing collinear intermediate points on straight lines (cross-product ~ 0)
+function simplifyCollinearPoints(pts: Point[]): Point[] {
+  if (pts.length <= 3) return pts;
+  const result: Point[] = [];
+  const n = pts.length;
 
-  const dot = v1.x * v2.x + v1.y * v2.y;
-  const mag1 = Math.hypot(v1.x, v1.y);
-  const mag2 = Math.hypot(v2.x, v2.y);
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n];
+    const curr = pts[i];
+    const next = pts[(i + 1) % n];
 
-  if (mag1 === 0 || mag2 === 0) return 0;
-  let cosTheta = dot / (mag1 * mag2);
-  cosTheta = Math.max(-1, Math.min(1, cosTheta));
-  return Math.round((Math.acos(cosTheta) * 180) / Math.PI);
+    const cp = Math.abs(ccw(prev, curr, next));
+    const distPrevNext = Math.hypot(next.x - prev.x, next.y - prev.y);
+
+    // If cross product is very small relative to edge length, point is collinear
+    if (cp > 20.0 || distPrevNext < 1.0) {
+      result.push(curr);
+    }
+  }
+
+  return result.length >= 3 ? result : pts;
 }
 
-// Planar Graph Face Extraction
-function extractFaces(nodes: NodeItem[], edges: EdgeItem[]): TriangleFace[] {
+// Sub-polygon Face Splitter
+function computeSubFaces(
+  nodes: NodeItem[],
+  polygonSides: PolygonType,
+  userCuts: EdgeItem[]
+): SubFace[] {
   const nodeMap = new Map<number, NodeItem>();
   nodes.forEach((n) => nodeMap.set(n.id, n));
 
-  const adj = new Map<number, number[]>();
-  nodes.forEach((n) => adj.set(n.id, []));
+  const n = polygonSides;
 
-  edges.forEach((e) => {
-    adj.get(e.from)?.push(e.to);
-    adj.get(e.to)?.push(e.from);
-  });
+  // Initial outer face cycle: V0 - M0 - V1 - M1 ... Vn-1 - Mn-1
+  let currentFaceCycles: number[][] = [[]];
+  for (let i = 0; i < n; i++) {
+    currentFaceCycles[0].push(i); // Vi
+    currentFaceCycles[0].push(n + i); // Mi
+  }
 
-  const visitedEdges = new Set<string>();
-  const facesPoints: number[][] = [];
+  // Iteratively split faces along user cuts
+  userCuts.forEach((cut) => {
+    const u = cut.from;
+    const v = cut.to;
+    const nextCycles: number[][] = [];
 
-  nodes.forEach((uNode) => {
-    const u = uNode.id;
-    const neighbors = adj.get(u) || [];
+    let splitDone = false;
 
-    neighbors.forEach((v) => {
-      const edgeKey = `${u}->${v}`;
-      if (visitedEdges.has(edgeKey)) return;
-
-      const facePath: number[] = [u];
-      let currU = u;
-      let currV = v;
-
-      while (!visitedEdges.has(`${currU}->${currV}`)) {
-        visitedEdges.add(`${currU}->${currV}`);
-        facePath.push(currV);
-
-        const nextCandidates = adj.get(currV) || [];
-        const ptU = nodeMap.get(currU)!;
-        const ptV = nodeMap.get(currV)!;
-        const inAngle = Math.atan2(ptU.y - ptV.y, ptU.x - ptV.x);
-
-        let bestW = -1;
-        let minTurn = Infinity;
-
-        nextCandidates.forEach((w) => {
-          if (w === currU && nextCandidates.length > 1) return;
-          const ptW = nodeMap.get(w)!;
-          const outAngle = Math.atan2(ptW.y - ptV.y, ptW.x - ptV.x);
-
-          let turn = outAngle - inAngle;
-          while (turn <= 0) turn += 2 * Math.PI;
-
-          if (turn < minTurn) {
-            minTurn = turn;
-            bestW = w;
-          }
-        });
-
-        if (bestW === -1) break;
-        currU = currV;
-        currV = bestW;
-
-        if (currV === u) {
-          visitedEdges.add(`${currU}->${currV}`);
-          break;
-        }
+    currentFaceCycles.forEach((cycle) => {
+      if (splitDone) {
+        nextCycles.push(cycle);
+        return;
       }
 
-      if (facePath.length >= 3) {
-        let area = 0;
-        for (let i = 0; i < facePath.length; i++) {
-          const p1 = nodeMap.get(facePath[i])!;
-          const p2 = nodeMap.get(facePath[(i + 1) % facePath.length])!;
-          area += p1.x * p2.y - p2.x * p1.y;
+      const idxU = cycle.indexOf(u);
+      const idxV = cycle.indexOf(v);
+
+      if (idxU !== -1 && idxV !== -1 && Math.abs(idxU - idxV) > 1) {
+        // Split cycle into two sub-cycles
+        const minIdx = Math.min(idxU, idxV);
+        const maxIdx = Math.max(idxU, idxV);
+
+        const sub1: number[] = [];
+        for (let i = minIdx; i <= maxIdx; i++) {
+          sub1.push(cycle[i]);
         }
 
-        if (area > 0) {
-          facesPoints.push(facePath);
+        const sub2: number[] = [];
+        for (let i = maxIdx; i < cycle.length; i++) {
+          sub2.push(cycle[i]);
         }
+        for (let i = 0; i <= minIdx; i++) {
+          sub2.push(cycle[i]);
+        }
+
+        nextCycles.push(sub1);
+        nextCycles.push(sub2);
+        splitDone = true;
+      } else {
+        nextCycles.push(cycle);
       }
     });
+
+    currentFaceCycles = nextCycles;
   });
 
-  const triangles: TriangleFace[] = [];
+  // Construct SubFace objects
+  return currentFaceCycles.map((cycle, idx) => {
+    const pts = cycle.map((id) => {
+      const node = nodeMap.get(id)!;
+      return { x: node.x, y: node.y };
+    });
 
-  facesPoints.forEach((cycle) => {
-    const uniqueNodes = Array.from(new Set(cycle));
-    if (uniqueNodes.length === 3) {
-      const n0 = nodeMap.get(uniqueNodes[0])!;
-      const n1 = nodeMap.get(uniqueNodes[1])!;
-      const n2 = nodeMap.get(uniqueNodes[2])!;
+    const corners = simplifyCollinearPoints(pts);
+    const centroid = getCentroid(corners);
 
-      const p0 = { x: n0.x, y: n0.y };
-      const p1 = { x: n1.x, y: n1.y };
-      const p2 = { x: n2.x, y: n2.y };
+    // Pull-apart vector from center (200, 200)
+    const dx = centroid.x - 200;
+    const dy = centroid.y - 200;
+    const dist = Math.hypot(dx, dy) || 1;
 
-      const centroid = getCentroid([p0, p1, p2]);
+    // Shift 9px outward when triangulated
+    const offsetVector = {
+      x: (dx / dist) * 9,
+      y: (dy / dist) * 9,
+    };
 
-      const a0 = getAngleDegrees(p1, p0, p2);
-      const a1 = getAngleDegrees(p0, p1, p2);
-      const a2 = getAngleDegrees(p0, p2, p1);
-
-      triangles.push({
-        id: `tri-${uniqueNodes.sort().join("-")}`,
-        nodeIds: [uniqueNodes[0], uniqueNodes[1], uniqueNodes[2]],
-        points: [p0, p1, p2],
-        centroid,
-        clicked: false,
-        angles: [a0, a1, a2],
-      });
-    }
+    return {
+      id: `face-${idx}-${cycle.join("-")}`,
+      nodeIds: cycle,
+      points: pts,
+      cornerPoints: corners,
+      isTriangle: corners.length === 3,
+      centroid,
+      offsetVector,
+    };
   });
-
-  return triangles;
 }
 
 // ----------------------------------------------------------------------
@@ -237,9 +232,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     null
   );
   const [userCuts, setUserCuts] = useState<EdgeItem[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Fruit-ninja style cut slice animations
   const [activeSlices, setActiveSlices] = useState<SliceEffect[]>([]);
 
   // App Workflow Steps
@@ -254,11 +246,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     new Set()
   );
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
+  // Generate nodes for selected polygon
   const { nodes, outerEdges, boundaryCycle } = useMemo(() => {
     const n = polygonSides;
     const center = { x: 200, y: 200 };
@@ -267,6 +255,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     const nodeList: NodeItem[] = [];
     const vertices: Point[] = [];
 
+    // 1. Original Vertices (0 to n-1)
     for (let i = 0; i < n; i++) {
       const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
       const x = center.x + radius * Math.cos(angle);
@@ -282,6 +271,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       });
     }
 
+    // 2. Edge Midpoints (n to 2n-1)
     for (let i = 0; i < n; i++) {
       const v1 = vertices[i];
       const v2 = vertices[(i + 1) % n];
@@ -297,6 +287,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       });
     }
 
+    // 3. Polygon Center (2n)
     nodeList.push({
       id: 2 * n,
       type: "center",
@@ -333,6 +324,23 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     return { nodes: nodeList, outerEdges: edgeList, boundaryCycle: bCycle };
   }, [polygonSides]);
 
+  // Combine all edges (outer boundary + user cuts)
+  const allEdges = useMemo(() => {
+    return [...outerEdges, ...userCuts];
+  }, [outerEdges, userCuts]);
+
+  // Compute Sub-polygon Faces
+  const subFaces = useMemo(() => {
+    return computeSubFaces(nodes, polygonSides, userCuts);
+  }, [nodes, polygonSides, userCuts]);
+
+  // Check if every sub-face is a triangle
+  const isTriangulated = useMemo(() => {
+    if (userCuts.length === 0) return false;
+    return subFaces.length > 1 && subFaces.every((f) => f.isTriangle);
+  }, [subFaces, userCuts]);
+
+  // Reset when polygon shape changes
   const handlePolygonChange = (sides: PolygonType) => {
     setPolygonSides(sides);
     setSelectedStartNode(null);
@@ -343,6 +351,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     setDeductedExtraAngles(new Set());
   };
 
+  // Reset current cutting
   const handleResetCuts = () => {
     setSelectedStartNode(null);
     setUserCuts([]);
@@ -352,79 +361,33 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     setDeductedExtraAngles(new Set());
   };
 
-  const disabledNeighborNodes = useMemo(() => {
+  // SMART DYNAMIC NODE HIDING LOGIC
+  // When a start node is selected, hide all invalid target nodes!
+  const validTargetNodes = useMemo(() => {
     if (selectedStartNode === null) return new Set<number>();
 
-    const disabled = new Set<number>();
-    const idxInCycle = boundaryCycle.indexOf(selectedStartNode);
+    const validSet = new Set<number>();
+    const startNode = nodes.find((n) => n.id === selectedStartNode)!;
+    const centerId = 2 * polygonSides;
 
-    if (idxInCycle !== -1) {
-      const len = boundaryCycle.length;
-      const prevNode = boundaryCycle[(idxInCycle - 1 + len) % len];
-      const nextNode = boundaryCycle[(idxInCycle + 1) % len];
-      disabled.add(prevNode);
-      disabled.add(nextNode);
-    }
+    nodes.forEach((targetNode) => {
+      if (targetNode.id === selectedStartNode) return;
 
-    return disabled;
-  }, [selectedStartNode, boundaryCycle]);
-
-  const allEdges = useMemo(() => {
-    return [...outerEdges, ...userCuts];
-  }, [outerEdges, userCuts]);
-
-  const triangleFaces = useMemo(() => {
-    return extractFaces(nodes, allEdges);
-  }, [nodes, allEdges]);
-
-  const isTriangulated = useMemo(() => {
-    if (userCuts.length === 0) return false;
-    const totalTriArea = triangleFaces.reduce((acc, tf) => {
-      const [p0, p1, p2] = tf.points;
-      const area = Math.abs(
-        0.5 * (p0.x * (p1.y - p2.y) + p1.x * (p2.y - p0.y) + p2.x * (p0.y - p1.y))
-      );
-      return acc + area;
-    }, 0);
-
-    const n = polygonSides;
-    const radius = 140;
-    const mainPolyArea = 0.5 * n * radius * radius * Math.sin((2 * Math.PI) / n);
-
-    return (
-      triangleFaces.length >= n - 2 &&
-      Math.abs(totalTriArea - mainPolyArea) < 1.0
-    );
-  }, [triangleFaces, polygonSides, userCuts]);
-
-  const handleNodeClick = (nodeId: number) => {
-    if (appStep !== "cut") return;
-
-    if (selectedStartNode === null) {
-      setSelectedStartNode(nodeId);
-    } else if (selectedStartNode === nodeId) {
-      setSelectedStartNode(null);
-    } else {
-      const fromNode = nodes.find((n) => n.id === selectedStartNode)!;
-      const toNode = nodes.find((n) => n.id === nodeId)!;
-
-      if (disabledNeighborNodes.has(nodeId)) {
-        showToast("이웃하는 변은 자를 수 없습니다!");
-        setSelectedStartNode(null);
+      // RULE 1: If start node is NOT center, hide center node unless explicitly starting from center!
+      // (User request: "정중앙은 정중앙을 시작점으로 누르지 않는 이상 사라지게 해버리는게 좋을 거 같은데")
+      if (selectedStartNode !== centerId && targetNode.id === centerId) {
         return;
       }
 
+      // RULE 2: Cannot re-cut an edge that already exists
       const edgeExists = allEdges.some(
         (e) =>
-          (e.from === fromNode.id && e.to === toNode.id) ||
-          (e.from === toNode.id && e.to === fromNode.id)
+          (e.from === startNode.id && e.to === targetNode.id) ||
+          (e.from === targetNode.id && e.to === startNode.id)
       );
-      if (edgeExists) {
-        showToast("이미 자른 선입니다!");
-        setSelectedStartNode(null);
-        return;
-      }
+      if (edgeExists) return;
 
+      // RULE 3: Cannot connect if segment intersects an existing cut line
       let intersects = false;
       for (const e of userCuts) {
         const eFrom = nodes.find((n) => n.id === e.from)!;
@@ -432,8 +395,8 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
         if (
           segmentsIntersect(
-            { x: fromNode.x, y: fromNode.y },
-            { x: toNode.x, y: toNode.y },
+            { x: startNode.x, y: startNode.y },
+            { x: targetNode.x, y: targetNode.y },
             { x: eFrom.x, y: eFrom.y },
             { x: eTo.x, y: eTo.y }
           )
@@ -442,14 +405,49 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
           break;
         }
       }
+      if (intersects) return;
 
-      if (intersects) {
-        showToast("기존에 잘린 선과 교차할 수 없습니다!");
-        setSelectedStartNode(null);
-        return;
+      // RULE 4: Both start and target node must share at least one untriangulated sub-face
+      const sharedFace = subFaces.find(
+        (f) =>
+          !f.isTriangle &&
+          f.nodeIds.includes(startNode.id) &&
+          f.nodeIds.includes(targetNode.id)
+      );
+
+      if (sharedFace) {
+        // Cannot cut adjacent boundary neighbors in that face
+        const idxStart = sharedFace.nodeIds.indexOf(startNode.id);
+        const idxTarget = sharedFace.nodeIds.indexOf(targetNode.id);
+        const len = sharedFace.nodeIds.length;
+
+        const isAdjacent =
+          (idxStart + 1) % len === idxTarget ||
+          (idxTarget + 1) % len === idxStart;
+
+        if (!isAdjacent) {
+          validSet.add(targetNode.id);
+        }
       }
+    });
 
-      // Valid cut line created!
+    return validSet;
+  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces, polygonSides]);
+
+  // Handle Node Selection & Cutting
+  const handleNodeClick = (nodeId: number) => {
+    if (appStep !== "cut") return;
+
+    if (selectedStartNode === null) {
+      setSelectedStartNode(nodeId);
+    } else if (selectedStartNode === nodeId) {
+      setSelectedStartNode(null);
+    } else {
+      if (!validTargetNodes.has(nodeId)) return;
+
+      const fromNode = nodes.find((n) => n.id === selectedStartNode)!;
+      const toNode = nodes.find((n) => n.id === nodeId)!;
+
       const newEdge: EdgeItem = {
         id: `cut-${fromNode.id}-${toNode.id}`,
         from: fromNode.id,
@@ -457,7 +455,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         isCut: true,
       };
 
-      // Trigger Fruit-Ninja style Slice Effect Animation
+      // Fruit-Ninja Slice Effect Animation
       const midX = (fromNode.x + toNode.x) / 2;
       const midY = (fromNode.y + toNode.y) / 2;
       const dx = toNode.x - fromNode.x;
@@ -467,7 +465,13 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       const ny = dx / len;
 
       const particles: SliceEffectParticle[] = [];
-      const particleColors = ["#f59e0b", "#fbbf24", "#d97706", "#ffffff", "#fef3c7"];
+      const particleColors = [
+        "#f59e0b",
+        "#fbbf24",
+        "#d97706",
+        "#ffffff",
+        "#fef3c7",
+      ];
 
       for (let i = 0; i < 8; i++) {
         const side = i % 2 === 0 ? 1 : -1;
@@ -497,8 +501,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       };
 
       setActiveSlices((prev) => [...prev, sliceEffect]);
-
-      // Clear slice effect after animation completes (600ms)
       setTimeout(() => {
         setActiveSlices((prev) => prev.filter((s) => s.id !== sliceEffect.id));
       }, 600);
@@ -509,12 +511,8 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
   };
 
   const handleStartStep1 = () => {
-    if (!isTriangulated) {
-      showToast("삼각형 모양으로 다 잘라주세요!");
-      return;
-    }
+    if (!isTriangulated) return;
     setAppStep("step1");
-    showToast("삼각형들을 눌러보세요!");
   };
 
   const handleTriangleClick = (faceId: string) => {
@@ -531,7 +529,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
   const actualInteriorAngleSum = (polygonSides - 2) * 180;
   const clickedTriangleCount = clickedTriangles.size;
-  const totalTriangleCount = triangleFaces.length;
+  const totalTriangleCount = subFaces.length;
 
   const extraAngleGroups = useMemo<ExtraAngleGroup[]>(() => {
     const list: ExtraAngleGroup[] = [];
@@ -587,7 +585,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
   const handleStartStep2 = () => {
     setAppStep("step2");
-    showToast("내각에 해당하지 않는 각을 모두 눌러보세요.");
   };
 
   const handleExtraAngleClick = (groupId: string) => {
@@ -621,6 +618,22 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     }
   }, [appStep, allTrianglesClicked, rawPieceSum, actualInteriorAngleSum]);
 
+  // Guidance Banner Text
+  const currentPromptMessage = useMemo(() => {
+    if (appStep === "cut") {
+      if (selectedStartNode === null) {
+        return "👉 꼭짓점을 선택하세요!";
+      } else {
+        return "🔪 다른 점들을 눌러 잘라보세요!";
+      }
+    } else if (appStep === "step1") {
+      return "💡 삼각형들을 눌러보세요!";
+    } else if (appStep === "step2") {
+      return "❓ 내각에 해당하지 않는 각을 모두 눌러보세요.";
+    }
+    return null;
+  }, [appStep, selectedStartNode]);
+
   return (
     <div
       className={`min-h-screen w-full bg-[#fdfbf7] flex flex-col font-sans select-none relative overflow-x-hidden ${
@@ -651,12 +664,11 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         </button>
       </header>
 
-      {/* TOAST BANNER */}
-      {toastMessage && (
+      {/* DYNAMIC GUIDANCE PROMPT BANNER */}
+      {currentPromptMessage && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 animate-bounce">
           <div className="bg-amber-900/90 backdrop-blur-md text-amber-100 text-xs sm:text-sm font-bold px-5 py-2.5 rounded-full shadow-lg border border-amber-400/40 flex items-center gap-2">
-            <span>💡</span>
-            <span>{toastMessage}</span>
+            <span>{currentPromptMessage}</span>
           </div>
         </div>
       )}
@@ -665,13 +677,13 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       <main className="flex-1 flex flex-col lg:flex-row items-center justify-center p-3 sm:p-6 gap-6 max-w-5xl mx-auto w-full">
         {/* LEFT / TOP PANEL */}
         <div className="flex-1 flex flex-col items-center w-full max-w-lg">
-          {/* POLYGON SELECTOR */}
-          <div className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-2xl p-2 shadow-sm w-full mb-4 flex items-center justify-around">
-            {[5, 6, 7, 8].map((s) => (
+          {/* POLYGON SELECTOR: 5-gon & 6-gon ONLY */}
+          <div className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-2xl p-2 shadow-sm w-full mb-4 flex items-center justify-center gap-4">
+            {[5, 6].map((s) => (
               <button
                 key={s}
                 onClick={() => handlePolygonChange(s as PolygonType)}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-1 ${
+                className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1 ${
                   polygonSides === s
                     ? "bg-amber-500 text-white shadow-md scale-105"
                     : "bg-amber-50 text-amber-900 hover:bg-amber-100"
@@ -696,7 +708,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
               className="relative z-10 w-full h-full touch-none select-none"
             >
               <defs>
-                {/* CSS ANIMATIONS FOR FRUIT-NINJA SLICE EFFECT */}
                 <style>{`
                   @keyframes bladeFlash {
                     0% { stroke-dashoffset: 300; opacity: 1; stroke-width: 9px; }
@@ -733,7 +744,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   />
                 </pattern>
 
-                {/* Glow Filter */}
                 <filter
                   id="nodeGlow"
                   x="-50%"
@@ -756,7 +766,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 </filter>
               </defs>
 
-              {/* 1. BASE POLYGON SHAPE */}
+              {/* 1. BASE POLYGON SHAPE (Rendered underneath) */}
               <polygon
                 points={nodes
                   .filter((n) => n.type === "vertex")
@@ -766,40 +776,61 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 stroke="#d97706"
                 strokeWidth="4"
                 strokeLinejoin="round"
-                className="drop-shadow-md"
+                className="drop-shadow-md opacity-40"
               />
 
-              {/* 2. TRIANGLE SUB-POLYGONS */}
-              {triangleFaces.map((face) => {
+              {/* 2. SUB-POLYGONS (CHEESE PIECES WITH PULL-APART SLICE SEPARATION EFFECT) */}
+              {subFaces.map((face) => {
                 const isClicked = clickedTriangles.has(face.id);
+                // When triangulated or in step 1/2, shift sub-polygon outward slightly to show pull-apart separation!
+                const isSeparated = isTriangulated || appStep !== "cut";
+                const transformStr = isSeparated
+                  ? `translate(${face.offsetVector.x}px, ${face.offsetVector.y}px)`
+                  : "translate(0px, 0px)";
+
                 return (
-                  <g key={face.id}>
+                  <g
+                    key={face.id}
+                    style={{
+                      transform: transformStr,
+                      transition: "transform 0.45s cubic-bezier(0.17, 0.67, 0.83, 0.67)",
+                    }}
+                  >
                     <polygon
                       points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                      fill={
-                        appStep === "step1" && isClicked
-                          ? "rgba(251, 191, 36, 0.35)"
-                          : appStep === "step2" || appStep === "complete"
-                          ? "rgba(252, 211, 77, 0.25)"
-                          : "transparent"
-                      }
-                      stroke={appStep !== "cut" ? "#b45309" : "transparent"}
-                      strokeWidth="2"
-                      strokeDasharray={appStep !== "cut" ? "4 3" : undefined}
+                      fill="url(#cheesePattern)"
+                      stroke="#d97706"
+                      strokeWidth="2.5"
+                      strokeLinejoin="round"
                       className={
                         appStep === "step1"
-                          ? "cursor-pointer hover:fill-amber-300/40 transition-colors"
+                          ? "cursor-pointer hover:opacity-90 transition-opacity"
                           : ""
                       }
                       onClick={() => handleTriangleClick(face.id)}
                     />
 
+                    {/* Step 1 Overlay Highlight */}
+                    {appStep === "step1" && isClicked && (
+                      <polygon
+                        points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                        fill="rgba(251, 191, 36, 0.35)"
+                        stroke="#b45309"
+                        strokeWidth="2"
+                        strokeDasharray="4 3"
+                        className="pointer-events-none"
+                      />
+                    )}
+
+                    {/* Step 1 & 2: 180° Interior Angle Arcs & Centroid Label */}
                     {(appStep === "step1" ||
                       appStep === "step2" ||
                       appStep === "complete") &&
                       isClicked && (
                         <g className="pointer-events-none">
-                          <g transform={`translate(${face.centroid.x}, ${face.centroid.y})`}>
+                          <g
+                            transform={`translate(${face.centroid.x}, ${face.centroid.y})`}
+                          >
                             <circle
                               r="16"
                               fill="#fff"
@@ -818,9 +849,16 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                             </text>
                           </g>
 
-                          {face.points.map((pt, pIdx) => {
-                            const prevPt = face.points[(pIdx + 2) % 3];
-                            const nextPt = face.points[(pIdx + 1) % 3];
+                          {/* Render corner angle arcs */}
+                          {face.cornerPoints.map((pt, pIdx) => {
+                            const prevPt =
+                              face.cornerPoints[
+                                (pIdx + 2) % face.cornerPoints.length
+                              ];
+                            const nextPt =
+                              face.cornerPoints[
+                                (pIdx + 1) % face.cornerPoints.length
+                              ];
                             const a1 = Math.atan2(
                               prevPt.y - pt.y,
                               prevPt.x - pt.x
@@ -875,10 +913,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 );
               })}
 
-              {/* 4. FRUIT-NINJA SLICE EFFECT ANIMATION OVERLAY */}
+              {/* 4. FRUIT-NINJA SLICE EFFECT OVERLAY */}
               {activeSlices.map((slice) => (
                 <g key={slice.id} className="pointer-events-none z-40">
-                  {/* Expanding Shockwave Circle */}
                   <circle
                     cx={slice.midX}
                     cy={slice.midY}
@@ -887,7 +924,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                     className="animate-shockwave"
                   />
 
-                  {/* Bright Blade Slash Flash Trail */}
                   <line
                     x1={slice.x1}
                     y1={slice.y1}
@@ -908,7 +944,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                     className="animate-blade-slash"
                   />
 
-                  {/* Flying Cheese Crumb Particles */}
                   {slice.particles.map((p) => (
                     <circle
                       key={p.id}
@@ -960,13 +995,16 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   );
                 })}
 
-              {/* 6. INTERACTIVE NODES */}
+              {/* 6. SMART DYNAMIC NODES (HIDES INVALID TARGET NODES AUTOMATICALLY) */}
               {appStep === "cut" &&
                 nodes.map((node) => {
                   const isSelected = selectedStartNode === node.id;
-                  const isDisabled = disabledNeighborNodes.has(node.id);
+                  const isTargetPhase = selectedStartNode !== null;
 
-                  if (isDisabled) return null;
+                  // If in target selection phase, HIDE any node that is NOT in validTargetNodes!
+                  if (isTargetPhase && !isSelected && !validTargetNodes.has(node.id)) {
+                    return null;
+                  }
 
                   return (
                     <g
@@ -1069,7 +1107,12 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
               {appStep === "cut" && (
                 <button
                   onClick={handleStartStep1}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold text-sm shadow-md hover:from-amber-600 hover:to-amber-700 active:scale-98 transition-all flex items-center justify-center gap-2"
+                  disabled={!isTriangulated}
+                  className={`w-full py-3.5 rounded-2xl font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
+                    isTriangulated
+                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 active:scale-98 cursor-pointer animate-pulse"
+                      : "bg-amber-200/60 text-amber-800/60 cursor-not-allowed"
+                  }`}
                 >
                   <span>내각의 합 알아보기</span>
                   <span>➔</span>
@@ -1083,13 +1126,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 >
                   <span>❓ 왜 내각의 합이 다르지?</span>
                 </button>
-              )}
-
-              {appStep === "step2" && (
-                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800 text-center leading-relaxed">
-                  💡 주황색 <strong>?</strong> 표시된 각을 클릭하여 필요 없는
-                  각도(180° / 360°)를 빼보세요!
-                </div>
               )}
             </div>
           </div>
