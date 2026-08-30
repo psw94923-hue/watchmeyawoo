@@ -16,7 +16,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Press Start 2P', 'NeoDunggeunmo', var(--font-geist-sans);
+  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -95,7 +95,7 @@ body {
 /* --- 레트로 16비트 게임 스타일 --- */
 
 .font-retro {
-  font-family: 'Press Start 2P', 'NeoDunggeunmo', 'Silkscreen', monospace;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
 }
 
 .retro-border {
