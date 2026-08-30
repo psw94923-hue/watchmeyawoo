@@ -55,6 +55,11 @@ const JOBS = [
 export default function UnifiedPreviousPage() {
   const router = useRouter();
   
+  // Restricted visitor access guard
+  useEffect(() => {
+    router.replace('/');
+  }, [router]);
+
   // ------------------------------
   // GLOBAL STATE
   // ------------------------------

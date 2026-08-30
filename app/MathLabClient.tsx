@@ -1,12 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import CheeseCuttingApp from "./components/CheeseCuttingApp";
 
 type Step = 'setup' | 'step1' | 'step2' | 'analysis';
+type ActiveApp = 'hub' | 'cheese' | 'pythagoras';
 
 export default function MathLabClient() {
-  // App States
+  // Navigation & Sub-App State
+  const [activeApp, setActiveApp] = useState<ActiveApp>('hub');
+
+  // App States for Pythagoras AR App
   const [step, setStep] = useState<Step>('setup');
   const [eyeHeight, setEyeHeight] = useState<number>(1.50); // h
   
@@ -208,6 +212,108 @@ export default function MathLabClient() {
   const finalMarker1Y = Math.min(330, Math.max(180, reticleY + finalPitchDiff * 4.0));
   const finalMarker2Y = 60; // Top marker position
 
+  // -------------------------------------------------------------
+  // RENDER APP 1: CHEESE CUTTING APP
+  // -------------------------------------------------------------
+  if (activeApp === 'cheese') {
+    return <CheeseCuttingApp onBack={() => setActiveApp('hub')} />;
+  }
+
+  // -------------------------------------------------------------
+  // RENDER APP 2: HOME HUB SELECTION
+  // -------------------------------------------------------------
+  if (activeApp === 'hub') {
+    return (
+      <div className="min-h-screen w-full bg-amber-50/50 flex flex-col font-sans select-none relative overflow-x-hidden">
+        {/* TOP HEADER */}
+        <header className="bg-amber-100/90 backdrop-blur-md border-b border-amber-200 px-6 py-4 flex items-center justify-between shadow-sm z-30">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🧪</span>
+            <span className="text-lg font-black text-amber-950 tracking-tight">
+              세원쌤의 <span className="text-amber-600">수학 실험실</span>
+            </span>
+          </div>
+          <span className="text-xs font-bold text-amber-800 bg-amber-200/60 px-3 py-1 rounded-full border border-amber-300">
+            중학교 수학 탐구 웹앱
+          </span>
+        </header>
+
+        {/* HERO CONTENT */}
+        <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-4xl mx-auto w-full">
+          <div className="text-center mb-8 sm:mb-10 animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl font-black text-amber-950 mb-3 tracking-tight">
+              손으로 직접 만지고 탐구하는 <br className="sm:hidden" />
+              <span className="text-amber-600">체험형 수학 공간</span>
+            </h1>
+            <p className="text-xs sm:text-base text-amber-800/80 max-w-lg mx-auto leading-relaxed">
+              도형을 자유롭게 자르고 측정하며 수학의 아름다운 개념과 원리를 스스로 발견해보세요!
+            </p>
+          </div>
+
+          {/* TWO MAIN APP SELECTION CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+            {/* CARD 1: CHEESE CUTTING APP */}
+            <div
+              onClick={() => setActiveApp('cheese')}
+              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-amber-200 hover:border-amber-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100/50 rounded-full blur-2xl group-hover:bg-amber-200/60 transition-all pointer-events-none" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  🧀
+                </div>
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold mb-2">
+                  중1 수학 • 다각형의 내각의 합
+                </div>
+                <h2 className="text-xl font-black text-amber-950 mb-2 group-hover:text-amber-600 transition-colors">
+                  치즈 커팅 (다각형 자르기)
+                </h2>
+                <p className="text-xs sm:text-sm text-amber-800/80 leading-relaxed mb-6">
+                  귀여운 칼로 치즈 다각형을 직접 분할해보며 (N-2)×180° 내각의 합 공식을 스스로 발견해보세요!
+                </p>
+              </div>
+
+              <button className="w-full py-3.5 rounded-2xl bg-amber-500 text-white font-extrabold text-sm shadow-md group-hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>치즈 커팅 시작하기</span>
+                <span>➔</span>
+              </button>
+            </div>
+
+            {/* CARD 2: PYTHAGORAS AR MEASUREMENT APP */}
+            <div
+              onClick={() => setActiveApp('pythagoras')}
+              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200 hover:border-teal-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-teal-100/50 rounded-full blur-2xl group-hover:bg-teal-200/60 transition-all pointer-events-none" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  📐
+                </div>
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-bold mb-2">
+                  중2 수학 • 피타고라스 정리
+                </div>
+                <h2 className="text-xl font-black text-slate-900 mb-2 group-hover:text-teal-600 transition-colors">
+                  피타고라스 측정하기
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                  카메라와 자이로 센서로 건물 바닥과 꼭대기를 조준하고 삼각비와 피타고라스 정리로 높이를 구하세요!
+                </p>
+              </div>
+
+              <button className="w-full py-3.5 rounded-2xl bg-slate-900 text-teal-300 font-extrabold text-sm shadow-md group-hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>피타고라스 측정하기</span>
+                <span>➔</span>
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // RENDER APP 3: PYTHAGORAS AR HEIGHT MEASUREMENT APP
+  // -------------------------------------------------------------
   return (
     <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col font-sans select-none overflow-hidden relative">
       {/* ------------------------------------------------------------- */}
@@ -241,14 +347,13 @@ export default function MathLabClient() {
       {/* MINIMAL TOP NAVIGATION */}
       {/* ------------------------------------------------------------- */}
       <header className="relative z-30 w-full p-4 flex items-center justify-between pointer-events-auto">
-        <Link
-          href="/previous"
-          id="btn-previous-page"
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900/70 backdrop-blur-md border border-slate-700/80 text-xs font-semibold text-slate-200 hover:text-white transition-all shadow-lg active:scale-95"
+        <button
+          onClick={() => setActiveApp('hub')}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900/70 backdrop-blur-md border border-slate-700/80 text-xs font-semibold text-slate-200 hover:text-white transition-all shadow-lg active:scale-95 cursor-pointer"
         >
-          <span>←</span>
-          <span>이전페이지</span>
-        </Link>
+          <span>🏠</span>
+          <span>메인으로</span>
+        </button>
       </header>
 
       {/* ------------------------------------------------------------- */}
