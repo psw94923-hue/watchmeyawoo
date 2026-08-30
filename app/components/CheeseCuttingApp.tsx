@@ -175,7 +175,6 @@ function splitPolygonByLine(
 
   if (intersections.length < 2) return null;
 
-  // Take first 2 distinct edge intersections
   const hit1 = intersections[0];
   let hit2 = intersections[1];
   for (let i = 1; i < intersections.length; i++) {
@@ -200,14 +199,12 @@ function splitPolygonByLine(
   const minHit = hit1.idx < hit2.idx ? hit1 : hit2;
   const maxHit = hit1.idx < hit2.idx ? hit2 : hit1;
 
-  // Cycle 1: minHit.pt -> poly[minHit.idx + 1] ... poly[maxHit.idx] -> maxHit.pt
   const sub1: Point[] = [minHit.pt];
   for (let i = minHit.idx + 1; i <= maxHit.idx; i++) {
     sub1.push(poly[i]);
   }
   sub1.push(maxHit.pt);
 
-  // Cycle 2: maxHit.pt -> poly[maxHit.idx + 1] ... poly[end] -> poly[0] ... poly[minHit.idx] -> minHit.pt
   const sub2: Point[] = [maxHit.pt];
   for (let i = maxHit.idx + 1; i < n; i++) {
     sub2.push(poly[i]);
@@ -648,7 +645,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         };
         setFreeCuts((prev) => [...prev, newFreeCut]);
 
-        // REAL POLYGON-LINE CLIPPING: Split freePieces by line segment p1 p2!
         setFreePieces((prevPieces) => {
           const nextPieces: FreePolygonPiece[] = [];
 
@@ -661,7 +657,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 const dy = centroid.y - 200;
                 const dist = Math.hypot(dx, dy) || 1;
 
-                // Shift piece outward by 16px along vector from center
                 const offset = {
                   x: (dx / dist) * 16,
                   y: (dy / dist) * 16,
@@ -760,7 +755,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         isCut: true,
       };
 
-      // Fruit-Ninja Slice Effect Animation
       const midX = (fromNode.x + toNode.x) / 2;
       const midY = (fromNode.y + toNode.y) / 2;
       const dx = toNode.x - fromNode.x;
@@ -948,7 +942,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         selectedStartNode !== null ? "cursor-crosshair" : ""
       }`}
     >
-      {/* HEADER NAVIGATION (Cleaned up: NO duplicate exploration button in header!) */}
+      {/* HEADER NAVIGATION (Clean, minimalistic top bar) */}
       <header className="bg-amber-100/80 backdrop-blur-md border-b border-amber-200/80 px-4 py-3 flex items-center justify-between shadow-sm z-30">
         <button
           onClick={onBack}
@@ -982,17 +976,413 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       )}
 
       {/* MAIN CONTAINER */}
-      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center p-3 sm:p-6 gap-6 max-w-5xl mx-auto w-full">
-        {/* LEFT / TOP PANEL */}
-        <div className="flex-1 flex flex-col items-center w-full max-w-lg">
-          {/* POLYGON SELECTOR & MODE CONTROL */}
-          <div className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-2xl p-2 shadow-sm w-full mb-4 flex items-center justify-between gap-3">
+      <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 gap-5 max-w-4xl mx-auto w-full">
+        {/* CUTTING BOARD CONTAINER */}
+        <div className="relative w-full aspect-square max-w-[400px] rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-900/30 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-95"
+            style={{ backgroundImage: "url('/images/cutting_board.png')" }}
+          />
+          <div className="absolute inset-0 bg-amber-950/10 pointer-events-none" />
+
+          {/* SVG INTERACTIVE CANVASES */}
+          <svg
+            ref={svgRef}
+            viewBox="0 0 400 400"
+            className="relative z-10 w-full h-full touch-none select-none cursor-crosshair"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+          >
+            <defs>
+              <style>{`
+                @keyframes bladeFlash {
+                  0% { stroke-dashoffset: 300; opacity: 1; stroke-width: 9px; }
+                  50% { opacity: 1; stroke-width: 6px; }
+                  100% { stroke-dashoffset: 0; opacity: 0; stroke-width: 1px; }
+                }
+                @keyframes shockwavePulse {
+                  0% { r: 6px; opacity: 1; stroke-width: 4px; }
+                  100% { r: 35px; opacity: 0; stroke-width: 1px; }
+                }
+                .animate-blade-slash {
+                  stroke-dasharray: 300;
+                  animation: bladeFlash 0.5s ease-out forwards;
+                }
+                .animate-shockwave {
+                  animation: shockwavePulse 0.45s cubic-bezier(0, 0.7, 0.1, 1) forwards;
+                }
+              `}</style>
+
+              <pattern
+                id="cheesePattern"
+                patternUnits="userSpaceOnUse"
+                width="400"
+                height="400"
+              >
+                <image
+                  href="/images/cheese.jpg"
+                  x="0"
+                  y="0"
+                  width="400"
+                  height="400"
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              </pattern>
+
+              <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <filter id="bladeGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            {/* BASE POLYGON SHAPE */}
+            <polygon
+              points={baseVertices.map((n) => `${n.x},${n.y}`).join(" ")}
+              fill="url(#cheesePattern)"
+              stroke="#d97706"
+              strokeWidth="4"
+              strokeLinejoin="round"
+              className="drop-shadow-md opacity-30"
+            />
+
+            {/* PRACTICE MODE: DYNAMIC SPLIT FREE POLYGON PIECES */}
+            {appMode === "practice" &&
+              freePieces.map((piece) => (
+                <g
+                  key={piece.id}
+                  style={{
+                    transform: `translate(${piece.offset.x}px, ${piece.offset.y}px)`,
+                    transition: "transform 0.4s ease-out",
+                  }}
+                >
+                  <polygon
+                    points={piece.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                    fill="url(#cheesePattern)"
+                    stroke="#d97706"
+                    strokeWidth="3"
+                    strokeLinejoin="round"
+                    className="drop-shadow-md"
+                  />
+                </g>
+              ))}
+
+            {/* EXPLORE MODE: SUB-POLYGONS */}
+            {appMode === "explore" &&
+              subFaces.map((face) => {
+                const isClicked = clickedTriangles.has(face.id);
+                const isSeparated = isTriangulated || appStep !== "cut";
+
+                const transformStr = isSeparated
+                  ? `translate(${face.offsetVector.x}px, ${face.offsetVector.y}px)`
+                  : "translate(0px, 0px)";
+
+                return (
+                  <g
+                    key={face.id}
+                    style={{
+                      transform: transformStr,
+                      transition:
+                        "transform 0.45s cubic-bezier(0.17, 0.67, 0.83, 0.67)",
+                    }}
+                  >
+                    <polygon
+                      points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                      fill="url(#cheesePattern)"
+                      stroke="#d97706"
+                      strokeWidth="2.5"
+                      strokeLinejoin="round"
+                      className={
+                        appStep === "step1"
+                          ? "cursor-pointer hover:opacity-90 transition-opacity"
+                          : ""
+                      }
+                      onClick={() => handleTriangleClick(face.id)}
+                    />
+
+                    {appStep === "step1" && isClicked && (
+                      <polygon
+                        points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
+                        fill="rgba(251, 191, 36, 0.35)"
+                        stroke="#b45309"
+                        strokeWidth="2"
+                        strokeDasharray="4 3"
+                        className="pointer-events-none"
+                      />
+                    )}
+
+                    {(appStep === "step1" ||
+                      appStep === "step2" ||
+                      appStep === "complete") &&
+                      isClicked && (
+                        <g className="pointer-events-none">
+                          <g transform={`translate(${face.centroid.x}, ${face.centroid.y})`}>
+                            <circle
+                              r="16"
+                              fill="#fff"
+                              stroke="#d97706"
+                              strokeWidth="2"
+                              className="shadow-md"
+                            />
+                            <text
+                              textAnchor="middle"
+                              dy="4"
+                              fontSize="11"
+                              fontWeight="bold"
+                              fill="#78350f"
+                            >
+                              180°
+                            </text>
+                          </g>
+
+                          {face.cornerPoints.map((pt, pIdx) => {
+                            const prevPt =
+                              face.cornerPoints[
+                                (pIdx + 2) % face.cornerPoints.length
+                              ];
+                            const nextPt =
+                              face.cornerPoints[
+                                (pIdx + 1) % face.cornerPoints.length
+                              ];
+                            const a1 = Math.atan2(
+                              prevPt.y - pt.y,
+                              prevPt.x - pt.x
+                            );
+                            const a2 = Math.atan2(
+                              nextPt.y - pt.y,
+                              nextPt.x - pt.x
+                            );
+
+                            const r = 22;
+                            const x1 = pt.x + r * Math.cos(a1);
+                            const y1 = pt.y + r * Math.sin(a1);
+                            const x2 = pt.x + r * Math.cos(a2);
+                            const y2 = pt.y + r * Math.sin(a2);
+
+                            let turn = a2 - a1;
+                            while (turn < 0) turn += 2 * Math.PI;
+                            const sweepFlag = turn < Math.PI ? 1 : 0;
+
+                            return (
+                              <path
+                                key={pIdx}
+                                d={`M ${x1} ${y1} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${y2} L ${pt.x} ${pt.y} Z`}
+                                fill="rgba(217, 119, 6, 0.3)"
+                                stroke="#b45309"
+                                strokeWidth="1.5"
+                              />
+                            );
+                          })}
+                        </g>
+                      )}
+                  </g>
+                );
+              })}
+
+            {/* FORMAL CUT LINES (EXPLORE MODE) - Hides automatically once triangulated/pull-apart split occurs! */}
+            {appMode === "explore" &&
+              appStep === "cut" &&
+              !isTriangulated &&
+              userCuts.map((cut) => {
+                const nFrom = nodes.find((n) => n.id === cut.from)!;
+                const nTo = nodes.find((n) => n.id === cut.to)!;
+                return (
+                  <line
+                    key={cut.id}
+                    x1={nFrom.x}
+                    y1={nFrom.y}
+                    x2={nTo.x}
+                    y2={nTo.y}
+                    stroke="#78350f"
+                    strokeWidth="3.5"
+                    strokeDasharray="6 3"
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+
+            {/* ACTIVE FREE DRAG PATH TRAIL */}
+            {dragCurrentPath && dragCurrentPath.length >= 2 && (
+              <polyline
+                points={dragCurrentPath.map((p) => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="url(#bladeGlow)"
+              />
+            )}
+
+            {/* FRUIT-NINJA SLICE EFFECT OVERLAY */}
+            {activeSlices.map((slice) => (
+              <g key={slice.id} className="pointer-events-none z-40">
+                <circle
+                  cx={slice.midX}
+                  cy={slice.midY}
+                  fill="none"
+                  stroke="#fbbf24"
+                  className="animate-shockwave"
+                />
+
+                <line
+                  x1={slice.x1}
+                  y1={slice.y1}
+                  x2={slice.x2}
+                  y2={slice.y2}
+                  stroke="#ffffff"
+                  strokeLinecap="round"
+                  filter="url(#bladeGlow)"
+                  className="animate-blade-slash"
+                />
+                <line
+                  x1={slice.x1}
+                  y1={slice.y1}
+                  x2={slice.x2}
+                  y2={slice.y2}
+                  stroke="#f59e0b"
+                  strokeLinecap="round"
+                  className="animate-blade-slash"
+                />
+
+                {slice.particles.map((p) => (
+                  <circle
+                    key={p.id}
+                    cx={p.x}
+                    cy={p.y}
+                    r={p.r}
+                    fill={p.color}
+                    className="shadow-sm"
+                    style={{
+                      transform: `translate(${p.dx}px, ${p.dy}px)`,
+                      opacity: 0,
+                      transition: "all 0.55s cubic-bezier(0.1, 0.8, 0.3, 1)",
+                    }}
+                  />
+                ))}
+              </g>
+            ))}
+
+            {/* STEP 2: CLICKABLE EXTRA ANGLE BADGES */}
+            {appMode === "explore" &&
+              (appStep === "step2" || appStep === "complete") &&
+              extraAngleGroups.map((group) => {
+                const isDeducted = deductedExtraAngles.has(group.id);
+                return (
+                  <g
+                    key={group.id}
+                    className="cursor-pointer transition-all active:scale-110"
+                    onClick={() => handleExtraAngleClick(group.id)}
+                  >
+                    <circle
+                      cx={group.x}
+                      cy={group.y}
+                      r="18"
+                      fill={isDeducted ? "#ef4444" : "#f59e0b"}
+                      stroke="#fff"
+                      strokeWidth="2.5"
+                      className="shadow-lg animate-pulse"
+                    />
+                    <text
+                      x={group.x}
+                      y={group.y + 4}
+                      textAnchor="middle"
+                      fontSize="10"
+                      fontWeight="extrabold"
+                      fill="#fff"
+                    >
+                      {isDeducted ? `-${group.degValue}°` : `? ${group.degValue}°`}
+                    </text>
+                  </g>
+                );
+              })}
+
+            {/* INTERACTIVE NODES (ONLY SHOWN IN EXPLORE MODE) */}
+            {appMode === "explore" &&
+              appStep === "cut" &&
+              nodes.map((node) => {
+                const isSelected = selectedStartNode === node.id;
+                const isTargetPhase = selectedStartNode !== null;
+
+                if (permanentlyHiddenNodeIds.has(node.id) && !isSelected) {
+                  return null;
+                }
+
+                if (isTargetPhase && !isSelected && !validTargetNodes.has(node.id)) {
+                  return null;
+                }
+
+                return (
+                  <g
+                    key={node.id}
+                    className="cursor-pointer group"
+                    onClick={() => handleNodeClick(node.id)}
+                  >
+                    <circle
+                      cx={node.x}
+                      cy={node.y}
+                      r={isSelected ? "14" : "10"}
+                      fill={
+                        isSelected
+                          ? "#ef4444"
+                          : node.type === "vertex"
+                          ? "#d97706"
+                          : node.type === "midpoint"
+                          ? "#f59e0b"
+                          : "#3b82f6"
+                      }
+                      stroke="#ffffff"
+                      strokeWidth="2.5"
+                      filter={isSelected ? "url(#nodeGlow)" : undefined}
+                      className="transition-all duration-200 group-hover:scale-125"
+                    />
+
+                    {isSelected && (
+                      <text
+                        x={node.x + 12}
+                        y={node.y - 12}
+                        fontSize="22"
+                        className="animate-bounce pointer-events-none"
+                      >
+                        🔪
+                      </text>
+                    )}
+
+                    <text
+                      x={node.x}
+                      y={node.y + (node.y > 200 ? 18 : -12)}
+                      textAnchor="middle"
+                      fontSize="9"
+                      fontWeight="bold"
+                      fill="#78350f"
+                      className="pointer-events-none opacity-80 group-hover:opacity-100"
+                    >
+                      {node.type === "vertex"
+                        ? `꼭짓점`
+                        : node.type === "midpoint"
+                        ? `중심`
+                        : `정중앙`}
+                    </text>
+                  </g>
+                );
+              })}
+          </svg>
+        </div>
+
+        {/* BOTTOM PANEL & SELECTOR TAB BAR (Moved to the bottom!) */}
+        <div className="w-full max-w-lg flex flex-col gap-4">
+          {/* SELECTOR TAB BAR AT THE BOTTOM */}
+          <div className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-2xl p-2 shadow-sm w-full flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-1">
               {[5, 6].map((s) => (
                 <button
                   key={s}
                   onClick={() => handlePolygonChange(s as PolygonType)}
-                  className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1 ${
+                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1 ${
                     polygonSides === s
                       ? "bg-amber-500 text-white shadow-md scale-105"
                       : "bg-amber-50 text-amber-900 hover:bg-amber-100"
@@ -1006,428 +1396,14 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
             {appMode === "explore" && (
               <button
                 onClick={() => setAppMode("practice")}
-                className="px-3 py-2 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold hover:bg-amber-200 transition-all"
+                className="px-3.5 py-2.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold hover:bg-amber-200 transition-all flex items-center gap-1"
               >
-                🖐️ 자유자르기로 변경
+                <span>🖐️ 자유자르기로 변경</span>
               </button>
             )}
           </div>
 
-          {/* CUTTING BOARD CONTAINER */}
-          <div className="relative w-full aspect-square max-w-[400px] rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-900/30 flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-cover bg-center opacity-95"
-              style={{ backgroundImage: "url('/images/cutting_board.png')" }}
-            />
-            <div className="absolute inset-0 bg-amber-950/10 pointer-events-none" />
-
-            {/* SVG INTERACTIVE CANVASES */}
-            <svg
-              ref={svgRef}
-              viewBox="0 0 400 400"
-              className="relative z-10 w-full h-full touch-none select-none cursor-crosshair"
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-            >
-              <defs>
-                <style>{`
-                  @keyframes bladeFlash {
-                    0% { stroke-dashoffset: 300; opacity: 1; stroke-width: 9px; }
-                    50% { opacity: 1; stroke-width: 6px; }
-                    100% { stroke-dashoffset: 0; opacity: 0; stroke-width: 1px; }
-                  }
-                  @keyframes shockwavePulse {
-                    0% { r: 6px; opacity: 1; stroke-width: 4px; }
-                    100% { r: 35px; opacity: 0; stroke-width: 1px; }
-                  }
-                  .animate-blade-slash {
-                    stroke-dasharray: 300;
-                    animation: bladeFlash 0.5s ease-out forwards;
-                  }
-                  .animate-shockwave {
-                    animation: shockwavePulse 0.45s cubic-bezier(0, 0.7, 0.1, 1) forwards;
-                  }
-                `}</style>
-
-                <pattern
-                  id="cheesePattern"
-                  patternUnits="userSpaceOnUse"
-                  width="400"
-                  height="400"
-                >
-                  <image
-                    href="/images/cheese.jpg"
-                    x="0"
-                    y="0"
-                    width="400"
-                    height="400"
-                    preserveAspectRatio="xMidYMid slice"
-                  />
-                </pattern>
-
-                <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-                <filter id="bladeGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="4" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-
-              {/* BASE POLYGON SHAPE */}
-              <polygon
-                points={baseVertices.map((n) => `${n.x},${n.y}`).join(" ")}
-                fill="url(#cheesePattern)"
-                stroke="#d97706"
-                strokeWidth="4"
-                strokeLinejoin="round"
-                className="drop-shadow-md opacity-30"
-              />
-
-              {/* PRACTICE MODE: DYNAMIC SPLIT FREE POLYGON PIECES */}
-              {appMode === "practice" &&
-                freePieces.map((piece) => (
-                  <g
-                    key={piece.id}
-                    style={{
-                      transform: `translate(${piece.offset.x}px, ${piece.offset.y}px)`,
-                      transition: "transform 0.4s ease-out",
-                    }}
-                  >
-                    <polygon
-                      points={piece.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                      fill="url(#cheesePattern)"
-                      stroke="#d97706"
-                      strokeWidth="3"
-                      strokeLinejoin="round"
-                      className="drop-shadow-md"
-                    />
-                  </g>
-                ))}
-
-              {/* EXPLORE MODE: SUB-POLYGONS */}
-              {appMode === "explore" &&
-                subFaces.map((face) => {
-                  const isClicked = clickedTriangles.has(face.id);
-                  const isSeparated = isTriangulated || appStep !== "cut";
-
-                  const transformStr = isSeparated
-                    ? `translate(${face.offsetVector.x}px, ${face.offsetVector.y}px)`
-                    : "translate(0px, 0px)";
-
-                  return (
-                    <g
-                      key={face.id}
-                      style={{
-                        transform: transformStr,
-                        transition:
-                          "transform 0.45s cubic-bezier(0.17, 0.67, 0.83, 0.67)",
-                      }}
-                    >
-                      <polygon
-                        points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                        fill="url(#cheesePattern)"
-                        stroke="#d97706"
-                        strokeWidth="2.5"
-                        strokeLinejoin="round"
-                        className={
-                          appStep === "step1"
-                            ? "cursor-pointer hover:opacity-90 transition-opacity"
-                            : ""
-                        }
-                        onClick={() => handleTriangleClick(face.id)}
-                      />
-
-                      {appStep === "step1" && isClicked && (
-                        <polygon
-                          points={face.points.map((p) => `${p.x},${p.y}`).join(" ")}
-                          fill="rgba(251, 191, 36, 0.35)"
-                          stroke="#b45309"
-                          strokeWidth="2"
-                          strokeDasharray="4 3"
-                          className="pointer-events-none"
-                        />
-                      )}
-
-                      {(appStep === "step1" ||
-                        appStep === "step2" ||
-                        appStep === "complete") &&
-                        isClicked && (
-                          <g className="pointer-events-none">
-                            <g
-                              transform={`translate(${face.centroid.x}, ${face.centroid.y})`}
-                            >
-                              <circle
-                                r="16"
-                                fill="#fff"
-                                stroke="#d97706"
-                                strokeWidth="2"
-                                className="shadow-md"
-                              />
-                              <text
-                                textAnchor="middle"
-                                dy="4"
-                                fontSize="11"
-                                fontWeight="bold"
-                                fill="#78350f"
-                              >
-                                180°
-                              </text>
-                            </g>
-
-                            {face.cornerPoints.map((pt, pIdx) => {
-                              const prevPt =
-                                face.cornerPoints[
-                                  (pIdx + 2) % face.cornerPoints.length
-                                ];
-                              const nextPt =
-                                face.cornerPoints[
-                                  (pIdx + 1) % face.cornerPoints.length
-                                ];
-                              const a1 = Math.atan2(
-                                prevPt.y - pt.y,
-                                prevPt.x - pt.x
-                              );
-                              const a2 = Math.atan2(
-                                nextPt.y - pt.y,
-                                nextPt.x - pt.x
-                              );
-
-                              const r = 22;
-                              const x1 = pt.x + r * Math.cos(a1);
-                              const y1 = pt.y + r * Math.sin(a1);
-                              const x2 = pt.x + r * Math.cos(a2);
-                              const y2 = pt.y + r * Math.sin(a2);
-
-                              let turn = a2 - a1;
-                              while (turn < 0) turn += 2 * Math.PI;
-                              const sweepFlag = turn < Math.PI ? 1 : 0;
-
-                              return (
-                                <path
-                                  key={pIdx}
-                                  d={`M ${x1} ${y1} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${y2} L ${pt.x} ${pt.y} Z`}
-                                  fill="rgba(217, 119, 6, 0.3)"
-                                  stroke="#b45309"
-                                  strokeWidth="1.5"
-                                />
-                              );
-                            })}
-                          </g>
-                        )}
-                    </g>
-                  );
-                })}
-
-              {/* FORMAL CUT LINES (EXPLORE MODE) */}
-              {appMode === "explore" &&
-                userCuts.map((cut) => {
-                  const nFrom = nodes.find((n) => n.id === cut.from)!;
-                  const nTo = nodes.find((n) => n.id === cut.to)!;
-                  return (
-                    <line
-                      key={cut.id}
-                      x1={nFrom.x}
-                      y1={nFrom.y}
-                      x2={nTo.x}
-                      y2={nTo.y}
-                      stroke="#78350f"
-                      strokeWidth="3.5"
-                      strokeDasharray="6 3"
-                      strokeLinecap="round"
-                    />
-                  );
-                })}
-
-              {/* FREE CUT LINES (PRACTICE MODE) */}
-              {appMode === "practice" &&
-                freeCuts.map((cut) => (
-                  <line
-                    key={cut.id}
-                    x1={cut.p1.x}
-                    y1={cut.p1.y}
-                    x2={cut.p2.x}
-                    y2={cut.p2.y}
-                    stroke="#78350f"
-                    strokeWidth="4"
-                    strokeDasharray="5 3"
-                    strokeLinecap="round"
-                  />
-                ))}
-
-              {/* ACTIVE FREE DRAG PATH TRAIL */}
-              {dragCurrentPath && dragCurrentPath.length >= 2 && (
-                <polyline
-                  points={dragCurrentPath.map((p) => `${p.x},${p.y}`).join(" ")}
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  filter="url(#bladeGlow)"
-                />
-              )}
-
-              {/* FRUIT-NINJA SLICE EFFECT OVERLAY */}
-              {activeSlices.map((slice) => (
-                <g key={slice.id} className="pointer-events-none z-40">
-                  <circle
-                    cx={slice.midX}
-                    cy={slice.midY}
-                    fill="none"
-                    stroke="#fbbf24"
-                    className="animate-shockwave"
-                  />
-
-                  <line
-                    x1={slice.x1}
-                    y1={slice.y1}
-                    x2={slice.x2}
-                    y2={slice.y2}
-                    stroke="#ffffff"
-                    strokeLinecap="round"
-                    filter="url(#bladeGlow)"
-                    className="animate-blade-slash"
-                  />
-                  <line
-                    x1={slice.x1}
-                    y1={slice.y1}
-                    x2={slice.x2}
-                    y2={slice.y2}
-                    stroke="#f59e0b"
-                    strokeLinecap="round"
-                    className="animate-blade-slash"
-                  />
-
-                  {slice.particles.map((p) => (
-                    <circle
-                      key={p.id}
-                      cx={p.x}
-                      cy={p.y}
-                      r={p.r}
-                      fill={p.color}
-                      className="shadow-sm"
-                      style={{
-                        transform: `translate(${p.dx}px, ${p.dy}px)`,
-                        opacity: 0,
-                        transition: "all 0.55s cubic-bezier(0.1, 0.8, 0.3, 1)",
-                      }}
-                    />
-                  ))}
-                </g>
-              ))}
-
-              {/* STEP 2: CLICKABLE EXTRA ANGLE BADGES */}
-              {appMode === "explore" &&
-                (appStep === "step2" || appStep === "complete") &&
-                extraAngleGroups.map((group) => {
-                  const isDeducted = deductedExtraAngles.has(group.id);
-                  return (
-                    <g
-                      key={group.id}
-                      className="cursor-pointer transition-all active:scale-110"
-                      onClick={() => handleExtraAngleClick(group.id)}
-                    >
-                      <circle
-                        cx={group.x}
-                        cy={group.y}
-                        r="18"
-                        fill={isDeducted ? "#ef4444" : "#f59e0b"}
-                        stroke="#fff"
-                        strokeWidth="2.5"
-                        className="shadow-lg animate-pulse"
-                      />
-                      <text
-                        x={group.x}
-                        y={group.y + 4}
-                        textAnchor="middle"
-                        fontSize="10"
-                        fontWeight="extrabold"
-                        fill="#fff"
-                      >
-                        {isDeducted ? `-${group.degValue}°` : `? ${group.degValue}°`}
-                      </text>
-                    </g>
-                  );
-                })}
-
-              {/* INTERACTIVE NODES (ONLY SHOWN IN EXPLORE MODE) */}
-              {appMode === "explore" &&
-                appStep === "cut" &&
-                nodes.map((node) => {
-                  const isSelected = selectedStartNode === node.id;
-                  const isTargetPhase = selectedStartNode !== null;
-
-                  if (permanentlyHiddenNodeIds.has(node.id) && !isSelected) {
-                    return null;
-                  }
-
-                  if (isTargetPhase && !isSelected && !validTargetNodes.has(node.id)) {
-                    return null;
-                  }
-
-                  return (
-                    <g
-                      key={node.id}
-                      className="cursor-pointer group"
-                      onClick={() => handleNodeClick(node.id)}
-                    >
-                      <circle
-                        cx={node.x}
-                        cy={node.y}
-                        r={isSelected ? "14" : "10"}
-                        fill={
-                          isSelected
-                            ? "#ef4444"
-                            : node.type === "vertex"
-                            ? "#d97706"
-                            : node.type === "midpoint"
-                            ? "#f59e0b"
-                            : "#3b82f6"
-                        }
-                        stroke="#ffffff"
-                        strokeWidth="2.5"
-                        filter={isSelected ? "url(#nodeGlow)" : undefined}
-                        className="transition-all duration-200 group-hover:scale-125"
-                      />
-
-                      {isSelected && (
-                        <text
-                          x={node.x + 12}
-                          y={node.y - 12}
-                          fontSize="22"
-                          className="animate-bounce pointer-events-none"
-                        >
-                          🔪
-                        </text>
-                      )}
-
-                      <text
-                        x={node.x}
-                        y={node.y + (node.y > 200 ? 18 : -12)}
-                        textAnchor="middle"
-                        fontSize="9"
-                        fontWeight="bold"
-                        fill="#78350f"
-                        className="pointer-events-none opacity-80 group-hover:opacity-100"
-                      >
-                        {node.type === "vertex"
-                          ? `꼭짓점`
-                          : node.type === "midpoint"
-                          ? `중심`
-                          : `정중앙`}
-                      </text>
-                    </g>
-                  );
-                })}
-            </svg>
-          </div>
-        </div>
-
-        {/* RIGHT / BOTTOM PANEL */}
-        <div className="w-full lg:w-80 flex flex-col gap-4">
+          {/* CONTROL CARD */}
           <div className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-3xl p-5 shadow-lg flex flex-col gap-4">
             <h2 className="text-base font-extrabold text-amber-950 flex items-center justify-between border-b border-amber-100 pb-3">
               <span className="flex items-center gap-2">
@@ -1447,7 +1423,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   치즈 위를 손가락이나 마우스로 마음껏 <strong>드래그해서 칼로 잘라보세요!</strong> 잘린 치즈 조각들이 자유롭게 분리됩니다.
                 </p>
 
-                {/* THE ONLY PROMINENT EXPLORATION BUTTON */}
                 <button
                   onClick={() => setAppMode("explore")}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold text-sm shadow-md hover:from-amber-600 hover:to-amber-700 active:scale-98 transition-all flex items-center justify-center gap-2 animate-bounce cursor-pointer"
