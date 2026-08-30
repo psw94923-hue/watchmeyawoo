@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import CheeseCuttingApp from "./components/CheeseCuttingApp";
+import CircumcenterApp from "./components/CircumcenterApp";
 
 type Step = 'setup' | 'step1' | 'step2' | 'analysis';
-type ActiveApp = 'hub' | 'cheese' | 'pythagoras';
+type ActiveApp = 'hub' | 'cheese' | 'circumcenter' | 'pythagoras';
 
 export default function MathLabClient() {
   // Navigation & Sub-App State
@@ -220,7 +221,14 @@ export default function MathLabClient() {
   }
 
   // -------------------------------------------------------------
-  // RENDER APP 2: HOME HUB SELECTION
+  // RENDER APP 2: CIRCUMCENTER GAME APP
+  // -------------------------------------------------------------
+  if (activeApp === 'circumcenter') {
+    return <CircumcenterApp onBack={() => setActiveApp('hub')} />;
+  }
+
+  // -------------------------------------------------------------
+  // RENDER HUB: APP SELECTION HUB
   // -------------------------------------------------------------
   if (activeApp === 'hub') {
     return (
@@ -239,7 +247,7 @@ export default function MathLabClient() {
         </header>
 
         {/* HERO CONTENT */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-4xl mx-auto w-full">
+        <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-6xl mx-auto w-full">
           <div className="text-center mb-8 sm:mb-10 animate-fade-in">
             <h1 className="text-3xl sm:text-4xl font-black text-amber-950 mb-3 tracking-tight">
               손으로 직접 만지고 탐구하는 <br className="sm:hidden" />
@@ -250,8 +258,8 @@ export default function MathLabClient() {
             </p>
           </div>
 
-          {/* TWO MAIN APP SELECTION CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+          {/* THREE MAIN APP SELECTION CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
             {/* CARD 1: CHEESE CUTTING APP */}
             <div
               onClick={() => setActiveApp('cheese')}
@@ -279,7 +287,34 @@ export default function MathLabClient() {
               </button>
             </div>
 
-            {/* CARD 2: PYTHAGORAS AR MEASUREMENT APP */}
+            {/* CARD 2: CIRCUMCENTER MINI GAME APP */}
+            <div
+              onClick={() => setActiveApp('circumcenter')}
+              className="group cursor-pointer bg-slate-900 rounded-3xl p-6 sm:p-7 border-2 border-indigo-500/40 hover:border-yellow-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden text-slate-100"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/30 rounded-full blur-2xl group-hover:bg-indigo-500/50 transition-all pointer-events-none" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-indigo-950 border border-indigo-500/40 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  🌌
+                </div>
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-950 border border-indigo-500/40 text-yellow-300 text-[11px] font-bold mb-2">
+                  중2 수학 • 삼각형의 외심
+                </div>
+                <h2 className="text-xl font-black text-white mb-2 group-hover:text-yellow-400 transition-colors">
+                  외심 탐사선 (항성 찾기)
+                </h2>
+                <p className="text-xs sm:text-sm text-indigo-200/80 leading-relaxed mb-6">
+                  밤하늘의 세 별로부터 같은 거리에 있는 항성(외심)을 감으로 맞춰보고 실시간 랭킹에 도전하세요!
+                </p>
+              </div>
+
+              <button className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-md hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>외심 탐사선 시작하기</span>
+                <span>➔</span>
+              </button>
+            </div>
+
+            {/* CARD 3: PYTHAGORAS AR MEASUREMENT APP */}
             <div
               onClick={() => setActiveApp('pythagoras')}
               className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200 hover:border-teal-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
@@ -310,6 +345,7 @@ export default function MathLabClient() {
       </div>
     );
   }
+
 
   // -------------------------------------------------------------
   // RENDER APP 3: PYTHAGORAS AR HEIGHT MEASUREMENT APP

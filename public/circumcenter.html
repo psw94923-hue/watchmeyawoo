@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>🌌 외심 탐사선: 밤하늘의 항성을 찾아라! | 중학교 2학년 수학</title>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    * {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      background-color: #070a13;
+      color: #f8fafc;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col relative overflow-hidden bg-slate-950">
+
+  <script>
+    const SUPABASE_URL = 'https://qmjqissvuuzqkdrogozo.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tlICyWW5XZUD6mt8n6lCqA_u8upDZtk';
+
+    let supabaseClient = null;
+    try {
+      if (typeof supabase !== 'undefined' && SUPABASE_URL && !SUPABASE_URL.includes('YOUR_SUPABASE_URL')) {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.warn("Supabase init fallback to localStorage:", e);
+    }
+  </script>
+
+  <!-- HEADER -->
+  <header class="w-full px-4 py-3 bg-slate-900/90 backdrop-blur-md border-b border-indigo-900/50 flex items-center justify-between z-30 shadow-lg">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🌌</span>
+      <span class="text-sm sm:text-base font-black text-indigo-100">
+        외심 탐사선 <span class="text-yellow-400">밤하늘의 항성을 찾아라!</span>
+      </span>
+    </div>
+    <button id="btn-hall-top" onclick="showLeaderboardScreen()" class="px-3.5 py-1.5 rounded-xl bg-indigo-900/70 hover:bg-indigo-800 border border-indigo-500/40 text-xs font-bold text-yellow-300 transition-all active:scale-95 cursor-pointer">
+      🏆 명예의 전당
+    </button>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
+
+    <!-- SCREEN 1: TUTORIAL SCREEN -->
+    <div id="screen-tutorial" class="flex-1 flex flex-col items-center justify-between p-4 z-20 max-w-4xl mx-auto w-full">
+      <div class="text-center mt-2 mb-3">
+        <span class="inline-block px-3 py-1 rounded-full bg-indigo-950 border border-indigo-500/40 text-indigo-300 text-xs font-bold mb-2">
+          중2 수학 • 삼각형의 외심 개념 형성 미니게임
+        </span>
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+          세 별로부터 <span class="text-yellow-400">같은 거리에 있는 항성(외심)</span>을 찾아라!
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+          💡 <span class="text-yellow-300 font-bold">외심의 성질:</span> 세 별(꼭짓점)을 지나는 원(외접원)의 중심이며, 세 별까지의 거리가 모두 같습니다.
+        </p>
+      </div>
+
+      <!-- Tutorial Canvas Container -->
+      <div id="tutorial-canvas-box" class="w-full flex-1 min-h-[280px] max-h-[400px] rounded-3xl border-2 border-indigo-500/40 bg-slate-900/90 shadow-2xl relative overflow-hidden cursor-crosshair">
+        <canvas id="canvas-tutorial" class="w-full h-full"></canvas>
+        <div id="tutorial-guide-banner" class="absolute inset-x-4 bottom-4 bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-yellow-400/40 text-center pointer-events-none animate-bounce shadow-xl">
+          <span class="text-xs sm:text-sm font-bold text-yellow-300">
+            👉 화면 속 밤하늘을 터치해 외심 위치를 맞혀보세요! (연습 1회)
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="w-full mt-4 flex justify-center">
+        <button id="btn-start-game" onclick="startActualGame()" disabled class="w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition-all shadow-xl">
+          🚀 게임 시작하기 (40초 타임어택) ➔
+        </button>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: IN-GAME PLAYING CANVAS -->
+    <div id="screen-playing" class="hidden flex-1 flex-col relative w-full h-full overflow-hidden">
+      <!-- Top HUD -->
+      <div class="absolute top-4 inset-x-4 z-20 flex items-center justify-between pointer-events-none max-w-4xl mx-auto">
+        <!-- Timer -->
+        <div class="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
+          <span class="text-lg">⏱️</span>
+          <div>
+            <span class="text-[10px] text-slate-400 block font-semibold">남은 시간</span>
+            <span id="hud-timer" class="text-xl font-black font-mono text-sky-300">40초</span>
+          </div>
+        </div>
+
+        <!-- Combo Streak Banner -->
+        <div id="hud-combo-box" class="hidden bg-gradient-to-r from-amber-500/30 to-red-500/30 backdrop-blur-md px-4 py-2 rounded-2xl border border-amber-400/60 shadow-xl flex items-center gap-2 animate-bounce">
+          <span class="text-xl">🔥</span>
+          <div>
+            <span class="text-[10px] text-amber-300 block font-bold">STREAK</span>
+            <span id="hud-combo-text" class="text-lg font-black text-yellow-300 font-mono">3 Combo (x1.2)</span>
+          </div>
+        </div>
+
+        <!-- Score -->
+        <div class="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
+          <span class="text-lg">⭐</span>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block font-semibold">현재 점수</span>
+            <span id="hud-score" class="text-xl font-black text-yellow-400 font-mono">0점</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- In-game Canvas -->
+      <div id="game-canvas-box" class="w-full flex-1 relative cursor-crosshair">
+        <canvas id="canvas-game" class="w-full h-full"></canvas>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: GAME OVER & RANKING REGISTRATION -->
+    <div id="screen-gameover" class="hidden flex-1 items-center justify-center p-4 z-20">
+      <div class="bg-slate-900/95 backdrop-blur-xl border border-indigo-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center">
+        <div class="w-16 h-16 rounded-2xl bg-indigo-950 border border-indigo-500/40 flex items-center justify-center text-3xl mx-auto mb-4">
+          🌌
+        </div>
+        <h2 class="text-2xl font-black text-white mb-1">탐사 완료!</h2>
+        <p class="text-xs text-slate-400 mb-6">외심 위치 감각 탐사가 완료되었습니다.</p>
+
+        <div class="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 mb-6 space-y-3 text-left">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <span class="text-xs text-slate-400 font-semibold">최종 획득 점수</span>
+            <span id="final-score" class="text-2xl font-black text-yellow-400 font-mono">0점</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+            <div class="bg-slate-900 p-2 rounded-xl border border-slate-800 flex justify-between">
+              <span class="text-emerald-400 font-bold">✨ PERFECT:</span>
+              <span id="cnt-perfect" class="font-mono text-white font-bold">0회</span>
+            </div>
+            <div class="bg-slate-900 p-2 rounded-xl border border-slate-800 flex justify-between">
+              <span class="text-yellow-400 font-bold">🌟 GREAT:</span>
+              <span id="cnt-great" class="font-mono text-white font-bold">0회</span>
+            </div>
+            <div class="bg-slate-900 p-2 rounded-xl border border-slate-800 flex justify-between">
+              <span class="text-orange-400 font-bold">👍 GOOD:</span>
+              <span id="cnt-good" class="font-mono text-white font-bold">0회</span>
+            </div>
+            <div class="bg-slate-900 p-2 rounded-xl border border-slate-800 flex justify-between">
+              <span class="text-amber-300 font-bold">🔥 최대 콤보:</span>
+              <span id="cnt-maxcombo" class="font-mono text-yellow-300 font-bold">0</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="rank-form" onsubmit="handleRankSubmit(event)" class="space-y-3">
+          <div class="text-left">
+            <label class="block text-xs font-bold text-indigo-300 mb-1">
+              🏆 명예의 전당 랭킹 등록
+            </label>
+            <input
+              type="text"
+              id="student-id-name"
+              required
+              placeholder="학번과 이름 (예: 2130 박세원)"
+              class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-indigo-500/50 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button
+              type="submit"
+              id="btn-submit-rank"
+              class="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
+            >
+              🚀 랭킹 등록하기
+            </button>
+            <button
+              type="button"
+              onclick="startActualGame()"
+              class="px-4 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
+            >
+              🔄 다시하기
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SCREEN 4: HALL OF FAME (LEADERBOARD) -->
+    <div id="screen-leaderboard" class="hidden flex-1 flex-col items-center justify-center p-4 z-20 max-w-md mx-auto w-full">
+      <div class="bg-slate-900/95 backdrop-blur-xl border border-indigo-500/40 rounded-3xl p-6 w-full shadow-2xl flex flex-col max-h-[85vh]">
+        <div class="text-center mb-4">
+          <span class="text-xs font-bold text-yellow-400 bg-yellow-950/80 px-3 py-1 rounded-full border border-yellow-500/40">
+            실시간 랭킹 Top 10
+          </span>
+          <h2 class="text-2xl font-black text-white mt-2">🏆 명예의 전당</h2>
+        </div>
+
+        <div id="leaderboard-list" class="flex-1 overflow-y-auto space-y-2.5 pr-1 mb-4">
+        </div>
+
+        <div class="flex gap-2 pt-2 border-t border-slate-800">
+          <button
+            onclick="startActualGame()"
+            class="flex-1 py-3 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
+          >
+            🚀 다시 도전하기
+          </button>
+          <button
+            onclick="showTutorialScreen()"
+            class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
+          >
+            🏠 시작 화면
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    let currentScreen = 'tutorial';
+    let gameState = {
+      score: 0,
+      combo: 0,
+      maxCombo: 0,
+      timeLeft: 40,
+      perfectCount: 0,
+      greatCount: 0,
+      goodCount: 0,
+      missCount: 0,
+      totalAttempts: 0
+    };
+
+    let tutorialTried = false;
+    let timerInterval = null;
+    let isTouchLocked = false;
+
+    let currentProblem = null;
+    let currentFeedback = null;
+    let particles = [];
+    let bgStars = [];
+
+    class WebAudioSynth {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playScore(type, combo) {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        if (type === 'PERFECT') {
+          const freqs = combo >= 3 ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
+          freqs.forEach((f, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now + idx * 0.05);
+            gain.gain.setValueAtTime(0.2, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.4);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.45);
+          });
+        } else if (type === 'GREAT') {
+          [587.33, 880].forEach((f, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now + idx * 0.06);
+            gain.gain.setValueAtTime(0.18, now + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.06);
+            osc.stop(now + idx * 0.06 + 0.4);
+          });
+        } else if (type === 'GOOD') {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.2);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+      }
+    }
+    const synth = new WebAudioSynth();
+
+    function generateProblem(w, h) {
+      const minDim = Math.min(w, h);
+      let R = minDim * (0.25 + Math.random() * 0.13);
+
+      let padX = R + 45;
+      let padY = R + 70;
+
+      let minX = padX;
+      let maxX = w - padX;
+      let minY = padY;
+      let maxY = h - padY;
+
+      if (maxX <= minX || maxY <= minY) {
+        R = minDim * 0.22;
+        minX = R + 30;
+        maxX = Math.max(minX + 10, w - (R + 30));
+        minY = R + 50;
+        maxY = Math.max(minY + 10, h - (R + 50));
+      }
+
+      const x0 = minX + Math.random() * Math.max(1, maxX - minX);
+      const y0 = minY + Math.random() * Math.max(1, maxY - minY);
+
+      const baseAngle = Math.random() * Math.PI * 2;
+      let gap1Deg = 70 + Math.random() * 65;
+      let gap2Deg = 70 + Math.random() * 65;
+      let gap3Deg = 360 - (gap1Deg + gap2Deg);
+
+      let attempts = 0;
+      while ((gap3Deg < 65 || gap3Deg > 145) && attempts < 100) {
+        gap1Deg = 70 + Math.random() * 65;
+        gap2Deg = 70 + Math.random() * 65;
+        gap3Deg = 360 - (gap1Deg + gap2Deg);
+        attempts++;
+      }
+
+      const a1 = baseAngle;
+      const a2 = baseAngle + (gap1Deg * Math.PI) / 180;
+      const a3 = baseAngle + ((gap1Deg + gap2Deg) * Math.PI) / 180;
+
+      return {
+        circumcenter: { x: x0, y: y0 },
+        radius: R,
+        stars: [
+          { x: x0 + R * Math.cos(a1), y: y0 + R * Math.sin(a1) },
+          { x: x0 + R * Math.cos(a2), y: y0 + R * Math.sin(a2) },
+          { x: x0 + R * Math.cos(a3), y: y0 + R * Math.sin(a3) }
+        ]
+      };
+    }
+
+    for (let i = 0; i < 80; i++) {
+      bgStars.push({
+        x: Math.random(),
+        y: Math.random(),
+        r: Math.random() * 1.8 + 0.5,
+        alpha: Math.random() * 0.8 + 0.2,
+        speed: Math.random() * 0.02 + 0.005
+      });
+    }
+
+    function setupCanvas(canvasId, containerId) {
+      const canvas = document.getElementById(canvasId);
+      const container = document.getElementById(containerId);
+      if (!canvas || !container) return;
+      const dpr = window.devicePixelRatio || 1;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+    }
+
+    function setScreen(screenName) {
+      currentScreen = screenName;
+      document.getElementById('screen-tutorial').classList.add('hidden');
+      document.getElementById('screen-playing').classList.add('hidden');
+      document.getElementById('screen-gameover').classList.add('hidden');
+      document.getElementById('screen-leaderboard').classList.add('hidden');
+
+      if (screenName === 'tutorial') {
+        document.getElementById('screen-tutorial').classList.remove('hidden');
+        setupCanvas('canvas-tutorial', 'tutorial-canvas-box');
+        spawnProblemForCanvas('canvas-tutorial');
+      } else if (screenName === 'playing') {
+        document.getElementById('screen-playing').classList.remove('hidden');
+        document.getElementById('screen-playing').classList.add('flex');
+        setupCanvas('canvas-game', 'game-canvas-box');
+        spawnProblemForCanvas('canvas-game');
+      } else if (screenName === 'gameover') {
+        document.getElementById('screen-gameover').classList.remove('hidden');
+        document.getElementById('screen-gameover').classList.add('flex');
+      } else if (screenName === 'leaderboard') {
+        document.getElementById('screen-leaderboard').classList.remove('hidden');
+        document.getElementById('screen-leaderboard').classList.add('flex');
+      }
+    }
+
+    function showTutorialScreen() {
+      setScreen('tutorial');
+    }
+
+    function spawnProblemForCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      currentProblem = generateProblem(w, h);
+      currentFeedback = null;
+      isTouchLocked = false;
+    }
+
+    function startActualGame() {
+      gameState = {
+        score: 0,
+        combo: 0,
+        maxCombo: 0,
+        timeLeft: 40,
+        perfectCount: 0,
+        greatCount: 0,
+        goodCount: 0,
+        missCount: 0,
+        totalAttempts: 0
+      };
+
+      updateHUD();
+      setScreen('playing');
+
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        gameState.timeLeft -= 1;
+        updateHUD();
+        if (gameState.timeLeft <= 0) {
+          clearInterval(timerInterval);
+          finishGame();
+        }
+      }, 1000);
+    }
+
+    function updateHUD() {
+      document.getElementById('hud-timer').innerText = `${gameState.timeLeft}초`;
+      document.getElementById('hud-score').innerText = `${gameState.score}점`;
+
+      const comboBo = document.getElementById('hud-combo-box');
+      if (gameState.combo >= 2) {
+        comboBo.classList.remove('hidden');
+        const multText = gameState.combo >= 5 ? '(x1.5)' : gameState.combo >= 3 ? '(x1.2)' : '';
+        document.getElementById('hud-combo-text').innerText = `${gameState.combo} Combo ${multText}`;
+      } else {
+        comboBo.classList.add('hidden');
+      }
+    }
+
+    function finishGame() {
+      if (timerInterval) clearInterval(timerInterval);
+      document.getElementById('final-score').innerText = `${gameState.score}점`;
+      document.getElementById('cnt-perfect').innerText = `${gameState.perfectCount}회`;
+      document.getElementById('cnt-great').innerText = `${gameState.greatCount}회`;
+      document.getElementById('cnt-good').innerText = `${gameState.goodCount}회`;
+      document.getElementById('cnt-maxcombo').innerText = `${gameState.maxCombo} Combo`;
+      setScreen('gameover');
+    }
+
+    function handleCanvasTouch(e, canvasId) {
+      if (isTouchLocked) return;
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || !currentProblem) return;
+
+      const rect = canvas.getBoundingClientRect();
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      const { circumcenter, radius, stars } = currentProblem;
+      const dist = Math.sqrt((x - circumcenter.x) ** 2 + (y - circumcenter.y) ** 2);
+      const ratio = dist / radius;
+
+      let type = 'MISS';
+      let basePoints = 0;
+      let newCombo = gameState.combo;
+
+      if (ratio <= 0.08) {
+        type = 'PERFECT';
+        basePoints = 50;
+        newCombo += 1;
+      } else if (ratio <= 0.18) {
+        type = 'GREAT';
+        basePoints = 30;
+        newCombo += 1;
+      } else if (ratio <= 0.32) {
+        type = 'GOOD';
+        basePoints = 15;
+      } else {
+        type = 'MISS';
+        basePoints = 0;
+        newCombo = 0;
+      }
+
+      let multiplier = 1.0;
+      if (newCombo >= 5) multiplier = 1.5;
+      else if (newCombo >= 3) multiplier = 1.2;
+
+      const points = Math.round(basePoints * multiplier);
+      synth.playScore(type, newCombo);
+
+      if (currentScreen === 'tutorial') {
+        tutorialTried = true;
+        const btnStart = document.getElementById('btn-start-game');
+        btnStart.disabled = false;
+        btnStart.classList.remove('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
+        btnStart.classList.add('bg-gradient-to-r', 'from-yellow-400', 'to-amber-500', 'text-slate-950', 'hover:from-yellow-300', 'hover:to-amber-400', 'cursor-pointer');
+
+        currentFeedback = {
+          type, points, multiplier, clickPoint: { x, y }, startTime: performance.now()
+        };
+        return;
+      }
+
+      isTouchLocked = true;
+      gameState.combo = newCombo;
+      if (newCombo > gameState.maxCombo) gameState.maxCombo = newCombo;
+      gameState.score += points;
+      gameState.totalAttempts += 1;
+
+      if (type === 'PERFECT') gameState.perfectCount++;
+      if (type === 'GREAT') gameState.greatCount++;
+      if (type === 'GOOD') gameState.goodCount++;
+      if (type === 'MISS') gameState.missCount++;
+
+      updateHUD();
+
+      const colors = type === 'PERFECT' ? ['#34d399', '#a7f3d0', '#fde047'] : ['#facc15', '#60a5fa'];
+      for (let i = 0; i < 18; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 4 + 1;
+        particles.push({
+          x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+          radius: Math.random() * 3 + 1.5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1.0
+        });
+      }
+
+      currentFeedback = {
+        type, points, multiplier, clickPoint: { x, y }, startTime: performance.now()
+      };
+
+      setTimeout(() => {
+        if (currentScreen === 'playing') {
+          spawnProblemForCanvas('canvas-game');
+        }
+      }, 600);
+    }
+
+    ['canvas-tutorial', 'canvas-game'].forEach(id => {
+      const cvs = document.getElementById(id);
+      if (cvs) {
+        cvs.addEventListener('click', (e) => handleCanvasTouch(e, id));
+        cvs.addEventListener('touchstart', (e) => handleCanvasTouch(e, id));
+      }
+    });
+
+    function renderLoop() {
+      const activeCanvasId = currentScreen === 'tutorial' ? 'canvas-tutorial' : currentScreen === 'playing' ? 'canvas-game' : null;
+      if (activeCanvasId) {
+        const canvas = document.getElementById(activeCanvasId);
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          const dpr = window.devicePixelRatio || 1;
+          const w = canvas.width / dpr;
+          const h = canvas.height / dpr;
+
+          ctx.save();
+          ctx.scale(dpr, dpr);
+          ctx.clearRect(0, 0, w, h);
+
+          const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+          skyGrad.addColorStop(0, '#080c1a');
+          skyGrad.addColorStop(1, '#070a16');
+          ctx.fillStyle = skyGrad;
+          ctx.fillRect(0, 0, w, h);
+
+          bgStars.forEach(st => {
+            st.alpha += st.speed;
+            const ca = 0.3 + Math.abs(Math.sin(st.alpha)) * 0.7;
+            ctx.fillStyle = `rgba(255,255,255,${ca})`;
+            ctx.beginPath();
+            ctx.arc(st.x * w, st.y * h, st.r, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          if (currentProblem) {
+            const { circumcenter, radius, stars } = currentProblem;
+
+            ctx.strokeStyle = 'rgba(147, 197, 253, 0.4)';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(stars[0].x, stars[0].y);
+            ctx.lineTo(stars[1].x, stars[1].y);
+            ctx.lineTo(stars[2].x, stars[2].y);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            stars.forEach((st, idx) => {
+              ctx.save();
+              ctx.translate(st.x, st.y);
+              ctx.fillStyle = '#fff';
+              ctx.shadowColor = '#fde047';
+              ctx.shadowBlur = 12;
+              ctx.beginPath();
+              for (let i = 0; i < 5; i++) {
+                const rot = (Math.PI / 5) * 2 * i - Math.PI / 2;
+                ctx.lineTo(Math.cos(rot) * 10, Math.sin(rot) * 10);
+                const irot = rot + Math.PI / 5;
+                ctx.lineTo(Math.cos(irot) * 4.5, Math.sin(irot) * 4.5);
+              }
+              ctx.closePath();
+              ctx.fill();
+              ctx.restore();
+            });
+
+            if (currentFeedback) {
+              const elapsed = (performance.now() - currentFeedback.startTime) / 1000;
+              const progress = Math.min(1, elapsed / 0.6);
+
+              ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(circumcenter.x, circumcenter.y, radius * 0.08, 0, Math.PI * 2);
+              ctx.stroke();
+
+              ctx.save();
+              ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+              ctx.lineWidth = 2.5;
+              ctx.shadowColor = '#38bdf8';
+              ctx.shadowBlur = 12;
+              ctx.beginPath();
+              ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * progress);
+              ctx.stroke();
+              ctx.restore();
+
+              ctx.fillStyle = '#fbbf24';
+              ctx.beginPath();
+              ctx.arc(circumcenter.x, circumcenter.y, 6, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.save();
+              ctx.textAlign = 'center';
+              ctx.font = 'bold 20px sans-serif';
+              ctx.fillStyle = currentFeedback.type === 'PERFECT' ? '#34d399' : currentFeedback.type === 'GREAT' ? '#facc15' : '#f87171';
+              ctx.fillText(`${currentFeedback.type}! +${currentFeedback.points}`, currentFeedback.clickPoint.x, currentFeedback.clickPoint.y - 25 - progress * 30);
+              ctx.restore();
+            }
+          }
+
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.alpha -= 0.03;
+            if (p.alpha > 0) {
+              ctx.fillStyle = p.color;
+              ctx.globalAlpha = Math.max(0, p.alpha);
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          });
+          particles = particles.filter(p => p.alpha > 0);
+
+          ctx.restore();
+        }
+      }
+      requestAnimationFrame(renderLoop);
+    }
+    requestAnimationFrame(renderLoop);
+
+    async function handleRankSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('student-id-name');
+      const studentName = input.value.trim();
+      if (!studentName) return;
+
+      const payload = {
+        student_id_name: studentName,
+        score: gameState.score,
+        created_at: new Date().toISOString()
+      };
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('rankings').insert([payload]);
+        } catch (err) {
+          console.warn("Supabase insert error:", err);
+        }
+      }
+
+      try {
+        const local = JSON.parse(localStorage.getItem('circumcenter_rankings') || '[]');
+        local.push(payload);
+        localStorage.setItem('circumcenter_rankings', JSON.stringify(local));
+      } catch (err) {}
+
+      showLeaderboardScreen();
+    }
+
+    async function showLeaderboardScreen() {
+      setScreen('leaderboard');
+      const listEl = document.getElementById('leaderboard-list');
+      listEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">랭킹 데이터를 불러오는 중...</div>';
+
+      let rankings = [];
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('rankings')
+            .select('*')
+            .order('score', { ascending: false })
+            .limit(10);
+          if (!error && data && data.length > 0) {
+            rankings = data;
+          }
+        } catch (err) {}
+      }
+
+      if (rankings.length === 0) {
+        try {
+          rankings = JSON.parse(localStorage.getItem('circumcenter_rankings') || '[]');
+          rankings.sort((a, b) => b.score - a.score);
+          rankings = rankings.slice(0, 10);
+        } catch (e) {}
+      }
+
+      if (rankings.length === 0) {
+        listEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">아직 등록된 랭킹 정보가 없습니다.</div>';
+        return;
+      }
+
+      let html = '';
+      rankings.forEach((rk, idx) => {
+        let trophy = `${idx + 1}위`;
+        let rankBg = 'bg-slate-950/60 border-slate-800 text-slate-300';
+        let scoreColor = 'text-slate-200';
+
+        if (idx === 0) {
+          trophy = '🥇 1위';
+          rankBg = 'bg-gradient-to-r from-amber-950/80 to-yellow-950/80 border-amber-500/60 text-yellow-300 font-bold';
+          scoreColor = 'text-yellow-400 font-black';
+        } else if (idx === 1) {
+          trophy = '🥈 2위';
+          rankBg = 'bg-slate-900/90 border-slate-400/40 text-slate-200';
+          scoreColor = 'text-slate-100 font-bold';
+        } else if (idx === 2) {
+          trophy = '🥉 3위';
+          rankBg = 'bg-slate-900/90 border-amber-800/40 text-amber-200';
+          scoreColor = 'text-amber-300 font-bold';
+        }
+
+        html += `
+          <div class="p-3 rounded-2xl border flex items-center justify-between text-xs sm:text-sm ${rankBg}">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-extrabold w-12 text-center">${trophy}</span>
+              <span class="font-bold text-white">${rk.student_id_name}</span>
+            </div>
+            <span class="font-mono text-base ${scoreColor}">${rk.score}점</span>
+          </div>
+        `;
+      });
+      listEl.innerHTML = html;
+    }
+
+    window.addEventListener('resize', () => {
+      if (currentScreen === 'tutorial') setupCanvas('canvas-tutorial', 'tutorial-canvas-box');
+      if (currentScreen === 'playing') setupCanvas('canvas-game', 'game-canvas-box');
+    });
+
+    showTutorialScreen();
+  </script>
+</body>
+</html>
