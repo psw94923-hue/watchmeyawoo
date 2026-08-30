@@ -217,7 +217,7 @@ function splitPolygonByLine(
   return [sub1, sub2];
 }
 
-// Sub-polygon Face Splitter for Formal Math Mode (Supports Center Node 2N!)
+// Robust Sub-polygon Face Splitter (Supports Center Star Triangulation 100% Cleanly!)
 function computeSubFaces(
   nodes: NodeItem[],
   polygonSides: PolygonType,
@@ -227,6 +227,126 @@ function computeSubFaces(
   nodes.forEach((n) => nodeMap.set(n.id, n));
 
   const n = polygonSides;
+  const centerId = 2 * n;
+
+  // Check if any cut involves the center node
+  const centerCuts = userCuts.filter(
+    (c) => c.from === centerId || c.to === centerId
+  );
+  const outerCuts = userCuts.filter(
+    (c) => c.from !== centerId && c.to !== centerId
+  );
+
+  if (centerCuts.length > 0) {
+    // Collect perimeter nodes connected to center
+    const connectedOuterIds = Array.from(
+      new Set(
+        centerCuts.map((c) => (c.from === centerId ? c.to : c.from))
+      )
+    );
+
+    // Sort connected outer nodes CCW by polar angle around center (200, 200)
+    connectedOuterIds.sort((idA, idB) => {
+      const nA = nodeMap.get(idA)!;
+      const nB = nodeMap.get(idB)!;
+      const angA = Math.atan2(nA.y - 200, nA.x - 200);
+      const angB = Math.atan2(nB.y - 200, nB.x - 200);
+      return angA - angB;
+    });
+
+    // Build main outer perimeter cycle: V0 -> M0 -> V1 -> M1 ... VN-1 -> MN-1
+    const perimeterCycle: number[] = [];
+    for (let i = 0; i < n; i++) {
+      perimeterCycle.push(i);
+      perimeterCycle.push(n + i);
+    }
+    const pLen = perimeterCycle.length;
+
+    // Build sectors between consecutive CCW connected outer nodes
+    let currentSectors: number[][] = [];
+    const k = connectedOuterIds.length;
+
+    for (let i = 0; i < k; i++) {
+      const u = connectedOuterIds[i];
+      const v = connectedOuterIds[(i + 1) % k];
+
+      const idxU = perimeterCycle.indexOf(u);
+      const idxV = perimeterCycle.indexOf(v);
+
+      const sectorArc: number[] = [];
+      let idx = idxU;
+      while (idx !== idxV) {
+        sectorArc.push(perimeterCycle[idx]);
+        idx = (idx + 1) % pLen;
+      }
+      sectorArc.push(v);
+      sectorArc.push(centerId);
+
+      currentSectors.push(sectorArc);
+    }
+
+    // Process additional non-center cuts inside sectors
+    outerCuts.forEach((cut) => {
+      const u = cut.from;
+      const v = cut.to;
+      const nextSectors: number[][] = [];
+      let splitDone = false;
+
+      currentSectors.forEach((cycle) => {
+        if (splitDone) {
+          nextSectors.push(cycle);
+          return;
+        }
+
+        const idxU = cycle.indexOf(u);
+        const idxV = cycle.indexOf(v);
+
+        if (idxU !== -1 && idxV !== -1 && Math.abs(idxU - idxV) > 1) {
+          const minIdx = Math.min(idxU, idxV);
+          const maxIdx = Math.max(idxU, idxV);
+
+          const sub1: number[] = [];
+          for (let i = minIdx; i <= maxIdx; i++) sub1.push(cycle[i]);
+
+          const sub2: number[] = [];
+          for (let i = maxIdx; i < cycle.length; i++) sub2.push(cycle[i]);
+          for (let i = 0; i <= minIdx; i++) sub2.push(cycle[i]);
+
+          nextSectors.push(sub1);
+          nextSectors.push(sub2);
+          splitDone = true;
+        } else {
+          nextSectors.push(cycle);
+        }
+      });
+
+      currentSectors = nextSectors;
+    });
+
+    return currentSectors.map((cycle, idx) => {
+      const pts = cycle.map((id) => {
+        const node = nodeMap.get(id)!;
+        return { x: node.x, y: node.y };
+      });
+      const corners = simplifyCollinearPoints(pts);
+      const centroid = getCentroid(corners);
+      const dx = centroid.x - 200;
+      const dy = centroid.y - 200;
+      const dist = Math.hypot(dx, dy) || 1;
+
+      return {
+        id: `face-center-${idx}-${cycle.join("-")}`,
+        nodeIds: cycle,
+        points: pts,
+        cornerPoints: corners,
+        isTriangle: corners.length === 3,
+        centroid,
+        offsetVector: { x: (dx / dist) * 12, y: (dy / dist) * 12 },
+      };
+    });
+  }
+
+  // Standard Planar Cycle Splitter for non-center cuts
   let currentFaceCycles: number[][] = [[]];
   for (let i = 0; i < n; i++) {
     currentFaceCycles[0].push(i);
@@ -253,31 +373,14 @@ function computeSubFaces(
         const maxIdx = Math.max(idxU, idxV);
 
         const sub1: number[] = [];
-        for (let i = minIdx; i <= maxIdx; i++) {
-          sub1.push(cycle[i]);
-        }
+        for (let i = minIdx; i <= maxIdx; i++) sub1.push(cycle[i]);
 
         const sub2: number[] = [];
-        for (let i = maxIdx; i < cycle.length; i++) {
-          sub2.push(cycle[i]);
-        }
-        for (let i = 0; i <= minIdx; i++) {
-          sub2.push(cycle[i]);
-        }
+        for (let i = maxIdx; i < cycle.length; i++) sub2.push(cycle[i]);
+        for (let i = 0; i <= minIdx; i++) sub2.push(cycle[i]);
 
         nextCycles.push(sub1);
         nextCycles.push(sub2);
-        splitDone = true;
-      } else if (idxU !== -1 && idxV === -1) {
-        // Cut connecting an outer node u to an inner node v (e.g. Center Node 2N)
-        const sub = [...cycle];
-        sub.splice(idxU + 1, 0, v);
-        nextCycles.push(sub);
-        splitDone = true;
-      } else if (idxV !== -1 && idxU === -1) {
-        const sub = [...cycle];
-        sub.splice(idxV + 1, 0, u);
-        nextCycles.push(sub);
         splitDone = true;
       } else {
         nextCycles.push(cycle);
@@ -300,11 +403,6 @@ function computeSubFaces(
     const dy = centroid.y - 200;
     const dist = Math.hypot(dx, dy) || 1;
 
-    const offsetVector = {
-      x: (dx / dist) * 12,
-      y: (dy / dist) * 12,
-    };
-
     return {
       id: `face-${idx}-${cycle.join("-")}`,
       nodeIds: cycle,
@@ -312,7 +410,7 @@ function computeSubFaces(
       cornerPoints: corners,
       isTriangle: corners.length === 3,
       centroid,
-      offsetVector,
+      offsetVector: { x: (dx / dist) * 12, y: (dy / dist) * 12 },
     };
   });
 }
@@ -321,13 +419,18 @@ function computeSubFaces(
 // Component Implementation
 // ----------------------------------------------------------------------
 export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
-  const [appMode, setAppMode] = useState<AppMode>("practice");
+  const [appMode, setAppMode] = useState<AppMode>("explore");
   const [polygonSides, setPolygonSides] = useState<PolygonType>(5);
   const [selectedStartNode, setSelectedStartNode] = useState<number | null>(
     null
   );
   const [userCuts, setUserCuts] = useState<EdgeItem[]>([]);
   const [activeSlices, setActiveSlices] = useState<SliceEffect[]>([]);
+
+  // PEDAGOGICAL TWO-STAGE CONTROL:
+  // Stage 1 (isFirstGuidedStage = true): Show ONLY outer vertices for guided teacher practice.
+  // Stage 2 (isFirstGuidedStage = false): Unlock center node & midpoints for free advanced exploration.
+  const [isFirstGuidedStage, setIsFirstGuidedStage] = useState<boolean>(true);
 
   // Free Drag Slicing Pieces (Practice Mode)
   const [freePieces, setFreePieces] = useState<FreePolygonPiece[]>([]);
@@ -389,7 +492,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       });
     }
 
-    // CENTER NODE (ID: 2 * n)
     nodeList.push({
       id: 2 * n,
       type: "center",
@@ -458,16 +560,19 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     }
   }, [appStep, isTriangulated]);
 
-  // PERMANENT NODE HIDING CALCULATION (Center node C is fully visible on initial board!)
+  // PERMANENT NODE HIDING CALCULATION
   const permanentlyHiddenNodeIds = useMemo(() => {
     const hiddenSet = new Set<number>();
     const centerId = 2 * polygonSides;
-
-    // Check if any untriangulated face exists
     const hasUntriangulatedFace = subFaces.some((f) => !f.isTriangle);
 
     nodes.forEach((nodeX) => {
-      // Center node C is ALWAYS visible as long as untriangulated faces exist!
+      // In first guided stage, hide ALL midpoints and center node C!
+      if (isFirstGuidedStage && (nodeX.type === "midpoint" || nodeX.type === "center")) {
+        hiddenSet.add(nodeX.id);
+        return;
+      }
+
       if (nodeX.id === centerId) {
         if (!hasUntriangulatedFace) {
           hiddenSet.add(centerId);
@@ -536,9 +641,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return hiddenSet;
-  }, [nodes, subFaces, allEdges, userCuts, polygonSides]);
+  }, [nodes, subFaces, allEdges, userCuts, polygonSides, isFirstGuidedStage]);
 
-  // TARGET NODES VISIBLE WHEN A START NODE IS SELECTED (Center node C is selectable!)
+  // TARGET NODES VISIBLE WHEN A START NODE IS SELECTED
   const validTargetNodes = useMemo(() => {
     if (selectedStartNode === null) return new Set<number>();
 
@@ -548,6 +653,11 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
     nodes.forEach((targetNode) => {
       if (targetNode.id === selectedStartNode) return;
+
+      // In first guided stage, allow ONLY vertex-to-vertex cuts
+      if (isFirstGuidedStage && (targetNode.type === "midpoint" || targetNode.type === "center")) {
+        return;
+      }
 
       const edgeExists = allEdges.some(
         (e) =>
@@ -575,8 +685,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       }
       if (intersects) return;
 
-      // Allow cuts to/from Center Node C if segment doesn't intersect existing cuts!
-      if (startNode.id === centerId || targetNode.id === centerId) {
+      if (!isFirstGuidedStage && (startNode.id === centerId || targetNode.id === centerId)) {
         validSet.add(targetNode.id);
         return;
       }
@@ -604,9 +713,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return validSet;
-  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces, polygonSides]);
+  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces, polygonSides, isFirstGuidedStage]);
 
-  // COMPLETE FRESH RESET WHEN SWITCHING SHAPES OR MODES
+  // UNLOCK STAGE 2 ADVANCED EXPLORATION WHEN SWITCHING SHAPES
   const handleSwitchToShape = (sides: PolygonType) => {
     setPolygonSides(sides);
     setSelectedStartNode(null);
@@ -615,6 +724,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     setActiveSlices([]);
     setAppStep("cut");
     setAppMode("explore");
+    setIsFirstGuidedStage(false); // Unlock center node & midpoints for advanced exploration!
     setShowVictoryModal(false);
     setClickedTriangles(new Set());
     setDeductedExtraAngles(new Set());
@@ -1032,7 +1142,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
         <div className="flex items-center gap-2">
           <span className="text-sm font-extrabold text-amber-950">
-            🧀 치즈 커팅 : {polygonSides}각형 ({appMode === "practice" ? "자유 연습" : "내각 탐구"})
+            🧀 치즈 커팅 : {polygonSides}각형 ({isFirstGuidedStage ? "기본 꼭짓점 연습" : "고급 탐구"})
           </span>
         </div>
 
@@ -1379,7 +1489,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 );
               })}
 
-            {/* INTERACTIVE NODES (Center node C is fully visible right from initial board!) */}
+            {/* INTERACTIVE NODES (Stage 1 shows outer vertices ONLY; Stage 2 unlocks center & midpoints) */}
             {appMode === "explore" &&
               appStep === "cut" &&
               nodes.map((node) => {
@@ -1549,7 +1659,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         </div>
       </main>
 
-      {/* DELAYED VICTORY POPUP MODAL WITH FRESH RESET OPTIONS */}
+      {/* DELAYED VICTORY POPUP MODAL WITH ADVANCED UNLOCK OPTIONS */}
       {showVictoryModal && (
         <div className="fixed inset-0 z-50 bg-amber-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-scale-up flex flex-col items-center">
@@ -1585,20 +1695,20 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
               <div className="pt-3 border-t border-amber-100 flex flex-col gap-2">
                 <span className="text-xs font-extrabold text-amber-900 text-left px-1">
-                  🧀 다른 모양의 치즈 잘라보기 (새로 시작):
+                  🧀 다른 치즈 잘라보기 (중앙점/중심점 해금!):
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => handleSwitchToShape(5)}
                     className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
                   >
-                    5각형 잘라보기
+                    5각형 (고급)
                   </button>
                   <button
                     onClick={() => handleSwitchToShape(6)}
                     className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
                   >
-                    6각형 잘라보기
+                    6각형 (고급)
                   </button>
                   <button
                     onClick={handleSwitchToPractice}
