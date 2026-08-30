@@ -8,7 +8,7 @@ type Step = 'setup' | 'step1' | 'step2' | 'analysis';
 export default function MathLabClient() {
   // App States
   const [step, setStep] = useState<Step>('setup');
-  const [eyeHeight, setEyeHeight] = useState<number>(1.50);
+  const [eyeHeight, setEyeHeight] = useState<number>(1.50); // h
   
   // Real-time Pitch Angle (0° = Horizon Level)
   const [currentPitch, setCurrentPitch] = useState<number>(0);
@@ -17,6 +17,9 @@ export default function MathLabClient() {
   
   const [theta1, setTheta1] = useState<number | null>(null); // looking down angle (>0)
   const [theta2, setTheta2] = useState<number | null>(null); // looking up angle (>0)
+
+  // Calibrated Horizontal Distance d (in meters, auto-calculated & user-adjustable)
+  const [calibratedDistance, setCalibratedDistance] = useState<number | null>(null);
 
   // Camera & Device Orientation Status
   const [cameraActive, setCameraActive] = useState<boolean>(false);
@@ -42,10 +45,8 @@ export default function MathLabClient() {
       const b = e.beta;
       const g = e.gamma || 0;
 
-      // Calculate pitch relative to horizon (0° = vertical upright facing horizon)
       let pitch = 90 - b;
 
-      // Adjust for device roll
       if (Math.abs(g) > 45) {
         const radB = (b * Math.PI) / 180;
         const radG = (g * Math.PI) / 180;
@@ -132,13 +133,25 @@ export default function MathLabClient() {
   };
 
   // -------------------------------------------------------------
-  // 3. Step Actions
+  // 3. Step Actions & Distance Calculation Optimization
   // -------------------------------------------------------------
   const handleStep1Lock = () => {
     const pitch = currentPitch;
     const absAngle = Math.max(1, Math.abs(pitch));
     setFixedPitch1(pitch);
     setTheta1(absAngle);
+
+    // Initial estimation of horizontal distance d
+    // Clamp d between 1.0m and 12.0m to prevent near-zero angle explosion (e.g. 96m error)
+    const t1RadInit = absAngle * (Math.PI / 180);
+    let calculatedD = eyeHeight / Math.tan(t1RadInit);
+    if (calculatedD > 12.0 || absAngle < 5.0) {
+      calculatedD = 3.0; // Realistic indoor pillar/wall distance default
+    } else {
+      calculatedD = Math.round(calculatedD * 10) / 10;
+    }
+    setCalibratedDistance(calculatedD);
+
     setStep('step2');
   };
 
@@ -162,6 +175,7 @@ export default function MathLabClient() {
     setFixedPitch2(null);
     setTheta1(null);
     setTheta2(null);
+    setCalibratedDistance(null);
     setCapturedImage(null);
     setShowSolutionModal(false);
   };
@@ -172,7 +186,8 @@ export default function MathLabClient() {
   const t1Rad = (theta1 || 1) * (Math.PI / 180);
   const t2Rad = (theta2 || 1) * (Math.PI / 180);
 
-  const d = eyeHeight / Math.tan(t1Rad);
+  // Use user-calibrated or estimated distance d
+  const d = calibratedDistance !== null ? calibratedDistance : Math.min(12, Math.max(1, eyeHeight / Math.tan(t1Rad)));
   const y = d * Math.tan(t2Rad);
   const H = y + eyeHeight;
   const c1 = Math.sqrt(d * d + eyeHeight * eyeHeight);
@@ -181,18 +196,16 @@ export default function MathLabClient() {
   const fmt = (num: number, dec = 2) => num.toFixed(dec);
 
   // iOS Measure App AR dynamic point offsets
-  // Center reticle is at SVG coordinate (150, 180) in a 300x360 canvas
   const reticleX = 150;
   const reticleY = 180;
 
   // Position of Step 1 Base Marker relative to active tilt
   const pitchDiff1 = fixedPitch1 !== null ? (currentPitch - fixedPitch1) : 0;
-  // As phone tilts UP (currentPitch increases), base marker moves DOWN the screen
-  const marker1Y = Math.min(330, Math.max(50, reticleY + pitchDiff1 * 3.5));
+  const marker1Y = Math.min(330, Math.max(50, reticleY + pitchDiff1 * 4.0));
 
   // Position of Step 1 Base Marker when frozen for Analysis
   const finalPitchDiff = (fixedPitch2 !== null && fixedPitch1 !== null) ? (fixedPitch2 - fixedPitch1) : 0;
-  const finalMarker1Y = Math.min(330, Math.max(180, reticleY + finalPitchDiff * 3.5));
+  const finalMarker1Y = Math.min(330, Math.max(180, reticleY + finalPitchDiff * 4.0));
   const finalMarker2Y = 60; // Top marker position
 
   return (
@@ -245,7 +258,7 @@ export default function MathLabClient() {
         <main className="relative z-20 flex-1 flex flex-col items-center justify-center p-6 max-w-md mx-auto w-full">
           <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl text-center w-full animate-fade-in-up">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-teal-500/10 border border-teal-400/30 text-teal-400 text-xs font-bold mb-4">
-              📐 AR 간접 높이 측정기
+              📐 iOS 측정 앱 방식 AR 높이 측정기
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 tracking-tight">
@@ -253,7 +266,7 @@ export default function MathLabClient() {
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-400 mb-6 leading-relaxed">
-              아이폰 측정 앱 방식으로 건물 바닥과 꼭대기를 찍어 <strong className="text-slate-200">피타고라스 정리</strong>로 높이를 실측합니다.
+              건물 바닥과 꼭대기를 찍어 실시간 직선 트래킹 라인과 <strong className="text-slate-200">피타고라스 정리</strong>로 높이를 산출합니다.
             </p>
 
             {/* Eye Height Setup Input */}
@@ -305,7 +318,7 @@ export default function MathLabClient() {
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* PHASE 1: MEASUREMENT MODE (STEPS 1 & 2) - iOS MEASURE APP STYLE */}
+      {/* PHASE 1: MEASUREMENT MODE (STEPS 1 & 2) - iOS MEASURE LINE TRACKING */}
       {/* ------------------------------------------------------------- */}
       {(step === 'step1' || step === 'step2') && (
         <div className="relative z-20 flex-1 flex flex-col justify-between pointer-events-none">
@@ -321,34 +334,41 @@ export default function MathLabClient() {
             </div>
 
             {step === 'step2' && fixedPitch2 === null && (
-              <span className="mt-1 text-[11px] font-medium text-amber-300 bg-slate-900/80 px-3 py-0.5 rounded-full border border-amber-500/30">
-                ⬆️ 위로 올려 꼭대기에 맞추세요 (점선이 연결됩니다)
+              <span className="mt-1 text-[11px] font-medium text-emerald-300 bg-slate-900/80 px-3 py-0.5 rounded-full border border-emerald-500/40">
+                ⬆️ 위로 이동하며 꼭대기 지점을 찍으세요 (실선이 연결됩니다)
               </span>
             )}
           </div>
 
-          {/* iOS MEASURE APP AR RETICLE & DYNAMIC EXTENDING DOTTED LINE */}
+          {/* iOS MEASURE APP STYLE SOLID WHITE LINE & LIVE HEIGHT BADGE */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <svg viewBox="0 0 300 360" className="w-full h-full">
-              {/* Dynamic Dotted Line extending from Step 1 Base Marker up to Active Crosshair */}
+              {/* Dynamic Thick White Solid Line extending from Step 1 Base Marker up to Active Crosshair (Image 2 style) */}
               {step === 'step2' && fixedPitch1 !== null && (
                 <>
+                  {/* Thick White Solid Measurement Line */}
                   <line
                     x1={reticleX}
                     y1={marker1Y}
                     x2={reticleX}
                     y2={reticleY}
-                    stroke="#f59e0b"
-                    strokeWidth="3"
-                    strokeDasharray="6 4"
+                    stroke="#ffffff"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    className="drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
                   />
-                  {/* Step 1 Base AR Pin Marker */}
+
+                  {/* Step 1 Base White Circle Pin (Image 2 style) */}
                   <g transform={`translate(${reticleX}, ${marker1Y})`}>
-                    <circle r="8" fill="#fb7185" stroke="#ffffff" strokeWidth="2.5" />
-                    <circle r="16" fill="none" stroke="#fb7185" strokeWidth="1" className="animate-ping" />
-                    <rect x="-40" y="12" width="80" height="20" rx="6" fill="#1e1b4b" stroke="#818cf8" strokeWidth="1" />
-                    <text x="0" y="25" fill="#e0e7ff" fontSize="9" fontWeight="bold" textAnchor="middle">
-                      시작점 (바닥)
+                    <circle r="7" fill="#ffffff" stroke="#1e293b" strokeWidth="2" />
+                    <circle r="14" fill="none" stroke="#ffffff" strokeWidth="1.5" className="animate-ping" />
+                  </g>
+
+                  {/* Attached Oval Height Badge at the center of the tracking line (Image 2 style) */}
+                  <g transform={`translate(${reticleX}, ${(marker1Y + reticleY) / 2})`}>
+                    <rect x="-35" y="-12" width="70" height="24" rx="12" fill="#ffffff" stroke="#000000" strokeWidth="1" className="shadow-lg" />
+                    <text x="0" y="3" fill="#000000" fontSize="11" fontWeight="extrabold" textAnchor="middle">
+                      {fmt(H, 2)}m
                     </text>
                   </g>
                 </>
@@ -357,21 +377,15 @@ export default function MathLabClient() {
               {/* Center AR Crosshair Reticle (iOS Measure style dot & circle) */}
               {fixedPitch2 === null && (
                 <g transform={`translate(${reticleX}, ${reticleY})`}>
-                  <circle r="20" fill="none" stroke="#34d399" strokeWidth="2" />
-                  <line x1="-28" y1="0" x2="28" y2="0" stroke="#34d399" strokeWidth="1.5" />
-                  <line x1="0" y1="-28" x2="0" y2="28" stroke="#34d399" strokeWidth="1.5" />
-                  <circle r="4" fill="#34d399" className="shadow-lg" />
+                  <circle r="18" fill="none" stroke="#ffffff" strokeWidth="2.5" />
+                  <circle r="4" fill="#ffffff" className="shadow-md" />
                 </g>
               )}
 
               {/* Step 2 Top Marker Pin when locked */}
               {fixedPitch2 !== null && (
                 <g transform={`translate(${reticleX}, ${reticleY})`}>
-                  <circle r="8" fill="#34d399" stroke="#ffffff" strokeWidth="2.5" />
-                  <rect x="-40" y="-30" width="80" height="20" rx="6" fill="#064e3b" stroke="#34d399" strokeWidth="1" />
-                  <text x="0" y="-17" fill="#a7f3d0" fontSize="9" fontWeight="bold" textAnchor="middle">
-                    도착점 (꼭대기)
-                  </text>
+                  <circle r="7" fill="#ffffff" stroke="#1e293b" strokeWidth="2" />
                 </g>
               )}
             </svg>
@@ -411,11 +425,11 @@ export default function MathLabClient() {
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* PHASE 2: CAPTURED PHOTO ANALYSIS MODE (UPPER/LOWER SPLIT UI) */}
+      {/* PHASE 2: CAPTURED PHOTO ANALYSIS MODE (SEPARATED UPPER & LOWER LAYOUT) */}
       {/* ------------------------------------------------------------- */}
       {step === 'analysis' && (
         <div className="relative z-20 flex-1 flex flex-col h-full overflow-hidden">
-          {/* UPPER SECTION (60% Height): CAPTURED PHOTO + AR OVERLAY */}
+          {/* UPPER SECTION (58% Height): CAPTURED PHOTO + iOS MEASURE AR OVERLAY */}
           <div className="relative w-full h-[58vh] bg-black overflow-hidden flex items-center justify-center">
             {/* Captured Photo Image */}
             {capturedImage ? (
@@ -430,73 +444,86 @@ export default function MathLabClient() {
               </div>
             )}
 
-            {/* iOS Measure Style AR Measurement Overlay & Geometry Triangle */}
+            {/* iOS Measure Style AR Measurement Overlay (Image 2 style) */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
               <svg viewBox="0 0 300 360" className="w-full h-full max-w-md">
                 {/* 1. Ground level dashed line */}
                 <line x1="30" y1={finalMarker1Y} x2="270" y2={finalMarker1Y} stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 4" />
 
                 {/* 2. Eye height line (h) */}
-                <line x1="60" y1="220" x2="60" y2={finalMarker1Y} stroke="#38bdf8" strokeWidth="2" strokeDasharray="3 3" />
+                <line x1="50" y1="220" x2="50" y2={finalMarker1Y} stroke="#38bdf8" strokeWidth="2" strokeDasharray="3 3" />
 
                 {/* 3. Horizontal distance line (d) */}
-                <line x1="60" y1="220" x2={reticleX} y2="220" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="3 3" />
-                <text x="105" y="212" fill="#e2e8f0" fontSize="10" fontWeight="bold" textAnchor="middle">
+                <line x1="50" y1="220" x2={reticleX} y2="220" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="3 3" />
+                <text x="100" y="212" fill="#e2e8f0" fontSize="10" fontWeight="bold" textAnchor="middle">
                   d={fmt(d, 1)}m
                 </text>
 
                 {/* 4. Sight line to Base (c1) */}
-                <line x1="60" y1="220" x2={reticleX} y2={finalMarker1Y} stroke="#fbbf24" strokeWidth="2" />
-                <text x="100" y={finalMarker1Y - 10} fill="#fbbf24" fontSize="10" fontWeight="bold">
-                  c₁={fmt(c1, 1)}m
-                </text>
+                <line x1="50" y1="220" x2={reticleX} y2={finalMarker1Y} stroke="#fbbf24" strokeWidth="2" />
 
                 {/* 5. Sight line to Top (c2) */}
-                <line x1="60" y1="220" x2={reticleX} y2={finalMarker2Y} stroke="#a78bfa" strokeWidth="2" />
-                <text x="100" y="130" fill="#a78bfa" fontSize="10" fontWeight="bold">
-                  c₂={fmt(c2, 1)}m
-                </text>
+                <line x1="50" y1="220" x2={reticleX} y2={finalMarker2Y} stroke="#a78bfa" strokeWidth="2" />
 
-                {/* 6. Solid Vertical Building Measurement Line (P1 to P2) */}
+                {/* 6. Solid Vertical Building White Measurement Line (P1 to P2) (Image 2 style) */}
                 <line
                   x1={reticleX}
                   y1={finalMarker1Y}
                   x2={reticleX}
                   y2={finalMarker2Y}
-                  stroke="#34d399"
-                  strokeWidth="3.5"
+                  stroke="#ffffff"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  className="drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
                 />
 
-                {/* Step 1 Base Marker Pin */}
+                {/* Step 1 Base White Circle Pin */}
                 <g transform={`translate(${reticleX}, ${finalMarker1Y})`}>
-                  <circle r="7" fill="#fb7185" stroke="#ffffff" strokeWidth="2" />
-                  <text x="-15" y="16" fill="#fb7185" fontSize="9" fontWeight="bold">바닥</text>
+                  <circle r="7" fill="#ffffff" stroke="#1e293b" strokeWidth="2" />
                 </g>
 
-                {/* Step 2 Top Marker Pin */}
+                {/* Step 2 Top White Circle Pin */}
                 <g transform={`translate(${reticleX}, ${finalMarker2Y})`}>
-                  <circle r="7" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-                  <text x="-15" y="-10" fill="#34d399" fontSize="9" fontWeight="bold">꼭대기</text>
+                  <circle r="7" fill="#ffffff" stroke="#1e293b" strokeWidth="2" />
                 </g>
 
-                {/* Highlighted Building Height Badge attached right next to the measurement line */}
-                <g transform={`translate(${reticleX + 12}, ${(finalMarker1Y + finalMarker2Y) / 2})`}>
-                  <rect x="0" y="-14" width="115" height="28" rx="8" fill="#064e3b" stroke="#34d399" strokeWidth="1.5" />
-                  <text x="57" y="3" fill="#a7f3d0" fontSize="11" fontWeight="bold" textAnchor="middle">
-                    높이 H = {fmt(H, 2)}m
+                {/* White Attached Height Badge (Image 2 style) */}
+                <g transform={`translate(${reticleX}, ${(finalMarker1Y + finalMarker2Y) / 2})`}>
+                  <rect x="-42" y="-13" width="84" height="26" rx="13" fill="#ffffff" stroke="#000000" strokeWidth="1" className="shadow-xl" />
+                  <text x="0" y="3" fill="#000000" fontSize="11" fontWeight="extrabold" textAnchor="middle">
+                    {fmt(H, 2)}m
                   </text>
                 </g>
               </svg>
             </div>
           </div>
 
-          {/* LOWER SECTION (42% Height): SEPARATED RESULTS CONTAINER (NO OVERLAP) */}
+          {/* LOWER SECTION (42% Height): SEPARATED RESULTS & DISTANCE CALIBRATION PANEL */}
           <div className="flex-1 w-full bg-slate-900 border-t-2 border-slate-800 p-4 pb-6 flex flex-col justify-between items-center shadow-2xl">
-            {/* Title / Badge */}
-            <div className="text-center mb-2">
-              <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider bg-teal-950/80 px-3 py-0.5 rounded-full border border-teal-800">
-                실측 데이터 분석 결과
-              </span>
+            {/* Distance d Fine-Calibration Control (Fixes 96m error) */}
+            <div className="w-full max-w-md bg-slate-800/80 rounded-2xl p-3 border border-slate-700 flex items-center justify-between gap-3">
+              <div className="text-left">
+                <span className="text-[11px] font-bold text-sky-300 block">📐 수평 거리 (d) 보정</span>
+                <span className="text-[10px] text-slate-400">실내/교실 실제 거리 맞춤</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCalibratedDistance(prev => Math.max(0.8, Math.round(((prev || 3.0) - 0.2) * 10) / 10))}
+                  className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 font-bold text-white text-base active:scale-95"
+                >
+                  -
+                </button>
+                <span className="text-sm font-extrabold text-sky-400 font-mono w-14 text-center">
+                  {fmt(d, 1)}m
+                </span>
+                <button
+                  onClick={() => setCalibratedDistance(prev => Math.min(15.0, Math.round(((prev || 3.0) + 0.2) * 10) / 10))}
+                  className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 font-bold text-white text-base active:scale-95"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             {/* Separated Clean Result Cards */}
@@ -516,7 +543,7 @@ export default function MathLabClient() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 w-full max-w-md mt-3">
+            <div className="flex gap-2 w-full max-w-md mt-2">
               <button
                 onClick={() => setShowSolutionModal(true)}
                 className="flex-1 py-3 px-3 text-xs sm:text-sm font-bold text-purple-950 rounded-xl bg-purple-200 hover:bg-purple-100 shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1"
@@ -559,7 +586,7 @@ export default function MathLabClient() {
 
             {/* Step 1 */}
             <div className="bg-slate-800/60 rounded-2xl p-4 border border-slate-700 mb-3 space-y-1">
-              <div className="text-xs font-bold text-sky-400">1단계: 수평 거리 (d) 역산</div>
+              <div className="text-xs font-bold text-sky-400">1단계: 수평 거리 (d) 산출</div>
               <p className="text-xs text-slate-300">
                 {`내려본 각도 θ₁ = ${theta1}°, 눈높이 h = ${fmt(eyeHeight, 2)}m 이용`}
               </p>
