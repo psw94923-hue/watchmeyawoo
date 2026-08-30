@@ -329,6 +329,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     "cut" | "step1" | "step2" | "complete"
   >("cut");
 
+  // Delayed Victory Modal Control
+  const [showVictoryModal, setShowVictoryModal] = useState<boolean>(false);
+
   const [clickedTriangles, setClickedTriangles] = useState<Set<string>>(
     new Set()
   );
@@ -581,6 +584,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     setFreeCuts([]);
     setActiveSlices([]);
     setAppStep("cut");
+    setShowVictoryModal(false);
     setClickedTriangles(new Set());
     setDeductedExtraAngles(new Set());
   };
@@ -592,6 +596,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     setFreeCuts([]);
     setActiveSlices([]);
     setAppStep("cut");
+    setShowVictoryModal(false);
     setClickedTriangles(new Set());
     setDeductedExtraAngles(new Set());
 
@@ -895,24 +900,29 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
 
       const allDeducted = extraAngleGroups.every((g) => next.has(g.id));
       if (allDeducted) {
+        setAppStep("complete");
+        // DELAY VICTORY POPUP BY 1.8 SECONDS so students can view their completed cheese cut & angles first!
         setTimeout(() => {
-          setAppStep("complete");
-        }, 500);
+          setShowVictoryModal(true);
+        }, 1800);
       }
 
       return next;
     });
   };
 
+  // Immediate completion handling when no midpoint/center node was used
   useEffect(() => {
     if (
       appStep === "step1" &&
       allTrianglesClicked &&
       rawPieceSum === actualInteriorAngleSum
     ) {
+      setAppStep("complete");
+      // DELAY VICTORY POPUP BY 1.8 SECONDS
       const timer = setTimeout(() => {
-        setAppStep("complete");
-      }, 600);
+        setShowVictoryModal(true);
+      }, 1800);
       return () => clearTimeout(timer);
     }
   }, [appStep, allTrianglesClicked, rawPieceSum, actualInteriorAngleSum]);
@@ -921,6 +931,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
   const currentPromptMessage = useMemo(() => {
     if (appMode === "practice") {
       return "🖐️ 자유롭게 치즈를 잘라봅시다!";
+    }
+    if (appStep === "complete" && !showVictoryModal) {
+      return "🎉 탐구 완수! 잘라낸 치즈와 내각을 더 관찰해보세요!";
     }
     if (appStep === "cut") {
       if (selectedStartNode === null) {
@@ -934,7 +947,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       return "❓ 내각에 해당하지 않는 각을 모두 눌러보세요.";
     }
     return null;
-  }, [appMode, appStep, selectedStartNode]);
+  }, [appMode, appStep, selectedStartNode, showVictoryModal]);
 
   return (
     <div
@@ -942,7 +955,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         selectedStartNode !== null ? "cursor-crosshair" : ""
       }`}
     >
-      {/* HEADER NAVIGATION (Clean, minimalistic top bar) */}
+      {/* HEADER NAVIGATION (Clean top bar) */}
       <header className="bg-amber-100/80 backdrop-blur-md border-b border-amber-200/80 px-4 py-3 flex items-center justify-between shadow-sm z-30">
         <button
           onClick={onBack}
@@ -1183,7 +1196,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 );
               })}
 
-            {/* FORMAL CUT LINES (EXPLORE MODE) - Hides automatically once triangulated/pull-apart split occurs! */}
+            {/* FORMAL CUT LINES (EXPLORE MODE) - Hides automatically once triangulated! */}
             {appMode === "explore" &&
               appStep === "cut" &&
               !isTriangulated &&
@@ -1373,37 +1386,8 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
           </svg>
         </div>
 
-        {/* BOTTOM PANEL & SELECTOR TAB BAR (Moved to the bottom!) */}
+        {/* BOTTOM CONTROL CARD & READOUTS */}
         <div className="w-full max-w-lg flex flex-col gap-4">
-          {/* SELECTOR TAB BAR AT THE BOTTOM */}
-          <div className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-2xl p-2 shadow-sm w-full flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              {[5, 6].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handlePolygonChange(s as PolygonType)}
-                  className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1 ${
-                    polygonSides === s
-                      ? "bg-amber-500 text-white shadow-md scale-105"
-                      : "bg-amber-50 text-amber-900 hover:bg-amber-100"
-                  }`}
-                >
-                  <span>{s}각형</span>
-                </button>
-              ))}
-            </div>
-
-            {appMode === "explore" && (
-              <button
-                onClick={() => setAppMode("practice")}
-                className="px-3.5 py-2.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold hover:bg-amber-200 transition-all flex items-center gap-1"
-              >
-                <span>🖐️ 자유자르기로 변경</span>
-              </button>
-            )}
-          </div>
-
-          {/* CONTROL CARD */}
           <div className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-3xl p-5 shadow-lg flex flex-col gap-4">
             <h2 className="text-base font-extrabold text-amber-950 flex items-center justify-between border-b border-amber-100 pb-3">
               <span className="flex items-center gap-2">
@@ -1423,6 +1407,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   치즈 위를 손가락이나 마우스로 마음껏 <strong>드래그해서 칼로 잘라보세요!</strong> 잘린 치즈 조각들이 자유롭게 분리됩니다.
                 </p>
 
+                {/* THE ONLY PROMINENT EXPLORATION BUTTON IN PRACTICE MODE */}
                 <button
                   onClick={() => setAppMode("explore")}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold text-sm shadow-md hover:from-amber-600 hover:to-amber-700 active:scale-98 transition-all flex items-center justify-center gap-2 animate-bounce cursor-pointer"
@@ -1488,6 +1473,16 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                       <span>❓ 왜 내각의 합이 다르지?</span>
                     </button>
                   )}
+
+                  {/* RE-OPEN VICTORY MODAL BUTTON IF CLOSED */}
+                  {appStep === "complete" && !showVictoryModal && (
+                    <button
+                      onClick={() => setShowVictoryModal(true)}
+                      className="w-full py-3.5 rounded-2xl bg-amber-500 text-white font-extrabold text-sm shadow-md hover:bg-amber-600 active:scale-98 transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>🎉 결과 팝업 다시보기 / 다른 치즈 잘라보기</span>
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -1505,10 +1500,10 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         </div>
       </main>
 
-      {/* VICTORY MODAL */}
-      {appStep === "complete" && (
+      {/* DELAYED VICTORY POPUP MODAL WITH MULTI-OPTION NAVIGATION */}
+      {showVictoryModal && (
         <div className="fixed inset-0 z-50 bg-amber-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl animate-scale-up flex flex-col items-center">
+          <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-scale-up flex flex-col items-center">
             <div className="text-5xl mb-3 animate-bounce">🎉</div>
             <h3 className="text-xl font-black text-amber-950 mb-2">
               탐구 완수! 축하합니다!
@@ -1529,12 +1524,53 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 </>
               )}
             </p>
-            <button
-              onClick={handleResetCuts}
-              className="w-full py-3 rounded-2xl bg-amber-500 text-white font-extrabold text-sm shadow-md hover:bg-amber-600 active:scale-95 transition-all"
-            >
-              다른 다각형 자르기
-            </button>
+
+            {/* ACTION OPTIONS IN MODAL */}
+            <div className="flex flex-col gap-2.5 w-full">
+              {/* Option 1: Inspect current cut cheese board */}
+              <button
+                onClick={() => setShowVictoryModal(false)}
+                className="w-full py-3 rounded-2xl bg-amber-100 border border-amber-300 text-amber-950 font-extrabold text-xs sm:text-sm shadow hover:bg-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>🔍 내가 자른 치즈 더 살펴보기</span>
+              </button>
+
+              {/* Option 2: Select other cheese shapes to cut */}
+              <div className="pt-2 border-t border-amber-100 flex flex-col gap-2">
+                <span className="text-[11px] font-bold text-amber-800 text-left px-1">
+                  🧀 다른 모양의 치즈 잘라보기:
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => {
+                      setAppMode("explore");
+                      handlePolygonChange(5);
+                    }}
+                    className="py-2.5 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
+                  >
+                    5각형 잘라보기
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAppMode("explore");
+                      handlePolygonChange(6);
+                    }}
+                    className="py-2.5 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
+                  >
+                    6각형 잘라보기
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAppMode("practice");
+                      handleResetCuts();
+                    }}
+                    className="py-2.5 rounded-xl bg-amber-600 text-white font-extrabold text-xs shadow hover:bg-amber-700 active:scale-95 transition-all"
+                  >
+                    🖐️ 자유 자르기
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
