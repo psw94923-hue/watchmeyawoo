@@ -15,6 +15,7 @@ interface ProblemData {
   circumcenter: Point;
   radius: number;
   stars: Point[]; // 3 star vertices
+  spawnTime: number;
 }
 
 interface FeedbackState {
@@ -201,6 +202,7 @@ function generateAcuteTriangleProblem(width: number, height: number): ProblemDat
     circumcenter: { x: x0, y: y0 },
     radius: R,
     stars,
+    spawnTime: performance.now(),
   };
 }
 
@@ -437,7 +439,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             ctx.scale(dpr, dpr);
             ctx.clearRect(0, 0, width, height);
 
-            // 1. Draw Night Sky Gradient & Stars
+            // 1. Draw Dark Night Sky Gradient
             const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
             skyGrad.addColorStop(0, "#080c1a");
             skyGrad.addColorStop(0.5, "#0b122c");
@@ -474,19 +476,24 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             const fb = feedbackRef.current;
 
             if (prob) {
-              const { circumcenter, radius, stars } = prob;
+              const { circumcenter, radius, stars, spawnTime } = prob;
 
-              // 2. Draw Triangle Edges connecting 3 Stars
-              ctx.strokeStyle = "rgba(147, 197, 253, 0.4)";
-              ctx.lineWidth = 1.8;
-              ctx.setLineDash([4, 4]);
-              ctx.beginPath();
-              ctx.moveTo(stars[0].x, stars[0].y);
-              ctx.lineTo(stars[1].x, stars[1].y);
-              ctx.lineTo(stars[2].x, stars[2].y);
-              ctx.closePath();
-              ctx.stroke();
-              ctx.setLineDash([]);
+              // 2. Smooth Fade-In for Triangle Lines (Fades in over 0.8s)
+              const elapsedSinceSpawn = (performance.now() - spawnTime) / 1000;
+              const triangleLineOpacity = Math.min(0.45, (elapsedSinceSpawn / 0.8) * 0.45);
+
+              if (triangleLineOpacity > 0) {
+                ctx.strokeStyle = `rgba(147, 197, 253, ${triangleLineOpacity})`;
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(stars[0].x, stars[0].y);
+                ctx.lineTo(stars[1].x, stars[1].y);
+                ctx.lineTo(stars[2].x, stars[2].y);
+                ctx.closePath();
+                ctx.stroke();
+                ctx.setLineDash([]);
+              }
 
               // 3. Draw 3 Sparkling Star Vertices
               stars.forEach((st, idx) => {
@@ -528,10 +535,9 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
                 ctx.fillText(String.fromCharCode(65 + idx), labelX, labelY);
               });
 
-              // 4. FEEDBACK ANIMATION (Faster snappy progress curve so circle & radial lines complete 100% early)
+              // 4. FEEDBACK ANIMATION (Full drawing completed early in 0.42 seconds)
               if (fb) {
                 const elapsed = (performance.now() - fb.startTime) / 1000;
-                // Full drawing completed in 0.42 seconds!
                 const drawProgress = Math.min(1.0, elapsed / 0.42);
 
                 const rPerf = radius * 0.08;
@@ -823,9 +829,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
   };
 
   return (
-    <div className={`w-full h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none relative overflow-hidden ${
-      screen === "playing" && timeLeft <= 10 ? "ring-4 ring-rose-500 shadow-[inset_0_0_50px_rgba(244,63,94,0.5)] animate-pulse" : ""
-    }`}>
+    <div className="w-full h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none relative overflow-hidden">
       {/* HEADER NAV BAR */}
       <header className="relative z-30 w-full px-4 py-3 bg-slate-900/90 backdrop-blur-md border-b border-indigo-900/40 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2">
@@ -845,7 +849,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         </div>
       </header>
 
-      {/* FEVER TIME BANNER (When timeLeft <= 10) */}
+      {/* FEVER TIME BANNER (No screen brightening, clean glowing banner) */}
       {screen === "playing" && timeLeft <= 10 && (
         <div className="absolute top-16 inset-x-0 z-30 flex justify-center pointer-events-none animate-bounce">
           <span className="bg-gradient-to-r from-red-600 via-amber-500 to-purple-600 text-white font-black text-sm sm:text-base px-6 py-1.5 rounded-full shadow-2xl tracking-widest border-2 border-yellow-300">
@@ -867,7 +871,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               세 별로부터 <span className="text-yellow-400">같은 거리에 있는 항성(외심)</span>을 찾아라!
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-              💡 <span className="text-yellow-300 font-bold">외심의 성질:</span> 삼각형의 세 별(꼭짓점)을 지나는 원(외접원)의 중심이며, 세 별까지의 거리가 모두 같습니다.
+              💡 <span className="text-yellow-300 font-bold">외심의 성질:</span> 세 별(꼭짓점)을 지나는 원(외접원)의 중심이며, 세 별까지의 거리가 모두 같습니다.
             </p>
           </div>
 
@@ -970,7 +974,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               <span className="text-lg">⏱️</span>
               <div>
                 <span className="text-[10px] text-slate-400 block font-semibold">남은 시간</span>
-                <span className={`text-xl font-black font-mono ${timeLeft <= 10 ? "text-red-400 animate-pulse" : "text-sky-300"}`}>
+                <span className={`text-xl font-black font-mono ${timeLeft <= 10 ? "text-rose-400 animate-pulse" : "text-sky-300"}`}>
                   {timeLeft}초
                 </span>
               </div>
@@ -999,8 +1003,15 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             </div>
           </div>
 
-          {/* In-Game Canvas Container */}
-          <div ref={containerRef} className="w-full flex-1 relative cursor-crosshair">
+          {/* In-Game Canvas Container (Subtle Neon Border in Fever Time, No background brightening!) */}
+          <div
+            ref={containerRef}
+            className={`w-full flex-1 relative cursor-crosshair transition-all duration-500 ${
+              timeLeft <= 10
+                ? "border-2 border-indigo-400 shadow-[inset_0_0_20px_rgba(129,140,248,0.35),0_0_20px_rgba(129,140,248,0.4)] animate-pulse"
+                : ""
+            }`}
+          >
             <canvas
               ref={canvasRef}
               className="absolute inset-0 w-full h-full"

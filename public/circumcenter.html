@@ -21,6 +21,10 @@
       color: #f8fafc;
       overflow: hidden;
     }
+    .neon-fever-border {
+      border: 2px solid #818cf8 !important;
+      box-shadow: inset 0 0 20px rgba(129,140,248,0.35), 0 0 20px rgba(129,140,248,0.4) !important;
+    }
   </style>
 </head>
 <body id="app-body" class="w-screen h-screen flex flex-col relative overflow-hidden bg-slate-950">
@@ -49,7 +53,7 @@
     </div>
   </header>
 
-  <!-- FEVER TIME BANNER -->
+  <!-- FEVER TIME BANNER (No screen brightening, crisp text) -->
   <div id="fever-banner" class="hidden absolute top-16 inset-x-0 z-30 justify-center pointer-events-none animate-bounce">
     <span class="bg-gradient-to-r from-red-600 via-amber-500 to-purple-600 text-white font-black text-sm sm:text-base px-6 py-1.5 rounded-full shadow-2xl tracking-widest border-2 border-yellow-300">
       🔥 FEVER TIME! 남은 시간 <span id="fever-sec">10</span>초! 🔥
@@ -168,7 +172,7 @@
         </div>
       </div>
 
-      <div id="game-canvas-box" class="w-full flex-1 relative cursor-crosshair">
+      <div id="game-canvas-box" class="w-full flex-1 relative cursor-crosshair transition-all duration-500">
         <canvas id="canvas-game" class="absolute inset-0 w-full h-full"></canvas>
       </div>
     </div>
@@ -410,7 +414,8 @@
           { x: x0 + R * Math.cos(a1), y: y0 + R * Math.sin(a1) },
           { x: x0 + R * Math.cos(a2), y: y0 + R * Math.sin(a2) },
           { x: x0 + R * Math.cos(a3), y: y0 + R * Math.sin(a3) }
-        ]
+        ],
+        spawnTime: performance.now()
       };
     }
 
@@ -530,17 +535,17 @@
       document.getElementById('hud-score').innerText = `${gameState.score}점`;
 
       const fvBanner = document.getElementById('fever-banner');
-      const bodyEl = document.getElementById('app-body');
+      const canvasBox = document.getElementById('game-canvas-box');
 
       if (currentScreen === 'playing' && gameState.timeLeft <= 10) {
         fvBanner.classList.remove('hidden');
         fvBanner.classList.add('flex');
         document.getElementById('fever-sec').innerText = gameState.timeLeft;
-        bodyEl.classList.add('ring-4', 'ring-rose-500', 'animate-pulse');
+        if (canvasBox) canvasBox.classList.add('neon-fever-border');
       } else {
         fvBanner.classList.add('hidden');
         fvBanner.classList.remove('flex');
-        bodyEl.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse');
+        if (canvasBox) canvasBox.classList.remove('neon-fever-border');
       }
 
       const comboBo = document.getElementById('hud-combo-box');
@@ -556,9 +561,9 @@
     function finishGame() {
       if (timerInterval) clearInterval(timerInterval);
       const fvBanner = document.getElementById('fever-banner');
-      const bodyEl = document.getElementById('app-body');
+      const canvasBox = document.getElementById('game-canvas-box');
       fvBanner.classList.add('hidden');
-      bodyEl.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse');
+      if (canvasBox) canvasBox.classList.remove('neon-fever-border');
 
       document.getElementById('final-score').innerText = `${gameState.score}점`;
       document.getElementById('cnt-perfect').innerText = `${gameState.perfectCount}회`;
@@ -706,18 +711,23 @@
             });
 
             if (currentProblem) {
-              const { circumcenter, radius, stars } = currentProblem;
+              const { circumcenter, radius, stars, spawnTime } = currentProblem;
 
-              ctx.strokeStyle = 'rgba(147, 197, 253, 0.4)';
-              ctx.lineWidth = 1.8;
-              ctx.setLineDash([4, 4]);
-              ctx.beginPath();
-              ctx.moveTo(stars[0].x, stars[0].y);
-              ctx.lineTo(stars[1].x, stars[1].y);
-              ctx.lineTo(stars[2].x, stars[2].y);
-              ctx.closePath();
-              ctx.stroke();
-              ctx.setLineDash([]);
+              const elapsedSinceSpawn = (performance.now() - spawnTime) / 1000;
+              const lineOpacity = Math.min(0.45, (elapsedSinceSpawn / 0.8) * 0.45);
+
+              if (lineOpacity > 0) {
+                ctx.strokeStyle = `rgba(147, 197, 253, ${lineOpacity})`;
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(stars[0].x, stars[0].y);
+                ctx.lineTo(stars[1].x, stars[1].y);
+                ctx.lineTo(stars[2].x, stars[2].y);
+                ctx.closePath();
+                ctx.stroke();
+                ctx.setLineDash([]);
+              }
 
               stars.forEach((st, idx) => {
                 ctx.save();
