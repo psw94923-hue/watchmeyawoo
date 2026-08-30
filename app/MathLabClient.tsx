@@ -249,13 +249,9 @@ export default function MathLabClient() {
         {/* HERO CONTENT */}
         <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-6xl mx-auto w-full">
           <div className="text-center mb-8 sm:mb-10 animate-fade-in">
-            <h1 className="text-3xl sm:text-4xl font-black text-amber-950 mb-3 tracking-tight">
-              손으로 직접 만지고 탐구하는 <br className="sm:hidden" />
-              <span className="text-amber-600">체험형 수학 공간</span>
+            <h1 className="text-3xl sm:text-4xl font-black text-amber-950 tracking-tight">
+              세원쌤의 <span className="text-amber-600">수학 실험실</span>
             </h1>
-            <p className="text-xs sm:text-base text-amber-800/80 max-w-lg mx-auto leading-relaxed">
-              도형을 자유롭게 자르고 측정하며 수학의 아름다운 개념과 원리를 스스로 발견해보세요!
-            </p>
           </div>
 
           {/* THREE MAIN APP SELECTION CARDS */}
