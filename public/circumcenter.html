@@ -23,7 +23,7 @@
     }
   </style>
 </head>
-<body class="w-screen h-screen flex flex-col relative overflow-hidden bg-slate-950">
+<body id="app-body" class="w-screen h-screen flex flex-col relative overflow-hidden bg-slate-950">
 
   <script>
     const SUPABASE_URL = 'https://qmjqissvuuzqkdrogozo.supabase.co';
@@ -48,6 +48,13 @@
       </span>
     </div>
   </header>
+
+  <!-- FEVER TIME BANNER -->
+  <div id="fever-banner" class="hidden absolute top-16 inset-x-0 z-30 justify-center pointer-events-none animate-bounce">
+    <span class="bg-gradient-to-r from-red-600 via-amber-500 to-purple-600 text-white font-black text-sm sm:text-base px-6 py-1.5 rounded-full shadow-2xl tracking-widest border-2 border-yellow-300">
+      🔥 FEVER TIME! 남은 시간 <span id="fever-sec">10</span>초! 🔥
+    </span>
+  </div>
 
   <!-- MAIN CONTAINER -->
   <main class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
@@ -123,10 +130,10 @@
           </button>
 
           <button
-            onclick="closeTutorialPopup()"
-            class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white font-bold text-xs cursor-pointer mt-1"
+            onclick="handlePracticeAgain()"
+            class="w-full py-3 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs cursor-pointer border border-slate-700 active:scale-95 transition-all"
           >
-            연습 더 하기
+            🔄 연습 더 하기 (새로운 삼각형 스폰)
           </button>
         </div>
       </div>
@@ -485,6 +492,11 @@
       }
     }
 
+    function handlePracticeAgain() {
+      closeTutorialPopup();
+      spawnProblemForCanvas('canvas-tutorial', 'tutorial-canvas-box');
+    }
+
     function startActualGame() {
       closeTutorialPopup();
       gameState = {
@@ -517,6 +529,20 @@
       document.getElementById('hud-timer').innerText = `${gameState.timeLeft}초`;
       document.getElementById('hud-score').innerText = `${gameState.score}점`;
 
+      const fvBanner = document.getElementById('fever-banner');
+      const bodyEl = document.getElementById('app-body');
+
+      if (currentScreen === 'playing' && gameState.timeLeft <= 10) {
+        fvBanner.classList.remove('hidden');
+        fvBanner.classList.add('flex');
+        document.getElementById('fever-sec').innerText = gameState.timeLeft;
+        bodyEl.classList.add('ring-4', 'ring-rose-500', 'animate-pulse');
+      } else {
+        fvBanner.classList.add('hidden');
+        fvBanner.classList.remove('flex');
+        bodyEl.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse');
+      }
+
       const comboBo = document.getElementById('hud-combo-box');
       if (gameState.combo >= 2) {
         comboBo.classList.remove('hidden');
@@ -529,6 +555,11 @@
 
     function finishGame() {
       if (timerInterval) clearInterval(timerInterval);
+      const fvBanner = document.getElementById('fever-banner');
+      const bodyEl = document.getElementById('app-body');
+      fvBanner.classList.add('hidden');
+      bodyEl.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse');
+
       document.getElementById('final-score').innerText = `${gameState.score}점`;
       document.getElementById('cnt-perfect').innerText = `${gameState.perfectCount}회`;
       document.getElementById('cnt-great').innerText = `${gameState.greatCount}회`;
@@ -592,7 +623,7 @@
 
         setTimeout(() => {
           openTutorialPopup();
-        }, 600);
+        }, 1300);
         return;
       }
 
@@ -629,7 +660,7 @@
         if (currentScreen === 'playing') {
           spawnProblemForCanvas('canvas-game', 'game-canvas-box');
         }
-      }, 600);
+      }, 800);
     }
 
     const cvsTut = document.getElementById('canvas-tutorial');
@@ -708,7 +739,7 @@
 
               if (currentFeedback) {
                 const elapsed = (performance.now() - currentFeedback.startTime) / 1000;
-                const progress = Math.min(1, elapsed / 0.6);
+                const drawProgress = Math.min(1.0, elapsed / 0.42);
 
                 ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
                 ctx.lineWidth = 2;
@@ -717,14 +748,28 @@
                 ctx.stroke();
 
                 ctx.save();
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
+                ctx.lineWidth = 2.8;
                 ctx.shadowColor = '#38bdf8';
-                ctx.shadowBlur = 12;
+                ctx.shadowBlur = 14;
                 ctx.beginPath();
-                ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * progress);
+                ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * drawProgress);
                 ctx.stroke();
                 ctx.restore();
+
+                stars.forEach((st) => {
+                  ctx.strokeStyle = 'rgba(253, 224, 71, 0.7)';
+                  ctx.lineWidth = 1.6;
+                  ctx.setLineDash([4, 4]);
+                  ctx.beginPath();
+                  ctx.moveTo(circumcenter.x, circumcenter.y);
+                  ctx.lineTo(
+                    circumcenter.x + (st.x - circumcenter.x) * drawProgress,
+                    circumcenter.y + (st.y - circumcenter.y) * drawProgress
+                  );
+                  ctx.stroke();
+                  ctx.setLineDash([]);
+                });
 
                 ctx.fillStyle = '#fbbf24';
                 ctx.beginPath();
@@ -735,7 +780,7 @@
                 ctx.textAlign = 'center';
                 ctx.font = 'bold 20px sans-serif';
                 ctx.fillStyle = currentFeedback.type === 'PERFECT' ? '#34d399' : currentFeedback.type === 'GREAT' ? '#facc15' : '#f87171';
-                ctx.fillText(`${currentFeedback.type}! +${currentFeedback.points}`, currentFeedback.clickPoint.x, currentFeedback.clickPoint.y - 25 - progress * 30);
+                ctx.fillText(`${currentFeedback.type}! +${currentFeedback.points}`, currentFeedback.clickPoint.x, currentFeedback.clickPoint.y - 25 - drawProgress * 30);
                 ctx.restore();
               }
             }

@@ -330,6 +330,19 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
     return () => observer.disconnect();
   }, [screen, spawnProblem]);
 
+  // Handle Practice Again Action (Generates NEW triangle)
+  const handlePracticeAgain = () => {
+    setShowTutorialPopup(false);
+    setTutorialHasTried(false);
+    feedbackRef.current = null;
+    isTouchLockedRef.current = false;
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      spawnProblem(canvas.width / dpr, canvas.height / dpr);
+    }
+  };
+
   // Start New Game
   const startGame = () => {
     setShowTutorialPopup(false);
@@ -515,16 +528,17 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
                 ctx.fillText(String.fromCharCode(65 + idx), labelX, labelY);
               });
 
-              // 4. FEEDBACK ANIMATION
+              // 4. FEEDBACK ANIMATION (Faster snappy progress curve so circle & radial lines complete 100% early)
               if (fb) {
                 const elapsed = (performance.now() - fb.startTime) / 1000;
-                const progress = Math.min(1, elapsed / 0.6);
+                // Full drawing completed in 0.42 seconds!
+                const drawProgress = Math.min(1.0, elapsed / 0.42);
 
                 const rPerf = radius * 0.08;
                 const rGreat = radius * 0.18;
                 const rGood = radius * 0.32;
 
-                // Rings
+                // Target Rings
                 ctx.strokeStyle = "rgba(251, 146, 60, 0.4)";
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
@@ -543,28 +557,28 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
                 ctx.arc(circumcenter.x, circumcenter.y, rPerf, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Circumcircle Animation
+                // Circumcircle Animation (Reaches 360 deg in 0.42s)
                 ctx.save();
-                ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
-                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.9)";
+                ctx.lineWidth = 2.8;
                 ctx.shadowColor = "#38bdf8";
                 ctx.shadowBlur = 14;
 
                 ctx.beginPath();
-                ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * progress);
+                ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * drawProgress);
                 ctx.stroke();
                 ctx.restore();
 
-                // 3 Radial Lines
+                // 3 Radial Lines connecting Circumcenter to 3 Star Vertices (Draws in sync)
                 stars.forEach((st) => {
-                  ctx.strokeStyle = "rgba(253, 224, 71, 0.6)";
-                  ctx.lineWidth = 1.4;
+                  ctx.strokeStyle = "rgba(253, 224, 71, 0.7)";
+                  ctx.lineWidth = 1.6;
                   ctx.setLineDash([4, 4]);
                   ctx.beginPath();
                   ctx.moveTo(circumcenter.x, circumcenter.y);
                   ctx.lineTo(
-                    circumcenter.x + (st.x - circumcenter.x) * progress,
-                    circumcenter.y + (st.y - circumcenter.y) * progress
+                    circumcenter.x + (st.x - circumcenter.x) * drawProgress,
+                    circumcenter.y + (st.y - circumcenter.y) * drawProgress
                   );
                   ctx.stroke();
                   ctx.setLineDash([]);
@@ -593,7 +607,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
                 ctx.strokeStyle = fb.type === "MISS" ? "#ef4444" : "#38bdf8";
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.arc(fb.clickPoint.x, fb.clickPoint.y, 8 + Math.sin(progress * Math.PI) * 4, 0, Math.PI * 2);
+                ctx.arc(fb.clickPoint.x, fb.clickPoint.y, 8 + Math.sin(drawProgress * Math.PI) * 4, 0, Math.PI * 2);
                 ctx.stroke();
 
                 ctx.beginPath();
@@ -606,8 +620,8 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
 
                 // Score Text Popup
                 ctx.save();
-                const popY = fb.clickPoint.y - 25 - progress * 35;
-                const popAlpha = Math.max(0, 1 - progress * 0.8);
+                const popY = fb.clickPoint.y - 25 - drawProgress * 35;
+                const popAlpha = Math.max(0, 1 - drawProgress * 0.8);
                 ctx.textAlign = "center";
                 ctx.font = "black 22px sans-serif";
 
@@ -738,10 +752,10 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         startTime: performance.now(),
       };
 
-      // Show Popup Modal after 0.6s feedback
+      // Show Popup Modal after 1.3s so student can observe full circumcircle & radial lines!
       setTimeout(() => {
         setShowTutorialPopup(true);
-      }, 600);
+      }, 1300);
       return;
     }
 
@@ -796,6 +810,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
       startTime: performance.now(),
     };
 
+    // Auto spawn next problem after 800ms (0.8s) so full circumcircle & radial lines stay fully visible!
     setTimeout(() => {
       if (screen === "playing") {
         const canvas = canvasRef.current;
@@ -804,12 +819,14 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
           spawnProblem(canvas.width / dpr, canvas.height / dpr);
         }
       }
-    }, 600);
+    }, 800);
   };
 
   return (
-    <div className="w-full h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none relative overflow-hidden">
-      {/* HEADER NAV BAR (No Hall of Fame button during gameplay as requested) */}
+    <div className={`w-full h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none relative overflow-hidden ${
+      screen === "playing" && timeLeft <= 10 ? "ring-4 ring-rose-500 shadow-[inset_0_0_50px_rgba(244,63,94,0.5)] animate-pulse" : ""
+    }`}>
+      {/* HEADER NAV BAR */}
       <header className="relative z-30 w-full px-4 py-3 bg-slate-900/90 backdrop-blur-md border-b border-indigo-900/40 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2">
           <button
@@ -827,6 +844,15 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
           </div>
         </div>
       </header>
+
+      {/* FEVER TIME BANNER (When timeLeft <= 10) */}
+      {screen === "playing" && timeLeft <= 10 && (
+        <div className="absolute top-16 inset-x-0 z-30 flex justify-center pointer-events-none animate-bounce">
+          <span className="bg-gradient-to-r from-red-600 via-amber-500 to-purple-600 text-white font-black text-sm sm:text-base px-6 py-1.5 rounded-full shadow-2xl tracking-widest border-2 border-yellow-300">
+            🔥 FEVER TIME! 남은 시간 {timeLeft}초! 🔥
+          </span>
+        </div>
+      )}
 
       {/* ---------------------------------------------------------------------- */}
       {/* SCREEN 1: TUTORIAL / START SCREEN */}
@@ -898,7 +924,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             </div>
             <h2 className="text-2xl font-black text-white mb-2">연습 완료!</h2>
             <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
-              외심 감각을 익혔나요? 이제 <span className="text-yellow-300 font-bold">40초 실전 타임어택</span>에 도전해 랭킹에 이름을 올해보세요!
+              외심 감각을 익혔나요? 이제 <span className="text-yellow-300 font-bold">40초 실전 타임어택</span>에 도전해 랭킹에 이름을 올려보세요!
             </p>
 
             <div className="grid grid-cols-1 gap-3">
@@ -922,10 +948,10 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               </button>
 
               <button
-                onClick={() => setShowTutorialPopup(false)}
-                className="w-full py-2.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white font-bold text-xs cursor-pointer mt-1"
+                onClick={handlePracticeAgain}
+                className="w-full py-3 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs cursor-pointer border border-slate-700 active:scale-95 transition-all"
               >
-                연습 더 하기
+                🔄 연습 더 하기 (새로운 삼각형 스폰)
               </button>
             </div>
           </div>
