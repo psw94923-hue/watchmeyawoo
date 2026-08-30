@@ -217,7 +217,7 @@ function splitPolygonByLine(
   return [sub1, sub2];
 }
 
-// Robust Sub-polygon Face Splitter for Formal Math Exploration
+// Robust Sub-polygon Face Splitter (Method 2: Partial Center Cut Handling)
 function computeSubFaces(
   nodes: NodeItem[],
   polygonSides: PolygonType,
@@ -238,14 +238,84 @@ function computeSubFaces(
   );
 
   if (centerCuts.length > 0) {
-    // Collect outer nodes connected to center
+    // Collect outer nodes connected to center C
     const connectedOuterIds = Array.from(
       new Set(
         centerCuts.map((c) => (c.from === centerId ? c.to : c.from))
       )
     );
 
-    // Sort connected outer nodes CCW by polar angle around center (200, 200)
+    const k = connectedOuterIds.length;
+
+    // METHOD 2: If only 1 center cut is made (k === 1), polygon is NOT split into sub-faces yet!
+    // Keep 1 main polygon face so cheese never disappears!
+    if (k === 1) {
+      const mainCycle: number[] = [];
+      for (let i = 0; i < n; i++) {
+        mainCycle.push(i);
+        mainCycle.push(n + i);
+      }
+
+      let currentFaceCycles = [mainCycle];
+      outerCuts.forEach((cut) => {
+        const u = cut.from;
+        const v = cut.to;
+        const nextCycles: number[][] = [];
+        let splitDone = false;
+
+        currentFaceCycles.forEach((cycle) => {
+          if (splitDone) {
+            nextCycles.push(cycle);
+            return;
+          }
+          const idxU = cycle.indexOf(u);
+          const idxV = cycle.indexOf(v);
+
+          if (idxU !== -1 && idxV !== -1 && Math.abs(idxU - idxV) > 1) {
+            const minIdx = Math.min(idxU, idxV);
+            const maxIdx = Math.max(idxU, idxV);
+
+            const sub1: number[] = [];
+            for (let i = minIdx; i <= maxIdx; i++) sub1.push(cycle[i]);
+
+            const sub2: number[] = [];
+            for (let i = maxIdx; i < cycle.length; i++) sub2.push(cycle[i]);
+            for (let i = 0; i <= minIdx; i++) sub2.push(cycle[i]);
+
+            nextCycles.push(sub1);
+            nextCycles.push(sub2);
+            splitDone = true;
+          } else {
+            nextCycles.push(cycle);
+          }
+        });
+        currentFaceCycles = nextCycles;
+      });
+
+      return currentFaceCycles.map((cycle, idx) => {
+        const pts = cycle.map((id) => {
+          const node = nodeMap.get(id)!;
+          return { x: node.x, y: node.y };
+        });
+        const corners = simplifyCollinearPoints(pts);
+        const centroid = getCentroid(corners);
+        const dx = centroid.x - 200;
+        const dy = centroid.y - 200;
+        const dist = Math.hypot(dx, dy) || 1;
+
+        return {
+          id: `face-k1-${idx}-${cycle.join("-")}`,
+          nodeIds: cycle,
+          points: pts,
+          cornerPoints: corners,
+          isTriangle: corners.length === 3,
+          centroid,
+          offsetVector: { x: (dx / dist) * 12, y: (dy / dist) * 12 },
+        };
+      });
+    }
+
+    // k >= 2: Sort connected outer nodes CCW by polar angle around center (200, 200)
     connectedOuterIds.sort((idA, idB) => {
       const nA = nodeMap.get(idA)!;
       const nB = nodeMap.get(idB)!;
@@ -262,7 +332,6 @@ function computeSubFaces(
     const pLen = perimeterCycle.length;
 
     let currentSectors: number[][] = [];
-    const k = connectedOuterIds.length;
 
     for (let i = 0; i < k; i++) {
       const u = connectedOuterIds[i];
