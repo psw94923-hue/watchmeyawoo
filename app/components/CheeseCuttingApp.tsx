@@ -1141,8 +1141,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       {/* HEADER NAVIGATION */}
       <header className="bg-amber-100/80 backdrop-blur-md border-b border-amber-200/80 px-4 py-3 flex items-center justify-between shadow-sm z-30">
         <button
+          type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-xs font-bold text-amber-900 shadow-sm hover:bg-amber-50 active:scale-95 transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-xs font-bold text-amber-900 shadow-sm hover:bg-amber-50 active:scale-95 transition-all cursor-pointer"
         >
           <span>🏠</span>
           <span>메인으로</span>
@@ -1161,8 +1162,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         </div>
 
         <button
+          type="button"
           onClick={handleResetCuts}
-          className="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold shadow hover:bg-amber-600 active:scale-95 transition-all"
+          className="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold shadow hover:bg-amber-600 active:scale-95 transition-all cursor-pointer"
         >
           🔄 초기화
         </button>
@@ -1503,7 +1505,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 );
               })}
 
-            {/* INTERACTIVE NODES (Center node C vanishes if an outer vertex is picked as start node!) */}
+            {/* INTERACTIVE NODES */}
             {appMode === "explore" &&
               appStep === "cut" &&
               nodes.map((node) => {
@@ -1596,8 +1598,8 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   치즈 위를 손가락이나 마우스로 마음껏 <strong>드래그해서 칼로 잘라보세요!</strong> 잘린 치즈 조각들이 자유롭게 분리됩니다.
                 </p>
 
-                {/* THE PROMINENT TRANSITION BUTTON TO STEP 2 */}
                 <button
+                  type="button"
                   onClick={() => {
                     setAppMode("explore");
                     setIsFirstGuidedStage(true);
@@ -1644,8 +1646,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 <div className="flex flex-col gap-2 pt-2">
                   {appStep === "step1" && hasAngleMismatch && (
                     <button
+                      type="button"
                       onClick={handleStartStep2}
-                      className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-rose-600 text-white font-extrabold text-sm shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-98 transition-all animate-bounce flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-rose-600 text-white font-extrabold text-sm shadow-md hover:from-rose-600 hover:to-rose-700 active:scale-98 transition-all animate-bounce flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>❓ 왜 내각의 합이 다르지?</span>
                     </button>
@@ -1654,8 +1657,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   {/* RE-OPEN VICTORY MODAL BUTTON IF CLOSED */}
                   {appStep === "complete" && !showVictoryModal && (
                     <button
+                      type="button"
                       onClick={() => setShowVictoryModal(true)}
-                      className="w-full py-3.5 rounded-2xl bg-amber-500 text-white font-extrabold text-sm shadow-md hover:bg-amber-600 active:scale-98 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3.5 rounded-2xl bg-amber-500 text-white font-extrabold text-sm shadow-md hover:bg-amber-600 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>🎉 결과 팝업 다시보기 / 고급 치즈 잘라보기</span>
                     </button>
@@ -1677,9 +1681,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         </div>
       </main>
 
-      {/* DELAYED VICTORY POPUP MODAL WITH ADVANCED UNLOCK OPTIONS */}
+      {/* DELAYED VICTORY POPUP MODAL WITH MOBILE TOUCH FIXES (z-[100] & onTouchEnd) */}
       {showVictoryModal && (
-        <div className="fixed inset-0 z-50 bg-amber-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[100] bg-amber-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
           <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-scale-up flex flex-col items-center">
             <div className="text-5xl mb-3 animate-bounce">🎉</div>
             <h3 className="text-xl font-black text-amber-950 mb-2">
@@ -1705,8 +1709,13 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
             {/* ACTION OPTIONS IN MODAL */}
             <div className="flex flex-col gap-2.5 w-full">
               <button
+                type="button"
                 onClick={() => setShowVictoryModal(false)}
-                className="w-full py-3.5 rounded-2xl bg-amber-100 border border-amber-300 text-amber-950 font-extrabold text-xs sm:text-sm shadow hover:bg-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  setShowVictoryModal(false);
+                }}
+                className="w-full py-3.5 rounded-2xl bg-amber-100 border border-amber-300 text-amber-950 font-extrabold text-xs sm:text-sm shadow hover:bg-amber-200 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none"
               >
                 <span>🔍 내가 자른 치즈 더 살펴보기</span>
               </button>
@@ -1717,20 +1726,35 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   <button
+                    type="button"
                     onClick={() => handleSwitchToShape(5, true)}
-                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handleSwitchToShape(5, true);
+                    }}
+                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all cursor-pointer select-none"
                   >
                     5각형 (고급)
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleSwitchToShape(6, true)}
-                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all"
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handleSwitchToShape(6, true);
+                    }}
+                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all cursor-pointer select-none"
                   >
                     6각형 (고급)
                   </button>
                   <button
+                    type="button"
                     onClick={handleSwitchToPractice}
-                    className="py-3 rounded-xl bg-amber-600 text-white font-extrabold text-xs shadow hover:bg-amber-700 active:scale-95 transition-all"
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handleSwitchToPractice();
+                    }}
+                    className="py-3 rounded-xl bg-amber-600 text-white font-extrabold text-xs shadow hover:bg-amber-700 active:scale-95 transition-all cursor-pointer select-none"
                   >
                     🖐️ 자유 자르기
                   </button>
