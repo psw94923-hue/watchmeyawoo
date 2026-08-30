@@ -217,7 +217,7 @@ function splitPolygonByLine(
   return [sub1, sub2];
 }
 
-// Robust Sub-polygon Face Splitter (Method 2: Partial Center Cut Handling)
+// Method 1: Sub-polygon Face Splitter (Auto Star-Triangulation Engine)
 function computeSubFaces(
   nodes: NodeItem[],
   polygonSides: PolygonType,
@@ -247,75 +247,7 @@ function computeSubFaces(
 
     const k = connectedOuterIds.length;
 
-    // METHOD 2: If only 1 center cut is made (k === 1), polygon is NOT split into sub-faces yet!
-    // Keep 1 main polygon face so cheese never disappears!
-    if (k === 1) {
-      const mainCycle: number[] = [];
-      for (let i = 0; i < n; i++) {
-        mainCycle.push(i);
-        mainCycle.push(n + i);
-      }
-
-      let currentFaceCycles = [mainCycle];
-      outerCuts.forEach((cut) => {
-        const u = cut.from;
-        const v = cut.to;
-        const nextCycles: number[][] = [];
-        let splitDone = false;
-
-        currentFaceCycles.forEach((cycle) => {
-          if (splitDone) {
-            nextCycles.push(cycle);
-            return;
-          }
-          const idxU = cycle.indexOf(u);
-          const idxV = cycle.indexOf(v);
-
-          if (idxU !== -1 && idxV !== -1 && Math.abs(idxU - idxV) > 1) {
-            const minIdx = Math.min(idxU, idxV);
-            const maxIdx = Math.max(idxU, idxV);
-
-            const sub1: number[] = [];
-            for (let i = minIdx; i <= maxIdx; i++) sub1.push(cycle[i]);
-
-            const sub2: number[] = [];
-            for (let i = maxIdx; i < cycle.length; i++) sub2.push(cycle[i]);
-            for (let i = 0; i <= minIdx; i++) sub2.push(cycle[i]);
-
-            nextCycles.push(sub1);
-            nextCycles.push(sub2);
-            splitDone = true;
-          } else {
-            nextCycles.push(cycle);
-          }
-        });
-        currentFaceCycles = nextCycles;
-      });
-
-      return currentFaceCycles.map((cycle, idx) => {
-        const pts = cycle.map((id) => {
-          const node = nodeMap.get(id)!;
-          return { x: node.x, y: node.y };
-        });
-        const corners = simplifyCollinearPoints(pts);
-        const centroid = getCentroid(corners);
-        const dx = centroid.x - 200;
-        const dy = centroid.y - 200;
-        const dist = Math.hypot(dx, dy) || 1;
-
-        return {
-          id: `face-k1-${idx}-${cycle.join("-")}`,
-          nodeIds: cycle,
-          points: pts,
-          cornerPoints: corners,
-          isTriangle: corners.length === 3,
-          centroid,
-          offsetVector: { x: (dx / dist) * 12, y: (dy / dist) * 12 },
-        };
-      });
-    }
-
-    // k >= 2: Sort connected outer nodes CCW by polar angle around center (200, 200)
+    // METHOD 1: If all N center-to-vertex cuts are made (or full cycle), build N sector triangles
     connectedOuterIds.sort((idA, idB) => {
       const nA = nodeMap.get(idA)!;
       const nB = nodeMap.get(idB)!;
@@ -497,7 +429,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
   // 3-STAGE PEDAGOGICAL CONTROL:
   // Step 1: Practice Mode (appMode = 'practice') -> Free drag slicing warm-up.
   // Step 2: Guided Mode (appMode = 'explore', isFirstGuidedStage = true) -> Outer vertices ONLY.
-  // Step 3: Advanced Mode (appMode = 'explore', isFirstGuidedStage = false) -> Center & Midpoints unlocked with strict target rules!
+  // Step 3: Advanced Mode (appMode = 'explore', isFirstGuidedStage = false) -> Center & Midpoints unlocked with Method 1 Auto Star-Triangulation!
   const [isFirstGuidedStage, setIsFirstGuidedStage] = useState<boolean>(true);
 
   // Free Drag Slicing Pieces (Practice Mode)
@@ -628,23 +560,33 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     }
   }, [appStep, isTriangulated]);
 
-  // PERMANENT NODE HIDING CALCULATION & EXACT CENTER NODE TARGET RULES
+  // PERMANENT NODE HIDING CALCULATION & PERMANENT CENTER NODE HIDING ON OUTER CUTS
   const permanentlyHiddenNodeIds = useMemo(() => {
     const hiddenSet = new Set<number>();
     const centerId = 2 * polygonSides;
     const hasUntriangulatedFace = subFaces.some((f) => !f.isTriangle);
+    const hasOuterCut = userCuts.some(
+      (c) => c.from !== centerId && c.to !== centerId
+    );
 
     nodes.forEach((nodeX) => {
       // In Guided Stage (Step 2), hide ALL midpoints and center node C!
-      if (isFirstGuidedStage && (nodeX.type === "midpoint" || nodeX.type === "center")) {
+      if (
+        isFirstGuidedStage &&
+        (nodeX.type === "midpoint" || nodeX.type === "center")
+      ) {
         hiddenSet.add(nodeX.id);
         return;
       }
 
-      // CRITICAL RULE: If an outer vertex/midpoint is picked as start node (selectedStartNode !== centerId),
-      // HIDE center node C immediately so student cannot make invalid single-slit cuts!
+      // CRITICAL RULE: If user starts by picking an outer node (selectedStartNode !== centerId),
+      // OR if any outer cut has been made (hasOuterCut), HIDE center node C PERMANENTLY!
       if (nodeX.id === centerId) {
-        if (!hasUntriangulatedFace || (selectedStartNode !== null && selectedStartNode !== centerId)) {
+        if (
+          !hasUntriangulatedFace ||
+          (selectedStartNode !== null && selectedStartNode !== centerId) ||
+          hasOuterCut
+        ) {
           hiddenSet.add(centerId);
         }
         return;
@@ -711,7 +653,15 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return hiddenSet;
-  }, [nodes, subFaces, allEdges, userCuts, polygonSides, isFirstGuidedStage, selectedStartNode]);
+  }, [
+    nodes,
+    subFaces,
+    allEdges,
+    userCuts,
+    polygonSides,
+    isFirstGuidedStage,
+    selectedStartNode,
+  ]);
 
   // TARGET NODES VISIBLE WHEN A START NODE IS SELECTED
   const validTargetNodes = useMemo(() => {
@@ -725,7 +675,10 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       if (targetNode.id === selectedStartNode) return;
 
       // In Guided Stage, allow ONLY outer vertex targets
-      if (isFirstGuidedStage && (targetNode.type === "midpoint" || targetNode.type === "center")) {
+      if (
+        isFirstGuidedStage &&
+        (targetNode.type === "midpoint" || targetNode.type === "center")
+      ) {
         return;
       }
 
@@ -761,9 +714,11 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       }
       if (intersects) return;
 
-      // If start node IS center node C, allow all outer vertices/midpoints as targets!
+      // If start node IS center node C, allow outer vertices as targets for Method 1 Auto Star-Triangulation!
       if (selectedStartNode === centerId) {
-        validSet.add(targetNode.id);
+        if (targetNode.type === "vertex") {
+          validSet.add(targetNode.id);
+        }
         return;
       }
 
@@ -790,10 +745,21 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     });
 
     return validSet;
-  }, [selectedStartNode, nodes, allEdges, userCuts, subFaces, polygonSides, isFirstGuidedStage]);
+  }, [
+    selectedStartNode,
+    nodes,
+    allEdges,
+    userCuts,
+    subFaces,
+    polygonSides,
+    isFirstGuidedStage,
+  ]);
 
   // UNLOCK ADVANCED STAGE WHEN SWITCHING SHAPES
-  const handleSwitchToShape = (sides: PolygonType, isAdvanced: boolean = true) => {
+  const handleSwitchToShape = (
+    sides: PolygonType,
+    isAdvanced: boolean = true
+  ) => {
     setPolygonSides(sides);
     setSelectedStartNode(null);
     setUserCuts([]);
@@ -822,28 +788,6 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
       {
         id: `piece-init-${sides}-${Date.now()}`,
         points: newVertices,
-        centroid: initialCentroid,
-        offset: { x: 0, y: 0 },
-      },
-    ]);
-  };
-
-  const handleSwitchToPractice = () => {
-    setSelectedStartNode(null);
-    setUserCuts([]);
-    setFreeCuts([]);
-    setActiveSlices([]);
-    setAppStep("cut");
-    setAppMode("practice");
-    setShowVictoryModal(false);
-    setClickedTriangles(new Set());
-    setDeductedExtraAngles(new Set());
-
-    const initialCentroid = getCentroid(baseVertices);
-    setFreePieces([
-      {
-        id: `piece-init-${polygonSides}-${Date.now()}`,
-        points: baseVertices,
         centroid: initialCentroid,
         offset: { x: 0, y: 0 },
       },
@@ -1001,6 +945,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
   // FORMAL MATH EXPLORATION CUTTING (Explore Mode)
   const handleNodeClick = (nodeId: number) => {
     if (appMode !== "explore" || appStep !== "cut") return;
+    const centerId = 2 * polygonSides;
 
     if (selectedStartNode === null) {
       if (permanentlyHiddenNodeIds.has(nodeId)) return;
@@ -1010,6 +955,61 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
     } else {
       if (!validTargetNodes.has(nodeId)) return;
 
+      // METHOD 1: If start node IS center node C, automatically create ALL N center-to-vertex cuts!
+      if (selectedStartNode === centerId) {
+        const starCuts: EdgeItem[] = [];
+        for (let i = 0; i < polygonSides; i++) {
+          starCuts.push({
+            id: `cut-${centerId}-${i}`,
+            from: centerId,
+            to: i,
+            isCut: true,
+          });
+        }
+
+        const newSlices: SliceEffect[] = [];
+        for (let i = 0; i < polygonSides; i++) {
+          const vNode = nodes.find((n) => n.id === i)!;
+          const cNode = nodes.find((n) => n.id === centerId)!;
+          const midX = (cNode.x + vNode.x) / 2;
+          const midY = (cNode.y + vNode.y) / 2;
+
+          const particles: SliceEffectParticle[] = [];
+          for (let p = 0; p < 4; p++) {
+            particles.push({
+              id: p,
+              x: midX,
+              y: midY,
+              dx: (Math.random() - 0.5) * 40,
+              dy: (Math.random() - 0.5) * 40,
+              r: 3,
+              color: "#f59e0b",
+            });
+          }
+
+          newSlices.push({
+            id: `slice-star-${i}-${Date.now()}`,
+            x1: cNode.x,
+            y1: cNode.y,
+            x2: vNode.x,
+            y2: vNode.y,
+            midX,
+            midY,
+            particles,
+          });
+        }
+
+        setActiveSlices((prev) => [...prev, ...newSlices]);
+        setTimeout(() => {
+          setActiveSlices([]);
+        }, 600);
+
+        setUserCuts(starCuts);
+        setSelectedStartNode(null);
+        return;
+      }
+
+      // Standard vertex cut
       const fromNode = nodes.find((n) => n.id === selectedStartNode)!;
       const toNode = nodes.find((n) => n.id === nodeId)!;
 
@@ -1750,7 +1750,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
         </div>
       </main>
 
-      {/* DELAYED VICTORY POPUP MODAL WITH MOBILE TOUCH FIXES (z-[100] & onTouchEnd) */}
+      {/* DELAYED VICTORY POPUP MODAL WITH REMOVED FREE PRACTICE BUTTON */}
       {showVictoryModal && (
         <div className="fixed inset-0 z-[100] bg-amber-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in pointer-events-auto">
           <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-scale-up flex flex-col items-center">
@@ -1793,7 +1793,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                 <span className="text-xs font-extrabold text-amber-900 text-left px-1">
                   🧀 고급 자유탐구 (중앙점/중심점 해금!):
                 </span>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => handleSwitchToShape(5, true)}
@@ -1801,7 +1801,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                       e.preventDefault();
                       handleSwitchToShape(5, true);
                     }}
-                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all cursor-pointer select-none"
+                    className="py-3.5 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all cursor-pointer select-none"
                   >
                     5각형 (고급)
                   </button>
@@ -1812,20 +1812,9 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                       e.preventDefault();
                       handleSwitchToShape(6, true);
                     }}
-                    className="py-3 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all cursor-pointer select-none"
+                    className="py-3.5 rounded-xl bg-amber-500 text-white font-extrabold text-xs shadow hover:bg-amber-600 active:scale-95 transition-all cursor-pointer select-none"
                   >
                     6각형 (고급)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSwitchToPractice}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      handleSwitchToPractice();
-                    }}
-                    className="py-3 rounded-xl bg-amber-600 text-white font-extrabold text-xs shadow hover:bg-amber-700 active:scale-95 transition-all cursor-pointer select-none"
-                  >
-                    🖐️ 자유 자르기
                   </button>
                 </div>
               </div>
