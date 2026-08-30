@@ -79,7 +79,6 @@ class SoundEffect {
     const now = this.ctx.currentTime;
 
     if (type === "PERFECT") {
-      // Shimmering chord
       const freqs = combo >= 3 ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
       freqs.forEach((f, idx) => {
         const osc = this.ctx!.createOscillator();
@@ -118,7 +117,6 @@ class SoundEffect {
       osc.start(now);
       osc.stop(now + 0.3);
     } else {
-      // MISS: Low soft thud
       const osc = this.ctx!.createOscillator();
       const gain = this.ctx!.createGain();
       osc.type = "sawtooth";
@@ -158,37 +156,26 @@ const soundManager = new SoundEffect();
 // Mathematical Algorithm: Generate Acute Triangle & Circumcircle
 // ----------------------------------------------------------------------
 function generateAcuteTriangleProblem(width: number, height: number): ProblemData {
-  const minDim = Math.min(width, height);
-  // Radius R = min(W, H) * [0.25 ~ 0.38]
-  let R = minDim * (0.25 + Math.random() * 0.13);
+  const safeW = Math.max(280, width);
+  const safeH = Math.max(280, height);
+  const minDim = Math.min(safeW, safeH);
 
-  // Safety padding to ensure circle and stars remain inside canvas with margins
-  const padX = R + 45;
-  const padY = R + 70;
+  let R = minDim * (0.24 + Math.random() * 0.12);
 
-  let minX = padX;
-  let maxX = width - padX;
-  let minY = padY;
-  let maxY = height - padY;
+  const padX = R + 40;
+  const padY = R + 60;
 
-  // Scale down R slightly if screen is too small
-  if (maxX <= minX || maxY <= minY) {
-    R = minDim * 0.22;
-    minX = R + 30;
-    maxX = Math.max(minX + 10, width - (R + 30));
-    minY = R + 50;
-    maxY = Math.max(minY + 10, height - (R + 50));
-  }
+  const minX = padX;
+  const maxX = Math.max(minX + 10, safeW - padX);
+  const minY = padY;
+  const maxY = Math.max(minY + 10, safeH - padY);
 
-  const x0 = minX + Math.random() * Math.max(1, maxX - minX);
-  const y0 = minY + Math.random() * Math.max(1, maxY - minY);
+  const x0 = minX + Math.random() * (maxX - minX);
+  const y0 = minY + Math.random() * (maxY - minY);
 
-  // Generate 3 central angles such that all adjacent gaps are in [65°, 145°]
-  // This mathematically guarantees an ACUTE triangle (all interior angles < 90°)
-  // and the circumcenter (x0, y0) is strictly INSIDE the triangle!
   const baseAngle = Math.random() * Math.PI * 2;
 
-  let gap1Deg = 70 + Math.random() * 65; // 70 ~ 135 deg
+  let gap1Deg = 70 + Math.random() * 65;
   let gap2Deg = 70 + Math.random() * 65;
   let gap3Deg = 360 - (gap1Deg + gap2Deg);
 
@@ -224,7 +211,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
   // Screen States: 'tutorial' | 'playing' | 'gameover' | 'leaderboard'
   const [screen, setScreen] = useState<"tutorial" | "playing" | "gameover" | "leaderboard">("tutorial");
 
-  // Game Gameplay States
+  // Gameplay States
   const [score, setScore] = useState<number>(0);
   const [combo, setCombo] = useState<number>(0);
   const [maxCombo, setMaxCombo] = useState<number>(0);
@@ -235,9 +222,9 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
   const [goodCount, setGoodCount] = useState<number>(0);
   const [missCount, setMissCount] = useState<number>(0);
 
-  // Tutorial state
-  const [tutorialDone, setTutorialDone] = useState<boolean>(false);
+  // Tutorial Popup State
   const [tutorialHasTried, setTutorialHasTried] = useState<boolean>(false);
+  const [showTutorialPopup, setShowTutorialPopup] = useState<boolean>(false);
 
   // Leaderboard & Student Input
   const [studentIdName, setStudentIdName] = useState<string>("");
@@ -294,7 +281,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
       console.warn("Supabase fetch rankings error (using fallback):", err);
     }
 
-    // Local Storage Fallback
     try {
       const local = JSON.parse(localStorage.getItem("circumcenter_rankings") || "[]");
       local.sort((a: RankingRecord, b: RankingRecord) => b.score - a.score);
@@ -306,17 +292,47 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
   }, []);
 
   // Spawn Next Problem
-  const spawnProblem = useCallback(() => {
-    if (!canvasRef.current) return;
-    const width = canvasRef.current.width / (window.devicePixelRatio || 1);
-    const height = canvasRef.current.height / (window.devicePixelRatio || 1);
+  const spawnProblem = useCallback((w?: number, h?: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const width = w || (canvas.width / dpr);
+    const height = h || (canvas.height / dpr);
+
+    if (width <= 0 || height <= 0) return;
+
     problemRef.current = generateAcuteTriangleProblem(width, height);
     feedbackRef.current = null;
     isTouchLockedRef.current = false;
   }, []);
 
+  // ResizeObserver for Reliable Canvas Dimensions
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        const height = entry.contentRect.height;
+
+        if (width > 50 && height > 50 && canvasRef.current) {
+          const dpr = window.devicePixelRatio || 1;
+          canvasRef.current.width = width * dpr;
+          canvasRef.current.height = height * dpr;
+
+          spawnProblem(width, height);
+        }
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [screen, spawnProblem]);
+
   // Start New Game
   const startGame = () => {
+    setShowTutorialPopup(false);
     setScore(0);
     setCombo(0);
     setMaxCombo(0);
@@ -328,10 +344,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
     setMissCount(0);
     setSubmitSuccess(false);
     setScreen("playing");
-
-    setTimeout(() => {
-      spawnProblem();
-    }, 50);
   };
 
   // Timer Tick Hook
@@ -369,19 +381,13 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
       created_at: new Date().toISOString(),
     };
 
-    let success = false;
     try {
       const { error } = await supabase.from("rankings").insert([payload]);
-      if (!error) {
-        success = true;
-      } else {
-        console.warn("Supabase insert error:", error);
-      }
+      if (error) console.warn("Supabase insert error:", error);
     } catch (err) {
       console.warn("Supabase insert exception:", err);
     }
 
-    // Always update LocalStorage backup
     try {
       const local = JSON.parse(localStorage.getItem("circumcenter_rankings") || "[]");
       local.push(payload);
@@ -400,263 +406,255 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
   // Canvas Rendering & Particle Animation Loop
   // ----------------------------------------------------------------------
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
     let running = true;
 
-    const render = (time: number) => {
+    const render = () => {
       if (!running) return;
 
-      const dpr = window.devicePixelRatio || 1;
-      const width = canvas.width / dpr;
-      const height = canvas.height / dpr;
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          const dpr = window.devicePixelRatio || 1;
+          const width = canvas.width / dpr;
+          const height = canvas.height / dpr;
 
-      ctx.save();
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, width, height);
+          if (width > 0 && height > 0) {
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, width, height);
 
-      // 1. Draw Night Sky Gradient & Stars
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
-      skyGrad.addColorStop(0, "#080c1a");
-      skyGrad.addColorStop(0.5, "#0b122c");
-      skyGrad.addColorStop(1, "#070a16");
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, width, height);
+            // 1. Draw Night Sky Gradient & Stars
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+            skyGrad.addColorStop(0, "#080c1a");
+            skyGrad.addColorStop(0.5, "#0b122c");
+            skyGrad.addColorStop(1, "#070a16");
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, width, height);
 
-      // Nebula glow background
-      const nebulaGrad = ctx.createRadialGradient(
-        width * 0.5,
-        height * 0.4,
-        20,
-        width * 0.5,
-        height * 0.4,
-        width * 0.6
-      );
-      nebulaGrad.addColorStop(0, "rgba(99, 102, 241, 0.15)");
-      nebulaGrad.addColorStop(0.6, "rgba(59, 130, 246, 0.05)");
-      nebulaGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = nebulaGrad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Twinkling Background Stars
-      starsBgRef.current.forEach((st) => {
-        st.alpha += st.speed;
-        const currentAlpha = 0.3 + Math.abs(Math.sin(st.alpha)) * 0.7;
-        ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha})`;
-        ctx.beginPath();
-        ctx.arc(st.x * width, st.y * height, st.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      const prob = problemRef.current;
-      const fb = feedbackRef.current;
-
-      if (prob) {
-        const { circumcenter, radius, stars } = prob;
-
-        // 2. Draw Triangle Edges connecting 3 Stars
-        ctx.strokeStyle = "rgba(147, 197, 253, 0.4)";
-        ctx.lineWidth = 1.8;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(stars[0].x, stars[0].y);
-        ctx.lineTo(stars[1].x, stars[1].y);
-        ctx.lineTo(stars[2].x, stars[2].y);
-        ctx.closePath();
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // 3. Draw 3 Sparkling Star Vertices
-        stars.forEach((st, idx) => {
-          // Star Glow
-          const starGlow = ctx.createRadialGradient(st.x, st.y, 2, st.x, st.y, 24);
-          starGlow.addColorStop(0, "rgba(253, 224, 71, 0.8)");
-          starGlow.addColorStop(0.5, "rgba(234, 179, 8, 0.3)");
-          starGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-          ctx.fillStyle = starGlow;
-          ctx.beginPath();
-          ctx.arc(st.x, st.y, 24, 0, Math.PI * 2);
-          ctx.fill();
-
-          // 5-Point Star Core
-          ctx.save();
-          ctx.translate(st.x, st.y);
-          ctx.fillStyle = "#fff";
-          ctx.shadowColor = "#fde047";
-          ctx.shadowBlur = 12;
-
-          ctx.beginPath();
-          for (let i = 0; i < 5; i++) {
-            const rot = (Math.PI / 5) * 2 * i - Math.PI / 2;
-            const outerX = Math.cos(rot) * 10;
-            const outerY = Math.sin(rot) * 10;
-            if (i === 0) ctx.moveTo(outerX, outerY);
-            else ctx.lineTo(outerX, outerY);
-
-            const innerRot = rot + Math.PI / 5;
-            const innerX = Math.cos(innerRot) * 4.5;
-            const innerY = Math.sin(innerRot) * 4.5;
-            ctx.lineTo(innerX, innerY);
-          }
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
-
-          // Label A, B, C
-          ctx.fillStyle = "#e2e8f0";
-          ctx.font = "bold 12px sans-serif";
-          ctx.textAlign = "center";
-          const labelOffsetAngle = Math.atan2(st.y - circumcenter.y, st.x - circumcenter.x);
-          const labelX = st.x + Math.cos(labelOffsetAngle) * 20;
-          const labelY = st.y + Math.sin(labelOffsetAngle) * 20 + 4;
-          ctx.fillText(String.fromCharCode(65 + idx), labelX, labelY);
-        });
-
-        // 4. FEEDBACK ANIMATION (0.6 seconds after touch)
-        if (fb) {
-          const elapsed = (performance.now() - fb.startTime) / 1000;
-          const progress = Math.min(1, elapsed / 0.6); // 0.0 to 1.0
-
-          // A. Draw Concentric Target Judgment Rings around actual Circumcenter
-          const rPerf = radius * 0.08;
-          const rGreat = radius * 0.18;
-          const rGood = radius * 0.32;
-
-          // Outer Good Ring (Orange)
-          ctx.strokeStyle = "rgba(251, 146, 60, 0.4)";
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(circumcenter.x, circumcenter.y, rGood, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Middle Great Ring (Yellow)
-          ctx.strokeStyle = "rgba(250, 204, 21, 0.6)";
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(circumcenter.x, circumcenter.y, rGreat, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Inner Perfect Ring (Cyan/Green)
-          ctx.strokeStyle = "rgba(52, 211, 153, 0.8)";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(circumcenter.x, circumcenter.y, rPerf, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // B. Draw Animated Circumcircle (passing through 3 stars)
-          ctx.save();
-          ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = "#38bdf8";
-          ctx.shadowBlur = 14;
-
-          const currentArc = Math.PI * 2 * progress;
-          ctx.beginPath();
-          ctx.arc(circumcenter.x, circumcenter.y, radius, 0, currentArc);
-          ctx.stroke();
-          ctx.restore();
-
-          // C. Draw 3 Equal Radius Lines connecting circumcenter to 3 stars
-          stars.forEach((st) => {
-            ctx.strokeStyle = "rgba(253, 224, 71, 0.5)";
-            ctx.lineWidth = 1.2;
-            ctx.setLineDash([3, 3]);
-            ctx.beginPath();
-            ctx.moveTo(circumcenter.x, circumcenter.y);
-            ctx.lineTo(
-              circumcenter.x + (st.x - circumcenter.x) * progress,
-              circumcenter.y + (st.y - circumcenter.y) * progress
+            // Nebula glow
+            const nebulaGrad = ctx.createRadialGradient(
+              width * 0.5,
+              height * 0.4,
+              20,
+              width * 0.5,
+              height * 0.4,
+              width * 0.6
             );
-            ctx.stroke();
-            ctx.setLineDash([]);
-          });
+            nebulaGrad.addColorStop(0, "rgba(99, 102, 241, 0.15)");
+            nebulaGrad.addColorStop(0.6, "rgba(59, 130, 246, 0.05)");
+            nebulaGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+            ctx.fillStyle = nebulaGrad;
+            ctx.fillRect(0, 0, width, height);
 
-          // D. Draw Actual Circumcenter Core (Golden Sun Icon)
-          ctx.save();
-          ctx.translate(circumcenter.x, circumcenter.y);
-          const coreGlow = ctx.createRadialGradient(0, 0, 2, 0, 0, 18);
-          coreGlow.addColorStop(0, "#fbbf24");
-          coreGlow.addColorStop(0.6, "rgba(245, 158, 11, 0.5)");
-          coreGlow.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = coreGlow;
-          ctx.beginPath();
-          ctx.arc(0, 0, 18, 0, Math.PI * 2);
-          ctx.fill();
+            // Twinkling Background Stars
+            starsBgRef.current.forEach((st) => {
+              st.alpha += st.speed;
+              const currentAlpha = 0.3 + Math.abs(Math.sin(st.alpha)) * 0.7;
+              ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha})`;
+              ctx.beginPath();
+              ctx.arc(st.x * width, st.y * height, st.r, 0, Math.PI * 2);
+              ctx.fill();
+            });
 
-          ctx.fillStyle = "#fff";
-          ctx.beginPath();
-          ctx.arc(0, 0, 5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
+            const prob = problemRef.current;
+            const fb = feedbackRef.current;
 
-          // E. Draw Student's Clicked Marker
-          ctx.save();
-          ctx.strokeStyle = fb.type === "MISS" ? "#ef4444" : "#38bdf8";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(fb.clickPoint.x, fb.clickPoint.y, 8 + Math.sin(progress * Math.PI) * 4, 0, Math.PI * 2);
-          ctx.stroke();
+            if (prob) {
+              const { circumcenter, radius, stars } = prob;
 
-          // Crosshair lines at clicked point
-          ctx.beginPath();
-          ctx.moveTo(fb.clickPoint.x - 12, fb.clickPoint.y);
-          ctx.lineTo(fb.clickPoint.x + 12, fb.clickPoint.y);
-          ctx.moveTo(fb.clickPoint.x, fb.clickPoint.y - 12);
-          ctx.lineTo(fb.clickPoint.x, fb.clickPoint.y + 12);
-          ctx.stroke();
-          ctx.restore();
+              // 2. Draw Triangle Edges connecting 3 Stars
+              ctx.strokeStyle = "rgba(147, 197, 253, 0.4)";
+              ctx.lineWidth = 1.8;
+              ctx.setLineDash([4, 4]);
+              ctx.beginPath();
+              ctx.moveTo(stars[0].x, stars[0].y);
+              ctx.lineTo(stars[1].x, stars[1].y);
+              ctx.lineTo(stars[2].x, stars[2].y);
+              ctx.closePath();
+              ctx.stroke();
+              ctx.setLineDash([]);
 
-          // F. Floating Score Popup Text
-          ctx.save();
-          const popY = fb.clickPoint.y - 25 - progress * 35;
-          const popAlpha = Math.max(0, 1 - progress * 0.8);
-          ctx.textAlign = "center";
-          ctx.font = "black 22px sans-serif";
+              // 3. Draw 3 Sparkling Star Vertices
+              stars.forEach((st, idx) => {
+                // Glow
+                const starGlow = ctx.createRadialGradient(st.x, st.y, 2, st.x, st.y, 24);
+                starGlow.addColorStop(0, "rgba(253, 224, 71, 0.8)");
+                starGlow.addColorStop(0.5, "rgba(234, 179, 8, 0.3)");
+                starGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+                ctx.fillStyle = starGlow;
+                ctx.beginPath();
+                ctx.arc(st.x, st.y, 24, 0, Math.PI * 2);
+                ctx.fill();
 
-          let color = "#38bdf8";
-          let txt = `${fb.type}! +${fb.points}`;
-          if (fb.type === "PERFECT") color = "#34d399";
-          if (fb.type === "GREAT") color = "#facc15";
-          if (fb.type === "GOOD") color = "#fb923c";
-          if (fb.type === "MISS") {
-            color = "#f87171";
-            txt = "MISS!";
+                // 5-Point Star Core
+                ctx.save();
+                ctx.translate(st.x, st.y);
+                ctx.fillStyle = "#fff";
+                ctx.shadowColor = "#fde047";
+                ctx.shadowBlur = 12;
+
+                ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                  const rot = (Math.PI / 5) * 2 * i - Math.PI / 2;
+                  ctx.lineTo(Math.cos(rot) * 10, Math.sin(rot) * 10);
+                  const innerRot = rot + Math.PI / 5;
+                  ctx.lineTo(Math.cos(innerRot) * 4.5, Math.sin(innerRot) * 4.5);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                // Label A, B, C
+                ctx.fillStyle = "#e2e8f0";
+                ctx.font = "bold 13px sans-serif";
+                ctx.textAlign = "center";
+                const labelOffsetAngle = Math.atan2(st.y - circumcenter.y, st.x - circumcenter.x);
+                const labelX = st.x + Math.cos(labelOffsetAngle) * 22;
+                const labelY = st.y + Math.sin(labelOffsetAngle) * 22 + 4;
+                ctx.fillText(String.fromCharCode(65 + idx), labelX, labelY);
+              });
+
+              // 4. FEEDBACK ANIMATION
+              if (fb) {
+                const elapsed = (performance.now() - fb.startTime) / 1000;
+                const progress = Math.min(1, elapsed / 0.6);
+
+                const rPerf = radius * 0.08;
+                const rGreat = radius * 0.18;
+                const rGood = radius * 0.32;
+
+                // Rings
+                ctx.strokeStyle = "rgba(251, 146, 60, 0.4)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(circumcenter.x, circumcenter.y, rGood, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.strokeStyle = "rgba(250, 204, 21, 0.6)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(circumcenter.x, circumcenter.y, rGreat, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.strokeStyle = "rgba(52, 211, 153, 0.8)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(circumcenter.x, circumcenter.y, rPerf, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Circumcircle Animation
+                ctx.save();
+                ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = "#38bdf8";
+                ctx.shadowBlur = 14;
+
+                ctx.beginPath();
+                ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * progress);
+                ctx.stroke();
+                ctx.restore();
+
+                // 3 Radial Lines
+                stars.forEach((st) => {
+                  ctx.strokeStyle = "rgba(253, 224, 71, 0.6)";
+                  ctx.lineWidth = 1.4;
+                  ctx.setLineDash([4, 4]);
+                  ctx.beginPath();
+                  ctx.moveTo(circumcenter.x, circumcenter.y);
+                  ctx.lineTo(
+                    circumcenter.x + (st.x - circumcenter.x) * progress,
+                    circumcenter.y + (st.y - circumcenter.y) * progress
+                  );
+                  ctx.stroke();
+                  ctx.setLineDash([]);
+                });
+
+                // Circumcenter Sun Core
+                ctx.save();
+                ctx.translate(circumcenter.x, circumcenter.y);
+                const coreGlow = ctx.createRadialGradient(0, 0, 2, 0, 0, 18);
+                coreGlow.addColorStop(0, "#fbbf24");
+                coreGlow.addColorStop(0.6, "rgba(245, 158, 11, 0.5)");
+                coreGlow.addColorStop(1, "rgba(0,0,0,0)");
+                ctx.fillStyle = coreGlow;
+                ctx.beginPath();
+                ctx.arc(0, 0, 18, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(0, 0, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Clicked Marker
+                ctx.save();
+                ctx.strokeStyle = fb.type === "MISS" ? "#ef4444" : "#38bdf8";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(fb.clickPoint.x, fb.clickPoint.y, 8 + Math.sin(progress * Math.PI) * 4, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(fb.clickPoint.x - 12, fb.clickPoint.y);
+                ctx.lineTo(fb.clickPoint.x + 12, fb.clickPoint.y);
+                ctx.moveTo(fb.clickPoint.x, fb.clickPoint.y - 12);
+                ctx.lineTo(fb.clickPoint.x, fb.clickPoint.y + 12);
+                ctx.stroke();
+                ctx.restore();
+
+                // Score Text Popup
+                ctx.save();
+                const popY = fb.clickPoint.y - 25 - progress * 35;
+                const popAlpha = Math.max(0, 1 - progress * 0.8);
+                ctx.textAlign = "center";
+                ctx.font = "black 22px sans-serif";
+
+                let color = "#38bdf8";
+                let txt = `${fb.type}! +${fb.points}`;
+                if (fb.type === "PERFECT") color = "#34d399";
+                if (fb.type === "GREAT") color = "#facc15";
+                if (fb.type === "GOOD") color = "#fb923c";
+                if (fb.type === "MISS") {
+                  color = "#f87171";
+                  txt = "MISS!";
+                }
+
+                if (fb.multiplier > 1.0 && fb.type !== "MISS") {
+                  txt += ` (x${fb.multiplier})`;
+                }
+
+                ctx.fillStyle = color;
+                ctx.globalAlpha = popAlpha;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 10;
+                ctx.fillText(txt, fb.clickPoint.x, popY);
+                ctx.restore();
+              }
+            }
+
+            // Particles
+            particlesRef.current.forEach((p) => {
+              p.x += p.vx;
+              p.y += p.vy;
+              p.alpha -= 0.025;
+              p.life += 1;
+
+              if (p.alpha > 0) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            });
+            particlesRef.current = particlesRef.current.filter((p) => p.alpha > 0);
+
+            ctx.restore();
           }
-
-          if (fb.multiplier > 1.0 && fb.type !== "MISS") {
-            txt += ` (x${fb.multiplier})`;
-          }
-
-          ctx.fillStyle = color;
-          ctx.globalAlpha = popAlpha;
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 10;
-          ctx.fillText(txt, fb.clickPoint.x, popY);
-          ctx.restore();
         }
       }
-
-      // 5. Render Sparkle Particles
-      particlesRef.current.forEach((p, idx) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= 0.025;
-        p.life += 1;
-
-        if (p.alpha > 0) {
-          ctx.fillStyle = p.color;
-          ctx.globalAlpha = Math.max(0, p.alpha);
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
-      particlesRef.current = particlesRef.current.filter((p) => p.alpha > 0);
-
-      ctx.restore();
 
       animFrameRef.current = requestAnimationFrame(render);
     };
@@ -668,32 +666,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, []);
-
-  // Resize Listener for Canvas Responsiveness
-  useEffect(() => {
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      const container = containerRef.current;
-      if (!canvas || !container) return;
-
-      const dpr = window.devicePixelRatio || 1;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-
-      if (screen === "playing" || screen === "tutorial") {
-        spawnProblem();
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [screen, spawnProblem]);
 
   // Handle Touch / Click on Canvas
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -736,27 +708,22 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
     } else if (ratio <= 0.32) {
       type = "GOOD";
       basePoints = 15;
-      // combo maintained
     } else {
       type = "MISS";
       basePoints = 0;
       newCombo = 0;
     }
 
-    // Streak Multiplier
     let multiplier = 1.0;
     if (newCombo >= 5) multiplier = 1.5;
     else if (newCombo >= 3) multiplier = 1.2;
 
     const awardedPoints = Math.round(basePoints * multiplier);
-
-    // Audio Play
     soundManager.playScore(type, newCombo);
 
     // Tutorial Mode Handling
     if (screen === "tutorial") {
       setTutorialHasTried(true);
-      setTutorialDone(true);
       feedbackRef.current = {
         type,
         points: awardedPoints,
@@ -770,10 +737,15 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         stars,
         startTime: performance.now(),
       };
+
+      // Show Popup Modal after 0.6s feedback
+      setTimeout(() => {
+        setShowTutorialPopup(true);
+      }, 600);
       return;
     }
 
-    // In-Game Mode Handling
+    // Playing Mode Handling
     isTouchLockedRef.current = true;
     setCombo(newCombo);
     if (newCombo > maxCombo) setMaxCombo(newCombo);
@@ -785,7 +757,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
     if (type === "GOOD") setGoodCount((prev) => prev + 1);
     if (type === "MISS") setMissCount((prev) => prev + 1);
 
-    // Spawn Sparkle Particles
     const particleColors =
       type === "PERFECT"
         ? ["#34d399", "#a7f3d0", "#fde047"]
@@ -811,7 +782,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
       });
     }
 
-    // Set Feedback State
     feedbackRef.current = {
       type,
       points: awardedPoints,
@@ -826,23 +796,25 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
       startTime: performance.now(),
     };
 
-    // Auto spawn next problem after 0.6s feedback animation
     setTimeout(() => {
       if (screen === "playing") {
-        spawnProblem();
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const dpr = window.devicePixelRatio || 1;
+          spawnProblem(canvas.width / dpr, canvas.height / dpr);
+        }
       }
     }, 600);
   };
 
-  // Render Views based on `screen`
   return (
-    <div className="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none relative overflow-hidden">
-      {/* HEADER NAV BAR */}
-      <header className="relative z-30 w-full px-4 py-3 bg-slate-900/80 backdrop-blur-md border-b border-indigo-900/40 flex items-center justify-between shadow-lg">
+    <div className="w-full h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none relative overflow-hidden">
+      {/* HEADER NAV BAR (No Hall of Fame button during gameplay as requested) */}
+      <header className="relative z-30 w-full px-4 py-3 bg-slate-900/90 backdrop-blur-md border-b border-indigo-900/40 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 transition-all active:scale-95 cursor-pointer"
           >
             <span>←</span>
             <span>메인으로</span>
@@ -854,29 +826,18 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             </span>
           </div>
         </div>
-
-        <button
-          onClick={() => {
-            fetchLeaderboard();
-            setScreen("leaderboard");
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-500/40 text-xs font-bold text-yellow-300 transition-all active:scale-95 cursor-pointer"
-        >
-          <span>🏆</span>
-          <span>명예의 전당</span>
-        </button>
       </header>
 
       {/* ---------------------------------------------------------------------- */}
-      {/* SCREEN 1: TUTORIAL SCREEN */}
+      {/* SCREEN 1: TUTORIAL / START SCREEN */}
       {/* ---------------------------------------------------------------------- */}
       {screen === "tutorial" && (
         <div className="flex-1 flex flex-col items-center justify-between p-4 relative z-20 max-w-4xl mx-auto w-full">
-          <div className="text-center mt-2 mb-4 animate-fade-in">
+          <div className="text-center mt-1 mb-3 animate-fade-in">
             <span className="inline-block px-3 py-1 rounded-full bg-indigo-950 border border-indigo-500/40 text-indigo-300 text-xs font-bold mb-2">
               중2 수학 • 삼각형의 외심 개념 형성 미니게임
             </span>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-1.5">
               세 별로부터 <span className="text-yellow-400">같은 거리에 있는 항성(외심)</span>을 찾아라!
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
@@ -889,7 +850,12 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             ref={containerRef}
             className="w-full flex-1 min-h-[300px] max-h-[420px] rounded-3xl border-2 border-indigo-500/40 bg-slate-900/90 shadow-2xl relative overflow-hidden cursor-crosshair flex items-center justify-center"
           >
-            <canvas ref={canvasRef} onClick={handleCanvasClick} onTouchStart={handleCanvasClick} />
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full"
+              onClick={handleCanvasClick}
+              onTouchStart={handleCanvasClick}
+            />
 
             {!tutorialHasTried && (
               <div className="absolute inset-x-4 bottom-4 bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-yellow-400/40 text-center pointer-events-none animate-bounce shadow-xl">
@@ -900,20 +866,68 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             )}
           </div>
 
-          {/* Bottom Action Area */}
-          <div className="w-full mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+          {/* Prominent Action Buttons (Big & Equal Sized Side-by-Side) */}
+          <div className="w-full mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
             <button
               onClick={startGame}
-              disabled={!tutorialDone}
-              className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                tutorialDone
-                  ? "bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 shadow-yellow-500/20 active:scale-95"
-                  : "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"
-              }`}
+              className="w-full py-4 px-6 rounded-2xl font-black text-base sm:text-lg bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 shadow-xl shadow-yellow-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>🚀 게임 시작하기 (40초 타임어택)</span>
+              <span>🚀 게임 시작하기 (40초)</span>
               <span>➔</span>
             </button>
+
+            <button
+              onClick={() => {
+                fetchLeaderboard();
+                setScreen("leaderboard");
+              }}
+              className="w-full py-4 px-6 rounded-2xl font-black text-base sm:text-lg bg-indigo-900/90 hover:bg-indigo-800 border-2 border-indigo-500/50 text-yellow-300 shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>🏆 명예의 전당 보기</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* TUTORIAL PRACTICE COMPLETED POPUP MODAL */}
+      {showTutorialPopup && screen === "tutorial" && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border-2 border-indigo-500/50 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center relative text-slate-100">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 text-slate-950 flex items-center justify-center text-3xl mx-auto mb-4 font-black shadow-lg">
+              🎉
+            </div>
+            <h2 className="text-2xl font-black text-white mb-2">연습 완료!</h2>
+            <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
+              외심 감각을 익혔나요? 이제 <span className="text-yellow-300 font-bold">40초 실전 타임어택</span>에 도전해 랭킹에 이름을 올해보세요!
+            </p>
+
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={startGame}
+                className="w-full py-4 rounded-2xl font-black text-base sm:text-lg bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 shadow-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>🚀 실전 게임 시작하기</span>
+                <span>➔</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowTutorialPopup(false);
+                  fetchLeaderboard();
+                  setScreen("leaderboard");
+                }}
+                className="w-full py-4 rounded-2xl font-black text-base sm:text-lg bg-indigo-900/90 hover:bg-indigo-800 border-2 border-indigo-500/50 text-yellow-300 shadow-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>🏆 명예의 전당 보기</span>
+              </button>
+
+              <button
+                onClick={() => setShowTutorialPopup(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white font-bold text-xs cursor-pointer mt-1"
+              >
+                연습 더 하기
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -925,8 +939,8 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         <div className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
           {/* Top HUD */}
           <div className="absolute top-4 inset-x-4 z-20 flex items-center justify-between pointer-events-none max-w-4xl mx-auto">
-            {/* Timer HUD */}
-            <div className="bg-slate-900/85 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
+            {/* Timer */}
+            <div className="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
               <span className="text-lg">⏱️</span>
               <div>
                 <span className="text-[10px] text-slate-400 block font-semibold">남은 시간</span>
@@ -936,7 +950,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               </div>
             </div>
 
-            {/* Streak Combo HUD */}
+            {/* Combo Streak */}
             {combo >= 2 && (
               <div className="bg-gradient-to-r from-amber-500/30 to-red-500/30 backdrop-blur-md px-4 py-2 rounded-2xl border border-amber-400/60 shadow-xl flex items-center gap-2 animate-bounce">
                 <span className="text-xl">🔥</span>
@@ -949,8 +963,8 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               </div>
             )}
 
-            {/* Score HUD */}
-            <div className="bg-slate-900/85 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
+            {/* Score */}
+            <div className="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
               <span className="text-lg">⭐</span>
               <div className="text-right">
                 <span className="text-[10px] text-slate-400 block font-semibold">현재 점수</span>
@@ -959,9 +973,14 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             </div>
           </div>
 
-          {/* Interactive Game Canvas */}
+          {/* In-Game Canvas Container */}
           <div ref={containerRef} className="w-full flex-1 relative cursor-crosshair">
-            <canvas ref={canvasRef} onClick={handleCanvasClick} onTouchStart={handleCanvasClick} />
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full"
+              onClick={handleCanvasClick}
+              onTouchStart={handleCanvasClick}
+            />
           </div>
         </div>
       )}
@@ -978,7 +997,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
             <h2 className="text-2xl font-black text-white mb-1">탐사 완료!</h2>
             <p className="text-xs text-slate-400 mb-6">외심 위치 감각 탐사가 종료되었습니다.</p>
 
-            {/* Score Summary Card */}
             <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 mb-6 space-y-3 text-left">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <span className="text-xs text-slate-400 font-semibold">최종 획득 점수</span>
@@ -1005,7 +1023,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               </div>
             </div>
 
-            {/* Rank Submit Form */}
             {!submitSuccess ? (
               <form onSubmit={handleSubmitScore} className="space-y-3">
                 <div className="text-left">
@@ -1022,11 +1039,11 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
                   />
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="grid grid-cols-2 gap-2 pt-2">
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
+                    className="py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
                   >
                     {isSubmitting ? "등록 중..." : "🚀 랭킹 등록하기"}
                   </button>
@@ -1034,7 +1051,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
                   <button
                     type="button"
                     onClick={startGame}
-                    className="px-4 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
+                    className="py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
                   >
                     🔄 다시하기
                   </button>
@@ -1073,7 +1090,6 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               <h2 className="text-2xl font-black text-white mt-2">🏆 명예의 전당</h2>
             </div>
 
-            {/* Rankings List Container */}
             <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 mb-4">
               {isLoadingRankings ? (
                 <div className="text-center py-8 text-slate-400 text-xs">랭킹 데이터를 불러오는 중...</div>
@@ -1115,19 +1131,18 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2 border-t border-slate-800">
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
               <button
                 onClick={startGame}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
+                className="py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
               >
                 🚀 다시 도전하기
               </button>
               <button
-                onClick={onBack}
-                className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
+                onClick={() => setScreen("tutorial")}
+                className="py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
               >
-                🏠 메인으로
+                🏠 시작 화면
               </button>
             </div>
           </div>

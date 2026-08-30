@@ -47,21 +47,18 @@
         외심 탐사선 <span class="text-yellow-400">밤하늘의 항성을 찾아라!</span>
       </span>
     </div>
-    <button id="btn-hall-top" onclick="showLeaderboardScreen()" class="px-3.5 py-1.5 rounded-xl bg-indigo-900/70 hover:bg-indigo-800 border border-indigo-500/40 text-xs font-bold text-yellow-300 transition-all active:scale-95 cursor-pointer">
-      🏆 명예의 전당
-    </button>
   </header>
 
   <!-- MAIN CONTAINER -->
   <main class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
 
-    <!-- SCREEN 1: TUTORIAL SCREEN -->
+    <!-- SCREEN 1: TUTORIAL / START SCREEN -->
     <div id="screen-tutorial" class="flex-1 flex flex-col items-center justify-between p-4 z-20 max-w-4xl mx-auto w-full">
-      <div class="text-center mt-2 mb-3">
+      <div class="text-center mt-1 mb-3">
         <span class="inline-block px-3 py-1 rounded-full bg-indigo-950 border border-indigo-500/40 text-indigo-300 text-xs font-bold mb-2">
           중2 수학 • 삼각형의 외심 개념 형성 미니게임
         </span>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-1.5">
           세 별로부터 <span class="text-yellow-400">같은 거리에 있는 항성(외심)</span>을 찾아라!
         </h1>
         <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
@@ -70,8 +67,8 @@
       </div>
 
       <!-- Tutorial Canvas Container -->
-      <div id="tutorial-canvas-box" class="w-full flex-1 min-h-[280px] max-h-[400px] rounded-3xl border-2 border-indigo-500/40 bg-slate-900/90 shadow-2xl relative overflow-hidden cursor-crosshair">
-        <canvas id="canvas-tutorial" class="w-full h-full"></canvas>
+      <div id="tutorial-canvas-box" class="w-full flex-1 min-h-[300px] max-h-[420px] rounded-3xl border-2 border-indigo-500/40 bg-slate-900/90 shadow-2xl relative overflow-hidden cursor-crosshair">
+        <canvas id="canvas-tutorial" class="absolute inset-0 w-full h-full"></canvas>
         <div id="tutorial-guide-banner" class="absolute inset-x-4 bottom-4 bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-yellow-400/40 text-center pointer-events-none animate-bounce shadow-xl">
           <span class="text-xs sm:text-sm font-bold text-yellow-300">
             👉 화면 속 밤하늘을 터치해 외심 위치를 맞혀보세요! (연습 1회)
@@ -79,11 +76,59 @@
         </div>
       </div>
 
-      <!-- Action Button -->
-      <div class="w-full mt-4 flex justify-center">
-        <button id="btn-start-game" onclick="startActualGame()" disabled class="w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-sm sm:text-base bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed transition-all shadow-xl">
-          🚀 게임 시작하기 (40초 타임어택) ➔
+      <!-- Action Buttons -->
+      <div class="w-full mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+        <button
+          onclick="startActualGame()"
+          class="w-full py-4 px-6 rounded-2xl font-black text-base sm:text-lg bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 shadow-xl shadow-yellow-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <span>🚀 게임 시작하기 (40초)</span>
+          <span>➔</span>
         </button>
+
+        <button
+          onclick="showLeaderboardScreen()"
+          class="w-full py-4 px-6 rounded-2xl font-black text-base sm:text-lg bg-indigo-900/90 hover:bg-indigo-800 border-2 border-indigo-500/50 text-yellow-300 shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <span>🏆 명예의 전당 보기</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- POPUP MODAL -->
+    <div id="modal-tutorial-popup" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md items-center justify-center p-4">
+      <div class="bg-slate-900 border-2 border-indigo-500/50 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center relative text-slate-100">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 text-slate-950 flex items-center justify-center text-3xl mx-auto mb-4 font-black shadow-lg">
+          🎉
+        </div>
+        <h2 class="text-2xl font-black text-white mb-2">연습 완료!</h2>
+        <p class="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
+          외심 감각을 익혔나요? 이제 <span class="text-yellow-300 font-bold">40초 실전 타임어택</span>에 도전해 랭킹에 이름을 올려보세요!
+        </p>
+
+        <div class="grid grid-cols-1 gap-3">
+          <button
+            onclick="startActualGame()"
+            class="w-full py-4 rounded-2xl font-black text-base sm:text-lg bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 shadow-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>🚀 실전 게임 시작하기</span>
+            <span>➔</span>
+          </button>
+
+          <button
+            onclick="closeTutorialPopup(); showLeaderboardScreen();"
+            class="w-full py-4 rounded-2xl font-black text-base sm:text-lg bg-indigo-900/90 hover:bg-indigo-800 border-2 border-indigo-500/50 text-yellow-300 shadow-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>🏆 명예의 전당 보기</span>
+          </button>
+
+          <button
+            onclick="closeTutorialPopup()"
+            class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white font-bold text-xs cursor-pointer mt-1"
+          >
+            연습 더 하기
+          </button>
+        </div>
       </div>
     </div>
 
@@ -91,7 +136,6 @@
     <div id="screen-playing" class="hidden flex-1 flex-col relative w-full h-full overflow-hidden">
       <!-- Top HUD -->
       <div class="absolute top-4 inset-x-4 z-20 flex items-center justify-between pointer-events-none max-w-4xl mx-auto">
-        <!-- Timer -->
         <div class="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
           <span class="text-lg">⏱️</span>
           <div>
@@ -100,7 +144,6 @@
           </div>
         </div>
 
-        <!-- Combo Streak Banner -->
         <div id="hud-combo-box" class="hidden bg-gradient-to-r from-amber-500/30 to-red-500/30 backdrop-blur-md px-4 py-2 rounded-2xl border border-amber-400/60 shadow-xl flex items-center gap-2 animate-bounce">
           <span class="text-xl">🔥</span>
           <div>
@@ -109,7 +152,6 @@
           </div>
         </div>
 
-        <!-- Score -->
         <div class="bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-indigo-500/40 shadow-xl flex items-center gap-2">
           <span class="text-lg">⭐</span>
           <div class="text-right">
@@ -119,9 +161,8 @@
         </div>
       </div>
 
-      <!-- In-game Canvas -->
       <div id="game-canvas-box" class="w-full flex-1 relative cursor-crosshair">
-        <canvas id="canvas-game" class="w-full h-full"></canvas>
+        <canvas id="canvas-game" class="absolute inset-0 w-full h-full"></canvas>
       </div>
     </div>
 
@@ -174,18 +215,18 @@
             />
           </div>
 
-          <div class="flex gap-2 pt-2">
+          <div class="grid grid-cols-2 gap-2 pt-2">
             <button
               type="submit"
               id="btn-submit-rank"
-              class="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
+              class="py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-lg hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
             >
               🚀 랭킹 등록하기
             </button>
             <button
               type="button"
               onclick="startActualGame()"
-              class="px-4 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
+              class="py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
             >
               🔄 다시하기
             </button>
@@ -207,16 +248,16 @@
         <div id="leaderboard-list" class="flex-1 overflow-y-auto space-y-2.5 pr-1 mb-4">
         </div>
 
-        <div class="flex gap-2 pt-2 border-t border-slate-800">
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
           <button
             onclick="startActualGame()"
-            class="flex-1 py-3 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
+            class="py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-md hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all cursor-pointer"
           >
             🚀 다시 도전하기
           </button>
           <button
             onclick="showTutorialScreen()"
-            class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
+            class="py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm border border-slate-700 active:scale-95 transition-all cursor-pointer"
           >
             🏠 시작 화면
           </button>
@@ -240,7 +281,6 @@
       totalAttempts: 0
     };
 
-    let tutorialTried = false;
     let timerInterval = null;
     let isTouchLocked = false;
 
@@ -323,27 +363,21 @@
     const synth = new WebAudioSynth();
 
     function generateProblem(w, h) {
-      const minDim = Math.min(w, h);
-      let R = minDim * (0.25 + Math.random() * 0.13);
+      const safeW = Math.max(280, w);
+      const safeH = Math.max(280, h);
+      const minDim = Math.min(safeW, safeH);
+      let R = minDim * (0.24 + Math.random() * 0.12);
 
-      let padX = R + 45;
-      let padY = R + 70;
+      let padX = R + 40;
+      let padY = R + 60;
 
       let minX = padX;
-      let maxX = w - padX;
+      let maxX = Math.max(minX + 10, safeW - padX);
       let minY = padY;
-      let maxY = h - padY;
+      let maxY = Math.max(minY + 10, safeH - padY);
 
-      if (maxX <= minX || maxY <= minY) {
-        R = minDim * 0.22;
-        minX = R + 30;
-        maxX = Math.max(minX + 10, w - (R + 30));
-        minY = R + 50;
-        maxY = Math.max(minY + 10, h - (R + 50));
-      }
-
-      const x0 = minX + Math.random() * Math.max(1, maxX - minX);
-      const y0 = minY + Math.random() * Math.max(1, maxY - minY);
+      const x0 = minX + Math.random() * (maxX - minX);
+      const y0 = minY + Math.random() * (maxY - minY);
 
       const baseAngle = Math.random() * Math.PI * 2;
       let gap1Deg = 70 + Math.random() * 65;
@@ -383,15 +417,19 @@
       });
     }
 
-    function setupCanvas(canvasId, containerId) {
+    function fitCanvas(canvasId, containerId) {
       const canvas = document.getElementById(canvasId);
       const container = document.getElementById(containerId);
-      if (!canvas || !container) return;
+      if (!canvas || !container) return null;
       const dpr = window.devicePixelRatio || 1;
       const w = container.clientWidth;
       const h = container.clientHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
+      if (w > 50 && h > 50) {
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        return { w, h };
+      }
+      return null;
     }
 
     function setScreen(screenName) {
@@ -403,13 +441,11 @@
 
       if (screenName === 'tutorial') {
         document.getElementById('screen-tutorial').classList.remove('hidden');
-        setupCanvas('canvas-tutorial', 'tutorial-canvas-box');
-        spawnProblemForCanvas('canvas-tutorial');
+        setTimeout(() => spawnProblemForCanvas('canvas-tutorial', 'tutorial-canvas-box'), 50);
       } else if (screenName === 'playing') {
         document.getElementById('screen-playing').classList.remove('hidden');
         document.getElementById('screen-playing').classList.add('flex');
-        setupCanvas('canvas-game', 'game-canvas-box');
-        spawnProblemForCanvas('canvas-game');
+        setTimeout(() => spawnProblemForCanvas('canvas-game', 'game-canvas-box'), 50);
       } else if (screenName === 'gameover') {
         document.getElementById('screen-gameover').classList.remove('hidden');
         document.getElementById('screen-gameover').classList.add('flex');
@@ -420,21 +456,37 @@
     }
 
     function showTutorialScreen() {
+      closeTutorialPopup();
       setScreen('tutorial');
     }
 
-    function spawnProblemForCanvas(canvasId) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return;
-      const dpr = window.devicePixelRatio || 1;
-      const w = canvas.width / dpr;
-      const h = canvas.height / dpr;
-      currentProblem = generateProblem(w, h);
-      currentFeedback = null;
-      isTouchLocked = false;
+    function spawnProblemForCanvas(canvasId, containerId) {
+      const dim = fitCanvas(canvasId, containerId);
+      if (dim) {
+        currentProblem = generateProblem(dim.w, dim.h);
+        currentFeedback = null;
+        isTouchLocked = false;
+      }
+    }
+
+    function closeTutorialPopup() {
+      const pop = document.getElementById('modal-tutorial-popup');
+      if (pop) {
+        pop.classList.add('hidden');
+        pop.classList.remove('flex');
+      }
+    }
+
+    function openTutorialPopup() {
+      const pop = document.getElementById('modal-tutorial-popup');
+      if (pop) {
+        pop.classList.remove('hidden');
+        pop.classList.add('flex');
+      }
     }
 
     function startActualGame() {
+      closeTutorialPopup();
       gameState = {
         score: 0,
         combo: 0,
@@ -485,7 +537,7 @@
       setScreen('gameover');
     }
 
-    function handleCanvasTouch(e, canvasId) {
+    function handleCanvasTouch(e, canvasId, containerId) {
       if (isTouchLocked) return;
       const canvas = document.getElementById(canvasId);
       if (!canvas || !currentProblem) return;
@@ -534,15 +586,13 @@
       synth.playScore(type, newCombo);
 
       if (currentScreen === 'tutorial') {
-        tutorialTried = true;
-        const btnStart = document.getElementById('btn-start-game');
-        btnStart.disabled = false;
-        btnStart.classList.remove('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
-        btnStart.classList.add('bg-gradient-to-r', 'from-yellow-400', 'to-amber-500', 'text-slate-950', 'hover:from-yellow-300', 'hover:to-amber-400', 'cursor-pointer');
-
         currentFeedback = {
           type, points, multiplier, clickPoint: { x, y }, startTime: performance.now()
         };
+
+        setTimeout(() => {
+          openTutorialPopup();
+        }, 600);
         return;
       }
 
@@ -577,18 +627,22 @@
 
       setTimeout(() => {
         if (currentScreen === 'playing') {
-          spawnProblemForCanvas('canvas-game');
+          spawnProblemForCanvas('canvas-game', 'game-canvas-box');
         }
       }, 600);
     }
 
-    ['canvas-tutorial', 'canvas-game'].forEach(id => {
-      const cvs = document.getElementById(id);
-      if (cvs) {
-        cvs.addEventListener('click', (e) => handleCanvasTouch(e, id));
-        cvs.addEventListener('touchstart', (e) => handleCanvasTouch(e, id));
-      }
-    });
+    const cvsTut = document.getElementById('canvas-tutorial');
+    if (cvsTut) {
+      cvsTut.addEventListener('click', (e) => handleCanvasTouch(e, 'canvas-tutorial', 'tutorial-canvas-box'));
+      cvsTut.addEventListener('touchstart', (e) => handleCanvasTouch(e, 'canvas-tutorial', 'tutorial-canvas-box'));
+    }
+
+    const cvsGam = document.getElementById('canvas-game');
+    if (cvsGam) {
+      cvsGam.addEventListener('click', (e) => handleCanvasTouch(e, 'canvas-game', 'game-canvas-box'));
+      cvsGam.addEventListener('touchstart', (e) => handleCanvasTouch(e, 'canvas-game', 'game-canvas-box'));
+    }
 
     function renderLoop() {
       const activeCanvasId = currentScreen === 'tutorial' ? 'canvas-tutorial' : currentScreen === 'playing' ? 'canvas-game' : null;
@@ -600,106 +654,108 @@
           const w = canvas.width / dpr;
           const h = canvas.height / dpr;
 
-          ctx.save();
-          ctx.scale(dpr, dpr);
-          ctx.clearRect(0, 0, w, h);
+          if (w > 0 && h > 0) {
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
 
-          const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-          skyGrad.addColorStop(0, '#080c1a');
-          skyGrad.addColorStop(1, '#070a16');
-          ctx.fillStyle = skyGrad;
-          ctx.fillRect(0, 0, w, h);
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+            skyGrad.addColorStop(0, '#080c1a');
+            skyGrad.addColorStop(1, '#070a16');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h);
 
-          bgStars.forEach(st => {
-            st.alpha += st.speed;
-            const ca = 0.3 + Math.abs(Math.sin(st.alpha)) * 0.7;
-            ctx.fillStyle = `rgba(255,255,255,${ca})`;
-            ctx.beginPath();
-            ctx.arc(st.x * w, st.y * h, st.r, 0, Math.PI * 2);
-            ctx.fill();
-          });
-
-          if (currentProblem) {
-            const { circumcenter, radius, stars } = currentProblem;
-
-            ctx.strokeStyle = 'rgba(147, 197, 253, 0.4)';
-            ctx.lineWidth = 1.8;
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath();
-            ctx.moveTo(stars[0].x, stars[0].y);
-            ctx.lineTo(stars[1].x, stars[1].y);
-            ctx.lineTo(stars[2].x, stars[2].y);
-            ctx.closePath();
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            stars.forEach((st, idx) => {
-              ctx.save();
-              ctx.translate(st.x, st.y);
-              ctx.fillStyle = '#fff';
-              ctx.shadowColor = '#fde047';
-              ctx.shadowBlur = 12;
+            bgStars.forEach(st => {
+              st.alpha += st.speed;
+              const ca = 0.3 + Math.abs(Math.sin(st.alpha)) * 0.7;
+              ctx.fillStyle = `rgba(255,255,255,${ca})`;
               ctx.beginPath();
-              for (let i = 0; i < 5; i++) {
-                const rot = (Math.PI / 5) * 2 * i - Math.PI / 2;
-                ctx.lineTo(Math.cos(rot) * 10, Math.sin(rot) * 10);
-                const irot = rot + Math.PI / 5;
-                ctx.lineTo(Math.cos(irot) * 4.5, Math.sin(irot) * 4.5);
-              }
-              ctx.closePath();
+              ctx.arc(st.x * w, st.y * h, st.r, 0, Math.PI * 2);
               ctx.fill();
-              ctx.restore();
             });
 
-            if (currentFeedback) {
-              const elapsed = (performance.now() - currentFeedback.startTime) / 1000;
-              const progress = Math.min(1, elapsed / 0.6);
+            if (currentProblem) {
+              const { circumcenter, radius, stars } = currentProblem;
 
-              ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
-              ctx.lineWidth = 2;
+              ctx.strokeStyle = 'rgba(147, 197, 253, 0.4)';
+              ctx.lineWidth = 1.8;
+              ctx.setLineDash([4, 4]);
               ctx.beginPath();
-              ctx.arc(circumcenter.x, circumcenter.y, radius * 0.08, 0, Math.PI * 2);
+              ctx.moveTo(stars[0].x, stars[0].y);
+              ctx.lineTo(stars[1].x, stars[1].y);
+              ctx.lineTo(stars[2].x, stars[2].y);
+              ctx.closePath();
               ctx.stroke();
+              ctx.setLineDash([]);
 
-              ctx.save();
-              ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-              ctx.lineWidth = 2.5;
-              ctx.shadowColor = '#38bdf8';
-              ctx.shadowBlur = 12;
-              ctx.beginPath();
-              ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * progress);
-              ctx.stroke();
-              ctx.restore();
+              stars.forEach((st, idx) => {
+                ctx.save();
+                ctx.translate(st.x, st.y);
+                ctx.fillStyle = '#fff';
+                ctx.shadowColor = '#fde047';
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                  const rot = (Math.PI / 5) * 2 * i - Math.PI / 2;
+                  ctx.lineTo(Math.cos(rot) * 10, Math.sin(rot) * 10);
+                  const irot = rot + Math.PI / 5;
+                  ctx.lineTo(Math.cos(irot) * 4.5, Math.sin(irot) * 4.5);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+              });
 
-              ctx.fillStyle = '#fbbf24';
-              ctx.beginPath();
-              ctx.arc(circumcenter.x, circumcenter.y, 6, 0, Math.PI * 2);
-              ctx.fill();
+              if (currentFeedback) {
+                const elapsed = (performance.now() - currentFeedback.startTime) / 1000;
+                const progress = Math.min(1, elapsed / 0.6);
 
-              ctx.save();
-              ctx.textAlign = 'center';
-              ctx.font = 'bold 20px sans-serif';
-              ctx.fillStyle = currentFeedback.type === 'PERFECT' ? '#34d399' : currentFeedback.type === 'GREAT' ? '#facc15' : '#f87171';
-              ctx.fillText(`${currentFeedback.type}! +${currentFeedback.points}`, currentFeedback.clickPoint.x, currentFeedback.clickPoint.y - 25 - progress * 30);
-              ctx.restore();
+                ctx.strokeStyle = 'rgba(52, 211, 153, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(circumcenter.x, circumcenter.y, radius * 0.08, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(circumcenter.x, circumcenter.y, radius, 0, Math.PI * 2 * progress);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(circumcenter.x, circumcenter.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillStyle = currentFeedback.type === 'PERFECT' ? '#34d399' : currentFeedback.type === 'GREAT' ? '#facc15' : '#f87171';
+                ctx.fillText(`${currentFeedback.type}! +${currentFeedback.points}`, currentFeedback.clickPoint.x, currentFeedback.clickPoint.y - 25 - progress * 30);
+                ctx.restore();
+              }
             }
+
+            particles.forEach(p => {
+              p.x += p.vx;
+              p.y += p.vy;
+              p.alpha -= 0.03;
+              if (p.alpha > 0) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            });
+            particles = particles.filter(p => p.alpha > 0);
+
+            ctx.restore();
           }
-
-          particles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.alpha -= 0.03;
-            if (p.alpha > 0) {
-              ctx.fillStyle = p.color;
-              ctx.globalAlpha = Math.max(0, p.alpha);
-              ctx.beginPath();
-              ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-              ctx.fill();
-            }
-          });
-          particles = particles.filter(p => p.alpha > 0);
-
-          ctx.restore();
         }
       }
       requestAnimationFrame(renderLoop);
@@ -800,10 +856,21 @@
       listEl.innerHTML = html;
     }
 
-    window.addEventListener('resize', () => {
-      if (currentScreen === 'tutorial') setupCanvas('canvas-tutorial', 'tutorial-canvas-box');
-      if (currentScreen === 'playing') setupCanvas('canvas-game', 'game-canvas-box');
-    });
+    const observeBox = (containerId, canvasId) => {
+      const box = document.getElementById(containerId);
+      if (!box) return;
+      const ro = new ResizeObserver(() => {
+        if (currentScreen === 'tutorial' && containerId === 'tutorial-canvas-box') {
+          spawnProblemForCanvas('canvas-tutorial', 'tutorial-canvas-box');
+        } else if (currentScreen === 'playing' && containerId === 'game-canvas-box') {
+          spawnProblemForCanvas('canvas-game', 'game-canvas-box');
+        }
+      });
+      ro.observe(box);
+    };
+
+    observeBox('tutorial-canvas-box', 'canvas-tutorial');
+    observeBox('game-canvas-box', 'canvas-game');
 
     showTutorialScreen();
   </script>
