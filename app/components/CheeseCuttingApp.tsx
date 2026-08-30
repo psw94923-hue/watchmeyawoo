@@ -1549,6 +1549,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                   <g
                     key={group.id}
                     className="cursor-pointer transition-all active:scale-110"
+                    style={{ transformBox: "fill-box", transformOrigin: "center" }}
                     onClick={() => handleExtraAngleClick(group.id)}
                   >
                     <circle
@@ -1611,6 +1612,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                       stroke="#ffffff"
                       strokeWidth="2.5"
                       filter={isSelected ? "url(#nodeGlow)" : undefined}
+                      style={{ transformBox: "fill-box", transformOrigin: "center" }}
                       className="transition-all duration-200 group-hover:scale-125"
                     />
 
@@ -1619,6 +1621,7 @@ export default function CheeseCuttingApp({ onBack }: { onBack: () => void }) {
                         x={node.x + 12}
                         y={node.y - 12}
                         fontSize="22"
+                        style={{ transformBox: "fill-box", transformOrigin: "center" }}
                         className="animate-bounce pointer-events-none"
                       >
                         🔪
