@@ -26,11 +26,11 @@ interface Piece {
   targetEndAngle: number;
   snapped: boolean;
   currentPos: Point;
-  currentCanvas: "left" | "right";
 }
 
 const POLYGON_CONFIGS: Record<PolygonSides, {
   name: string;
+  title: string;
   baseColor: string;
   pastelBg: string;
   shades: string[];
@@ -38,6 +38,7 @@ const POLYGON_CONFIGS: Record<PolygonSides, {
 }> = {
   3: {
     name: "삼각형",
+    title: "삼각형의 외각 부채꼴",
     baseColor: "#f97316",
     pastelBg: "#fff7ed",
     shades: ["#f97316", "#fb923c", "#ea580c"],
@@ -45,6 +46,7 @@ const POLYGON_CONFIGS: Record<PolygonSides, {
   },
   4: {
     name: "사각형",
+    title: "사각형의 외각 부채꼴",
     baseColor: "#06b6d4",
     pastelBg: "#ecfeff",
     shades: ["#06b6d4", "#22d3ee", "#0891b2", "#0e7490"],
@@ -52,6 +54,7 @@ const POLYGON_CONFIGS: Record<PolygonSides, {
   },
   5: {
     name: "오각형",
+    title: "오각형의 외각 부채꼴",
     baseColor: "#a855f7",
     pastelBg: "#faf5ff",
     shades: ["#a855f7", "#c084fc", "#9333ea", "#7e22ce", "#6b21a8"],
@@ -59,6 +62,7 @@ const POLYGON_CONFIGS: Record<PolygonSides, {
   },
   6: {
     name: "육각형",
+    title: "육각형의 외각 부채꼴",
     baseColor: "#eab308",
     pastelBg: "#fefce8",
     shades: ["#eab308", "#facc15", "#d97706", "#ca8a04", "#a16207", "#854d0e"],
@@ -70,12 +74,12 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
   const [sides, setSides] = useState<PolygonSides>(3);
   const [progress, setProgress] = useState<number>(0); // 0 to 1
   const [isCut, setIsCut] = useState<boolean>(false);
-  const [showCompletion, setShowCompletion] = useState<boolean>(false);
 
-  const leftCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const rightCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const leftContainerRef = useRef<HTMLDivElement | null>(null);
-  const rightContainerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const polygonCenterRef = useRef<Point>({ x: 300, y: 250 });
+  const targetCenterRef = useRef<Point>({ x: 750, y: 250 });
 
   const verticesRef = useRef<Point[]>([]);
   const piecesRef = useRef<Piece[]>([]);
@@ -87,10 +91,10 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
   const animReqRef = useRef<number | null>(null);
   const isAnimatingRef = useRef<boolean>(false);
 
-  // Helper to generate convex polygon vertices
+  // Generate polygon vertices
   const generateVertices = useCallback((n: PolygonSides, width: number, height: number) => {
-    const center = { x: width / 2, y: height / 2 };
-    const radius = Math.min(width, height) * 0.28;
+    const polyCenter = polygonCenterRef.current;
+    const radius = Math.min(width, height) * 0.22;
     const newVerts: Point[] = [];
     const startAngle = -Math.PI / 2;
 
@@ -102,8 +106,8 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
       if (n === 6 && i === 3) r *= 1.05;
 
       newVerts.push({
-        x: center.x + r * Math.cos(angle),
-        y: center.y + r * Math.sin(angle),
+        x: polyCenter.x + r * Math.cos(angle),
+        y: polyCenter.y + r * Math.sin(angle),
       });
     }
 
@@ -111,7 +115,6 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
     calculatePieces(newVerts, n);
   }, []);
 
-  // Calculate exterior angles and sector metadata
   const calculatePieces = (verts: Point[], n: PolygonSides) => {
     const cfg = POLYGON_CONFIGS[n];
     const newPieces: Piece[] = [];
@@ -132,12 +135,12 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
       while (extAngle <= 0) extAngle += Math.PI * 2;
       while (extAngle > Math.PI * 2) extAngle -= Math.PI * 2;
 
-      const pieceRadius = 48;
+      const pieceRadius = 54;
       const color = cfg.shades[i % cfg.shades.length];
 
       newPieces.push({
         id: i,
-        vertex: curr,
+        vertex: { x: curr.x, y: curr.y },
         angleIn,
         angleOut,
         extAngle,
@@ -148,7 +151,6 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
         targetEndAngle: cumulativeAngle + extAngle,
         snapped: false,
         currentPos: { x: curr.x, y: curr.y },
-        currentCanvas: "left",
       });
 
       cumulativeAngle += extAngle;
@@ -156,166 +158,6 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
 
     piecesRef.current = newPieces;
   };
-
-  // Canvas drawing routines
-  const renderLeftCanvas = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, pVal: number) => {
-    const cfg = POLYGON_CONFIGS[sides];
-    ctx.clearRect(0, 0, width, height);
-
-    // Subtle background grid lines
-    ctx.strokeStyle = "rgba(203, 213, 225, 0.3)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x < width; x += 30) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
-    }
-    for (let y = 0; y < height; y += 30) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
-    }
-
-    const verts = verticesRef.current;
-    const pieces = piecesRef.current;
-    if (verts.length < 3) return;
-
-    // 1. Dotted extension lines
-    ctx.strokeStyle = "#ef4444";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    pieces.forEach((p) => {
-      const extLen = 70;
-      ctx.beginPath();
-      ctx.moveTo(p.vertex.x, p.vertex.y);
-      ctx.lineTo(
-        p.vertex.x + extLen * Math.cos(p.angleIn),
-        p.vertex.y + extLen * Math.sin(p.angleIn)
-      );
-      ctx.stroke();
-    });
-    ctx.setLineDash([]);
-
-    // 2. Polygon base body
-    ctx.beginPath();
-    ctx.moveTo(verts[0].x, verts[0].y);
-    for (let i = 1; i < verts.length; i++) {
-      ctx.lineTo(verts[i].x, verts[i].y);
-    }
-    ctx.closePath();
-
-    ctx.fillStyle = cfg.pastelBg;
-    ctx.fill();
-    ctx.strokeStyle = cfg.strokeColor;
-    ctx.lineWidth = 3.5;
-    ctx.stroke();
-
-    // 3. Render Sector pieces on Left
-    pieces.forEach((p) => {
-      if (p.snapped || p.currentCanvas === "right") return;
-
-      let renderPos = { x: p.vertex.x, y: p.vertex.y };
-      const renderStartAngle = p.angleIn;
-      const renderEndAngle = p.angleIn + p.extAngle;
-
-      if (pVal > 0) {
-        if (draggedPieceIndexRef.current === p.id) {
-          renderPos = p.currentPos;
-        } else {
-          const bisect = p.angleIn + p.extAngle / 2;
-          const shiftDist = pVal * 35;
-          renderPos = {
-            x: p.vertex.x + shiftDist * Math.cos(bisect),
-            y: p.vertex.y + shiftDist * Math.sin(bisect),
-          };
-        }
-      }
-
-      drawSector(ctx, renderPos.x, renderPos.y, p.radius, renderStartAngle, renderEndAngle, p.color, `∠${String.fromCharCode(65 + p.id)}`);
-    });
-
-    // 4. Vertex Drag Handles
-    if (pVal === 0) {
-      verts.forEach((v, idx) => {
-        ctx.beginPath();
-        ctx.arc(v.x, v.y, 7, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.strokeStyle = cfg.strokeColor;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        ctx.fillStyle = "#1e1b4b";
-        ctx.font = "bold 12px Pretendard, sans-serif";
-        ctx.fillText(String.fromCharCode(65 + idx), v.x - 12, v.y - 12);
-      });
-    }
-  }, [sides]);
-
-  const renderRightCanvas = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, pVal: number) => {
-    const target = { x: width / 2, y: height / 2 };
-    ctx.clearRect(0, 0, width, height);
-
-    // Subtle background grid
-    ctx.strokeStyle = "rgba(203, 213, 225, 0.3)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x < width; x += 30) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
-    }
-    for (let y = 0; y < height; y += 30) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
-    }
-
-    // Reference Target Circle & Crosshair
-    ctx.beginPath();
-    ctx.arc(target.x, target.y, 50, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(139, 92, 246, 0.35)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.strokeStyle = "rgba(139, 92, 246, 0.5)";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(target.x - 12, target.y); ctx.lineTo(target.x + 12, target.y);
-    ctx.moveTo(target.x, target.y - 12); ctx.lineTo(target.x, target.y + 12);
-    ctx.stroke();
-
-    // Render Assembly Pieces
-    const pieces = piecesRef.current;
-    pieces.forEach((p) => {
-      let shouldDraw = false;
-      let pos = { x: target.x, y: target.y };
-      let startAng = p.targetStartAngle;
-      let endAng = p.targetEndAngle;
-
-      if (pVal > 0 && draggedPieceIndexRef.current !== p.id) {
-        shouldDraw = true;
-        const t = pVal;
-        const startPos = p.vertex;
-        pos = {
-          x: (1 - t) * startPos.x + t * target.x,
-          y: (1 - t) * startPos.y + t * target.y,
-        };
-
-        const rotOffset = (1 - t) * 0 + t * (p.targetStartAngle - p.angleIn);
-        startAng = p.angleIn + rotOffset;
-        endAng = startAng + p.extAngle;
-      } else if (p.currentCanvas === "right" || p.snapped) {
-        shouldDraw = true;
-        pos = p.currentPos;
-        if (p.snapped) {
-          pos = target;
-          startAng = p.targetStartAngle;
-          endAng = p.targetEndAngle;
-        } else {
-          startAng = p.angleIn;
-          endAng = p.angleIn + p.extAngle;
-        }
-      }
-
-      if (shouldDraw) {
-        drawSector(ctx, pos.x, pos.y, p.radius, startAng, endAng, p.color, `∠${String.fromCharCode(65 + p.id)}`);
-      }
-    });
-  }, []);
 
   const drawSector = (
     ctx: CanvasRenderingContext2D,
@@ -334,11 +176,11 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
     ctx.closePath();
 
     ctx.fillStyle = color;
-    ctx.globalAlpha = 0.88;
+    ctx.globalAlpha = 0.9;
     ctx.fill();
 
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.globalAlpha = 1.0;
     ctx.stroke();
 
@@ -348,7 +190,7 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
     const ty = cy + textR * Math.sin(midAngle);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 11px Pretendard, sans-serif";
+    ctx.font = "bold 12px Pretendard, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(label, tx, ty);
@@ -356,61 +198,174 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
     ctx.restore();
   };
 
+  const renderCanvas = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, pVal: number) => {
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. Grid Background
+    ctx.strokeStyle = "#f1f5f9";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < width; x += 32) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+    }
+    for (let y = 0; y < height; y += 32) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+
+    const targetCenter = targetCenterRef.current;
+    const verts = verticesRef.current;
+    const pieces = piecesRef.current;
+    const cfg = POLYGON_CONFIGS[sides];
+
+    // 2. Target Center Reference Circle & Crosshair
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(targetCenter.x, targetCenter.y, 58, 0, Math.PI * 2);
+    ctx.strokeStyle = "#c084fc";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = "#a855f7";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(targetCenter.x - 14, targetCenter.y); ctx.lineTo(targetCenter.x + 14, targetCenter.y);
+    ctx.moveTo(targetCenter.x, targetCenter.y - 14); ctx.lineTo(targetCenter.x, targetCenter.y + 14);
+    ctx.stroke();
+
+    ctx.fillStyle = "#6b21a8";
+    ctx.font = "bold 13px Pretendard, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🎯 외각 모으기 기준점", targetCenter.x, targetCenter.y + 80);
+    ctx.restore();
+
+    if (verts.length < 3) return;
+
+    // 3. Dotted extension lines
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 6]);
+    pieces.forEach((p) => {
+      const extLen = 75;
+      ctx.beginPath();
+      ctx.moveTo(p.vertex.x, p.vertex.y);
+      ctx.lineTo(
+        p.vertex.x + extLen * Math.cos(p.angleIn),
+        p.vertex.y + extLen * Math.sin(p.angleIn)
+      );
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // Polygon body
+    ctx.beginPath();
+    ctx.moveTo(verts[0].x, verts[0].y);
+    for (let i = 1; i < verts.length; i++) {
+      ctx.lineTo(verts[i].x, verts[i].y);
+    }
+    ctx.closePath();
+
+    ctx.fillStyle = cfg.pastelBg;
+    ctx.fill();
+    ctx.strokeStyle = cfg.strokeColor;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Vertex drag handles (when pVal == 0)
+    if (pVal === 0) {
+      verts.forEach((v, idx) => {
+        ctx.beginPath();
+        ctx.arc(v.x, v.y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.strokeStyle = cfg.strokeColor;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 13px Pretendard, sans-serif";
+        ctx.fillText(String.fromCharCode(65 + idx), v.x - 14, v.y - 14);
+      });
+    }
+
+    // 4. Sector pieces
+    pieces.forEach((p) => {
+      let pos = { x: p.vertex.x, y: p.vertex.y };
+      let startAng = p.angleIn;
+      let endAng = p.angleIn + p.extAngle;
+
+      if (pVal > 0 && draggedPieceIndexRef.current !== p.id && !p.snapped) {
+        const t = pVal;
+        pos = {
+          x: (1 - t) * p.vertex.x + t * targetCenter.x,
+          y: (1 - t) * p.vertex.y + t * targetCenter.y,
+        };
+        const rotOffset = t * (p.targetStartAngle - p.angleIn);
+        startAng = p.angleIn + rotOffset;
+        endAng = startAng + p.extAngle;
+      } else if (p.snapped || pVal >= 0.99) {
+        pos = targetCenter;
+        startAng = p.targetStartAngle;
+        endAng = p.targetEndAngle;
+      } else if (draggedPieceIndexRef.current === p.id) {
+        pos = p.currentPos;
+      }
+
+      drawSector(ctx, pos.x, pos.y, p.radius, startAng, endAng, p.color, `∠${String.fromCharCode(65 + p.id)}`);
+    });
+  }, [sides]);
+
   const render = useCallback(() => {
-    const lCanvas = leftCanvasRef.current;
-    const rCanvas = rightCanvasRef.current;
-    if (!lCanvas || !rCanvas) return;
-
-    const lCtx = lCanvas.getContext("2d");
-    const rCtx = rCanvas.getContext("2d");
-    if (!lCtx || !rCtx) return;
-
-    renderLeftCanvas(lCtx, lCanvas.width, lCanvas.height, progress);
-    renderRightCanvas(rCtx, rCanvas.width, rCanvas.height, progress);
-  }, [progress, renderLeftCanvas, renderRightCanvas]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    renderCanvas(ctx, canvas.width, canvas.height, progress);
+  }, [progress, renderCanvas]);
 
   // Window resize handler
   useEffect(() => {
-    const updateSizes = () => {
-      if (!leftContainerRef.current || !rightContainerRef.current) return;
-      if (!leftCanvasRef.current || !rightCanvasRef.current) return;
+    const updateSize = () => {
+      if (!containerRef.current || !canvasRef.current) return;
+      const w = containerRef.current.clientWidth;
+      const h = containerRef.current.clientHeight;
 
-      const lw = leftContainerRef.current.clientWidth;
-      const lh = leftContainerRef.current.clientHeight;
-      leftCanvasRef.current.width = lw;
-      leftCanvasRef.current.height = lh;
+      canvasRef.current.width = w;
+      canvasRef.current.height = h;
 
-      const rw = rightContainerRef.current.clientWidth;
-      const rh = rightContainerRef.current.clientHeight;
-      rightCanvasRef.current.width = rw;
-      rightCanvasRef.current.height = rh;
+      if (w > 768) {
+        polygonCenterRef.current = { x: w * 0.32, y: h * 0.5 };
+        targetCenterRef.current = { x: w * 0.74, y: h * 0.5 };
+      } else {
+        polygonCenterRef.current = { x: w * 0.5, y: h * 0.32 };
+        targetCenterRef.current = { x: w * 0.5, y: h * 0.75 };
+      }
 
       if (verticesRef.current.length === 0) {
-        generateVertices(sides, lw, lh);
+        generateVertices(sides, w, h);
+      } else {
+        calculatePieces(verticesRef.current, sides);
       }
       render();
     };
 
-    updateSizes();
-    window.addEventListener("resize", updateSizes);
-    return () => window.removeEventListener("resize", updateSizes);
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
   }, [sides, generateVertices, render]);
 
-  // Sync canvas render when state changes
   useEffect(() => {
     render();
   }, [progress, sides, render]);
 
-  // Handle polygon side selection
   const handleSelectPolygon = (n: PolygonSides) => {
     setSides(n);
     setIsCut(false);
     setProgress(0);
-    setShowCompletion(false);
 
-    const lCanvas = leftCanvasRef.current;
-    if (lCanvas) {
-      generateVertices(n, lCanvas.width, lCanvas.height);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      generateVertices(n, canvas.width, canvas.height);
     }
   };
 
@@ -438,10 +393,6 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
 
       setProgress(cur);
 
-      if (cur >= 0.99) {
-        setShowCompletion(true);
-      }
-
       if (p < 1) {
         animReqRef.current = requestAnimationFrame(step);
       } else {
@@ -454,23 +405,16 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
 
   const handleAssemble = () => {
     setIsCut(true);
-    animateProgress(1.0, 800);
+    animateProgress(1.0, 750);
   };
 
   const handleReset = () => {
     setIsCut(false);
     setProgress(0);
-    setShowCompletion(false);
 
-    piecesRef.current.forEach((pc) => {
-      pc.snapped = false;
-      pc.currentCanvas = "left";
-      pc.currentPos = { x: pc.vertex.x, y: pc.vertex.y };
-    });
-
-    const lCanvas = leftCanvasRef.current;
-    if (lCanvas) {
-      generateVertices(sides, lCanvas.width, lCanvas.height);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      generateVertices(sides, canvas.width, canvas.height);
     }
   };
 
@@ -478,49 +422,47 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
     const val = parseFloat(e.target.value) / 100;
     setProgress(val);
     if (val > 0) setIsCut(true);
-
-    if (val >= 0.99) {
-      setShowCompletion(true);
-    } else {
-      setShowCompletion(false);
-    }
   };
 
-  // Touch & Mouse Pointer Event Handling
-  const handlePointerDown = (canvasType: "left" | "right") => (e: React.PointerEvent) => {
-    const lCanvas = leftCanvasRef.current;
-    const rCanvas = rightCanvasRef.current;
-    if (!lCanvas || !rCanvas) return;
+  // Pointer event handlers with Pointer Capture
+  const handlePointerDown = (e: React.PointerEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const rectL = lCanvas.getBoundingClientRect();
-    const rectR = rCanvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
+    const pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
-    const posL = { x: e.clientX - rectL.left, y: e.clientY - rectL.top };
-    const posR = { x: e.clientX - rectR.left, y: e.clientY - rectR.top };
-
-    // 1. Vertex drag on Left (progress == 0)
-    if (progress === 0 && canvasType === "left") {
+    if (progress === 0) {
       const verts = verticesRef.current;
       for (let i = 0; i < verts.length; i++) {
-        if (Math.hypot(posL.x - verts[i].x, posL.y - verts[i].y) < 22) {
+        if (Math.hypot(pos.x - verts[i].x, pos.y - verts[i].y) < 26) {
           draggedVertexIndexRef.current = i;
+          canvas.setPointerCapture(e.pointerId);
           return;
         }
       }
     }
 
-    // 2. Piece drag
     if (isCut) {
       const pieces = piecesRef.current;
+      const targetCenter = targetCenterRef.current;
+
       for (let i = 0; i < pieces.length; i++) {
         const p = pieces[i];
-        const checkPos = p.currentCanvas === "right" ? posR : posL;
-        if (Math.hypot(checkPos.x - p.currentPos.x, checkPos.y - p.currentPos.y) < p.radius + 10) {
-          draggedPieceIndexRef.current = i;
-          dragOffsetRef.current = {
-            x: checkPos.x - p.currentPos.x,
-            y: checkPos.y - p.currentPos.y,
+        let piecePos = p.currentPos;
+        if (progress > 0 && draggedPieceIndexRef.current !== i && !p.snapped) {
+          const t = progress;
+          piecePos = {
+            x: (1 - t) * p.vertex.x + t * targetCenter.x,
+            y: (1 - t) * p.vertex.y + t * targetCenter.y,
           };
+        }
+
+        if (Math.hypot(pos.x - piecePos.x, pos.y - piecePos.y) < p.radius + 14) {
+          draggedPieceIndexRef.current = i;
+          dragOffsetRef.current = { x: pos.x - piecePos.x, y: pos.y - piecePos.y };
+          p.currentPos = piecePos;
+          canvas.setPointerCapture(e.pointerId);
           return;
         }
       }
@@ -528,15 +470,16 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    const lCanvas = leftCanvasRef.current;
-    const rCanvas = rightCanvasRef.current;
-    if (!lCanvas || !rCanvas) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
     if (draggedVertexIndexRef.current >= 0) {
-      const rectL = lCanvas.getBoundingClientRect();
       verticesRef.current[draggedVertexIndexRef.current] = {
-        x: Math.max(30, Math.min(lCanvas.width - 30, e.clientX - rectL.left)),
-        y: Math.max(30, Math.min(lCanvas.height - 30, e.clientY - rectL.top)),
+        x: Math.max(40, Math.min(canvas.width - 40, pos.x)),
+        y: Math.max(40, Math.min(canvas.height - 40, pos.y)),
       };
       calculatePieces(verticesRef.current, sides);
       render();
@@ -544,130 +487,108 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
     }
 
     if (draggedPieceIndexRef.current >= 0) {
-      const rectR = rCanvas.getBoundingClientRect();
-      const rectL = lCanvas.getBoundingClientRect();
-
-      const isOverRight = e.clientX >= rectR.left && e.clientX <= rectR.right;
       const p = piecesRef.current[draggedPieceIndexRef.current];
+      p.currentPos = {
+        x: pos.x - dragOffsetRef.current.x,
+        y: pos.y - dragOffsetRef.current.y,
+      };
 
-      const targetCenter = { x: rCanvas.width / 2, y: rCanvas.height / 2 };
-
-      if (isOverRight) {
-        p.currentCanvas = "right";
-        p.currentPos = {
-          x: e.clientX - rectR.left - dragOffsetRef.current.x,
-          y: e.clientY - rectR.top - dragOffsetRef.current.y,
-        };
-
-        const distToTarget = Math.hypot(p.currentPos.x - targetCenter.x, p.currentPos.y - targetCenter.y);
-        if (distToTarget < 75) {
-          p.snapped = true;
-          p.currentPos = { x: targetCenter.x, y: targetCenter.y };
-        } else {
-          p.snapped = false;
-        }
+      const targetCenter = targetCenterRef.current;
+      const distToTarget = Math.hypot(p.currentPos.x - targetCenter.x, p.currentPos.y - targetCenter.y);
+      if (distToTarget < 80) {
+        p.snapped = true;
+        p.currentPos = { x: targetCenter.x, y: targetCenter.y };
       } else {
-        p.currentCanvas = "left";
-        p.currentPos = {
-          x: e.clientX - rectL.left - dragOffsetRef.current.x,
-          y: e.clientY - rectL.top - dragOffsetRef.current.y,
-        };
         p.snapped = false;
       }
 
       if (piecesRef.current.every((pc) => pc.snapped)) {
         setProgress(1.0);
-        setShowCompletion(true);
       }
 
       render();
     }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     draggedVertexIndexRef.current = -1;
     draggedPieceIndexRef.current = -1;
+    try {
+      canvasRef.current?.releasePointerCapture(e.pointerId);
+    } catch (err) {}
   };
 
+  const isCompleted = progress >= 0.98 || (piecesRef.current.length > 0 && piecesRef.current.every((p) => p.snapped));
+
   return (
-    <div
-      className="min-h-screen w-full flex flex-col font-sans select-none overflow-x-hidden"
-      style={{
-        background: "linear-gradient(135deg, #fdfbf7 0%, #f4effa 50%, #eef6ff 100%)",
-        color: "#1e1b4b",
-      }}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-    >
+    <div className="min-h-screen w-full flex flex-col font-sans select-none bg-slate-100 text-slate-900 overflow-x-hidden">
       {/* HEADER */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 flex items-center justify-between shadow-sm z-30">
-        <div className="flex items-center gap-2.5">
+      <header className="bg-white border-b-2 border-slate-200 px-6 py-3.5 flex items-center justify-between shadow-sm z-30">
+        <div className="flex items-center gap-3">
           <span className="text-2xl">📐</span>
-          <span className="text-lg font-black text-indigo-950 tracking-tight">
-            다각형 <span className="text-purple-600">외각 탐구</span>
+          <span className="text-xl font-black text-indigo-950 tracking-tight">
+            다각형 <span className="text-purple-700">외각 탐구</span>
           </span>
-          <span className="text-xs font-bold text-purple-800 bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
+          <span className="text-xs font-bold text-purple-900 bg-purple-100 px-3.5 py-1 rounded-full border border-purple-300">
             중1 수학 • 기하
           </span>
         </div>
 
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-slate-300 text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer"
+          className="flex items-center gap-1.5 px-4.5 py-2 rounded-full bg-white border-2 border-slate-300 text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer"
         >
           <span>🏠</span>
           <span>메인으로</span>
         </button>
       </header>
 
-      {/* MAIN CONTAINER */}
+      {/* MAIN CONTENT */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-4">
         {/* CONTROLS CARD */}
-        <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl p-4 sm:p-6 shadow-lg flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* TABS */}
-            <div className="flex bg-slate-100 p-1 rounded-2xl gap-1">
-              {([3, 4, 5, 6] as PolygonSides[]).map((n) => (
-                <button
-                  key={n}
-                  onClick={() => handleSelectPolygon(n)}
-                  className={`px-4 py-2 rounded-xl text-sm font-extrabold transition-all cursor-pointer ${
-                    sides === n
-                      ? "bg-white text-purple-900 shadow-md"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  {POLYGON_CONFIGS[n].name}
-                </button>
-              ))}
-            </div>
-
-            {/* ACTION BUTTONS */}
-            <div className="flex flex-wrap gap-2">
+        <div className="bg-white border-2 border-slate-300 rounded-3xl p-4 sm:p-6 shadow-md flex flex-wrap items-center justify-between gap-4">
+          {/* TABS */}
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1 border border-slate-200">
+            {( [3, 4, 5, 6] as PolygonSides[]).map((n) => (
               <button
-                onClick={handleCut}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                key={n}
+                onClick={() => handleSelectPolygon(n)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all cursor-pointer ${
+                  sides === n
+                    ? "bg-white text-purple-900 shadow-md"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
               >
-                <span>✂️</span> 외각 자르기
+                {POLYGON_CONFIGS[n].name}
               </button>
-              <button
-                onClick={handleAssemble}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>✨</span> 한 점으로 모으기
-              </button>
-              <button
-                onClick={handleReset}
-                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-extrabold text-xs sm:text-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>🔄</span> 초기화
-              </button>
-            </div>
+            ))}
           </div>
 
-          {/* PROGRESS SLIDER */}
-          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-2xl border border-slate-200">
-            <span className="text-xs sm:text-sm font-extrabold text-slate-700 whitespace-nowrap">
+          {/* ACTION BUTTONS */}
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              onClick={handleCut}
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>✂️</span> 외각 자르기
+            </button>
+            <button
+              onClick={handleAssemble}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-black text-sm shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>✨</span> 한 점으로 모으기
+            </button>
+            <button
+              onClick={handleReset}
+              className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-700 font-black text-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>🔄</span> 초기화
+            </button>
+          </div>
+
+          {/* SLIDER */}
+          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-2xl border-2 border-slate-200 min-w-[280px]">
+            <span className="text-xs sm:text-sm font-black text-slate-700 whitespace-nowrap">
               🎚️ 모으기 진행률
             </span>
             <input
@@ -678,77 +599,70 @@ export default function ExteriorAngleApp({ onBack }: ExteriorAngleAppProps) {
               onChange={handleSliderChange}
               className="flex-1 h-2 accent-purple-600 cursor-pointer"
             />
-            <span className="text-xs sm:text-sm font-black text-purple-700 w-12 text-right font-mono">
+            <span className="text-sm font-black text-purple-800 w-12 text-right font-mono">
               {Math.round(progress * 100)}%
             </span>
           </div>
         </div>
 
-        {/* WORKSPACE SPLIT GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-[460px]">
-          {/* LEFT PANEL: POLYGON VIEW */}
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-lg flex flex-col overflow-hidden relative">
-            <div className="px-5 py-3 border-b border-slate-200/80 flex items-center justify-between bg-white/60">
-              <div className="flex items-center gap-2 font-extrabold text-sm text-indigo-950">
-                <span>🔷</span>
-                <span>{POLYGON_CONFIGS[sides].name}와 외각 부채꼴</span>
-              </div>
-              <span className="text-xs font-semibold text-slate-500">
-                💡 꼭짓점을 드래그하여 모양 변경 가능
-              </span>
+        {/* UNIFIED SINGLE WORKSPACE CARD */}
+        <div className="bg-white border-2 border-slate-300 rounded-3xl shadow-lg flex flex-col overflow-hidden flex-1 min-h-[540px]">
+          <div className="px-6 py-3.5 border-b-2 border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50">
+            <div className="flex items-center gap-2 font-black text-base text-indigo-950">
+              <span>🔷</span>
+              <span>{POLYGON_CONFIGS[sides].title}</span>
             </div>
-            <div ref={leftContainerRef} className="flex-1 w-full min-h-[360px] relative">
-              <canvas
-                ref={leftCanvasRef}
-                className="absolute inset-0 w-full h-full touch-none cursor-crosshair"
-                onPointerDown={handlePointerDown("left")}
-              />
+            <div className="text-xs font-bold text-slate-700 bg-white px-3.5 py-1 rounded-full border border-slate-300 shadow-sm">
+              💡 꼭짓점을 드래그해 모양을 변경하거나, 외각 조각을 🎯 기준점으로 드래그해 모아보세요!
             </div>
           </div>
 
-          {/* RIGHT PANEL: ASSEMBLY VIEW */}
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-lg flex flex-col overflow-hidden relative">
-            <div className="px-5 py-3 border-b border-slate-200/80 flex items-center justify-between bg-white/60">
-              <div className="flex items-center gap-2 font-extrabold text-sm text-indigo-950">
-                <span>🎯</span>
-                <span>외각 결합 기준점</span>
-              </div>
-              <span className="text-xs font-semibold text-slate-500">
-                ✋ 조각을 기준점 근처로 드래그하면 자동 결합
+          {/* CANVAS WORKSPACE */}
+          <div ref={containerRef} className="flex-1 w-full min-h-[460px] relative">
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full touch-none cursor-default"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+            />
+          </div>
+
+          {/* NON-OBSCURING RESULT SUMMARY BANNER AT BOTTOM */}
+          <div
+            className={`px-6 py-4 border-t-2 transition-all flex flex-wrap items-center justify-between gap-3 ${
+              isCompleted
+                ? "bg-purple-50 border-purple-300 opacity-100 shadow-md"
+                : "bg-amber-50/70 border-amber-200 opacity-90"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-base font-black text-purple-950">
+              <span>✨</span>
+              <span>
+                {isCompleted
+                  ? "외각의 크기의 합 = 360° (완벽한 원 완성!)"
+                  : isCut
+                  ? "조각을 드래그하거나 모으기 버튼으로 🎯 기준점에 결합해보세요!"
+                  : "꼭짓점을 드래그하여 다각형 모양을 조절해보세요!"}
               </span>
             </div>
-            <div ref={rightContainerRef} className="flex-1 w-full min-h-[360px] relative">
-              <canvas
-                ref={rightCanvasRef}
-                className="absolute inset-0 w-full h-full touch-none cursor-crosshair"
-                onPointerDown={handlePointerDown("right")}
-              />
 
-              {/* COMPLETION BADGE OVERLAY */}
-              {showCompletion && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-md border-2 border-purple-500 rounded-3xl p-6 shadow-2xl text-center z-40 max-w-sm w-[90%] animate-fade-in-up">
-                  <h3 className="text-xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-1">
-                    ✨ 외각의 크기의 합 = 360° ✨
-                  </h3>
-                  <p className="text-xs font-bold text-slate-600 mb-3">
-                    모든 다각형의 외각 조각을 모으면 완벽한 360° 원이 완성됩니다!
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 justify-center">
-                    {piecesRef.current.map((p, idx) => (
-                      <span
-                        key={p.id}
-                        className="bg-purple-50 border border-purple-200 text-purple-800 text-[11px] font-extrabold px-2.5 py-1 rounded-lg"
-                      >
-                        ∠{String.fromCharCode(65 + idx)} = {p.extAngleDeg}°
-                      </span>
-                    ))}
-                    <span className="bg-purple-600 text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-sm">
-                      합계 = 360°
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+            {isCompleted && (
+              <div className="flex flex-wrap gap-2 items-center">
+                {piecesRef.current.map((p, idx) => (
+                  <span
+                    key={p.id}
+                    className="bg-white border-1.5 border-purple-300 text-purple-900 text-xs font-extrabold px-3 py-1 rounded-xl shadow-sm"
+                  >
+                    ∠{String.fromCharCode(65 + idx)} = {p.extAngleDeg}°
+                  </span>
+                ))}
+                <span className="bg-purple-700 text-white text-xs font-black px-4 py-1.5 rounded-xl shadow-md">
+                  합계 = 360°
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </main>
