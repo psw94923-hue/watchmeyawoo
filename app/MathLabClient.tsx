@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import CheeseCuttingApp from "./components/CheeseCuttingApp";
 import CircumcenterApp from "./components/CircumcenterApp";
+import ExteriorAngleApp from "./components/ExteriorAngleApp";
 
 type Step = 'setup' | 'step1' | 'step2' | 'analysis';
-type ActiveApp = 'hub' | 'cheese' | 'circumcenter' | 'pythagoras';
+type ActiveApp = 'hub' | 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras';
 
 export default function MathLabClient() {
   // Navigation & Sub-App State
@@ -228,6 +229,13 @@ export default function MathLabClient() {
   }
 
   // -------------------------------------------------------------
+  // RENDER APP 3: POLYGON EXTERIOR ANGLE APP
+  // -------------------------------------------------------------
+  if (activeApp === 'exterior') {
+    return <ExteriorAngleApp onBack={() => setActiveApp('hub')} />;
+  }
+
+  // -------------------------------------------------------------
   // RENDER HUB: APP SELECTION HUB
   // -------------------------------------------------------------
   if (activeApp === 'hub') {
@@ -247,15 +255,15 @@ export default function MathLabClient() {
         </header>
 
         {/* HERO CONTENT */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-6xl mx-auto w-full">
+        <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-7xl mx-auto w-full">
           <div className="text-center mb-8 sm:mb-10 animate-fade-in">
             <h1 className="text-3xl sm:text-4xl font-black text-amber-950 tracking-tight">
               세원쌤의 <span className="text-amber-600">수학 실험실</span>
             </h1>
           </div>
 
-          {/* THREE MAIN APP SELECTION CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+          {/* MAIN APP SELECTION CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl">
             {/* CARD 1: CHEESE CUTTING APP */}
             <div
               onClick={() => setActiveApp('cheese')}
@@ -310,7 +318,34 @@ export default function MathLabClient() {
               </button>
             </div>
 
-            {/* CARD 3: PYTHAGORAS AR MEASUREMENT APP */}
+            {/* CARD 3: POLYGON EXTERIOR ANGLE EXPLORATION APP */}
+            <div
+              onClick={() => setActiveApp('exterior')}
+              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-purple-200 hover:border-purple-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100/50 rounded-full blur-2xl group-hover:bg-purple-200/60 transition-all pointer-events-none" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  📐
+                </div>
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-800 text-[11px] font-bold mb-2">
+                  중1 수학 • 다각형의 외각의 합
+                </div>
+                <h2 className="text-xl font-black text-slate-900 mb-2 group-hover:text-purple-600 transition-colors">
+                  다각형 외각 탐구
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                  다각형의 외각을 잘라 한 점으로 모아 외각의 총합이 항상 360도임을 직관적으로 확인해보세요!
+                </p>
+              </div>
+
+              <button className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-sm shadow-md group-hover:from-purple-500 group-hover:to-indigo-500 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>외각 탐구 시작하기</span>
+                <span>➔</span>
+              </button>
+            </div>
+
+            {/* CARD 4: PYTHAGORAS AR MEASUREMENT APP */}
             <div
               onClick={() => setActiveApp('pythagoras')}
               className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200 hover:border-teal-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
@@ -318,7 +353,7 @@ export default function MathLabClient() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-teal-100/50 rounded-full blur-2xl group-hover:bg-teal-200/60 transition-all pointer-events-none" />
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                  📐
+                  📏
                 </div>
                 <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-bold mb-2">
                   중2 수학 • 피타고라스 정리

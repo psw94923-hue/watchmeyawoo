@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>다각형 외각 탐구 | 중학교 1학년 수학 실험실</title>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fdfbf7 0%, #f4effa 50%, #eef6ff 100%);
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(226, 232, 240, 0.8);
+      --primary-color: #7c3aed;
+      --text-dark: #1e1b4b;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* HEADER */
+    header {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      z-index: 50;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #2e1065;
+    }
+
+    .header-badge {
+      background: #f3e8ff;
+      color: #6b21a8;
+      border: 1px solid #d8b4fe;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      rounded: 9999px;
+      border-radius: 20px;
+    }
+
+    .btn-back {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .btn-back:hover {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+
+    /* MAIN CONTAINER */
+    main {
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* CONTROLS CARD */
+    .controls-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 16px 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .controls-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* TABS */
+    .tabs-group {
+      display: flex;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 16px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: #4c1d95;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    /* ACTION BUTTONS */
+    .actions-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .act-btn {
+      border: none;
+      padding: 10px 18px;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    .act-btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-cut {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+    .btn-cut:hover {
+      background: #2563eb;
+    }
+
+    .btn-assemble {
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      color: #ffffff;
+    }
+    .btn-assemble:hover {
+      opacity: 0.95;
+    }
+
+    .btn-reset {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-reset:hover {
+      background: #e2e8f0;
+    }
+
+    /* SLIDER ROW */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #f8fafc;
+      padding: 10px 16px;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .slider-label {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .slider-input {
+      flex: 1;
+      accent-color: #8b5cf6;
+      height: 6px;
+      cursor: pointer;
+    }
+
+    .slider-val {
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #6d28d9;
+      width: 44px;
+      text-align: right;
+      font-mono: true;
+    }
+
+    /* SPLIT WORKSPACE */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      flex: 1;
+      min-height: 480px;
+    }
+
+    @media (max-width: 868px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #1e1b4b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .panel-hint {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      min-height: 380px;
+      cursor: default;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* COMPLETION OVERLAY BADGE */
+    .completion-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      border: 3px solid #a855f7;
+      box-shadow: 0 20px 50px rgba(168, 85, 247, 0.3), 0 0 30px rgba(236, 72, 153, 0.2);
+      border-radius: 28px;
+      padding: 20px 32px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 40;
+    }
+
+    .completion-badge.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      pointer-events: auto;
+    }
+
+    .completion-title {
+      font-size: 1.35rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #6d28d9, #db2777);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    .completion-sub {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .angle-formula-list {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .angle-tag {
+      background: #f3e8ff;
+      border: 1px solid #d8b4fe;
+      color: #6b21a8;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-title">
+      <span>📐</span>
+      <span>다각형 외각 탐구</span>
+      <span class="header-badge">중1 수학 • 기하</span>
+    </div>
+    <button class="btn-back" onclick="window.history.back()">
+      <span>🏠</span>
+      <span>메인으로</span>
+    </button>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <!-- CONTROLS CARD -->
+    <div class="controls-card">
+      <div class="controls-top">
+        <!-- POLYGON TABS -->
+        <div class="tabs-group">
+          <button class="tab-btn active" onclick="selectPolygon(3)">삼각형</button>
+          <button class="tab-btn" onclick="selectPolygon(4)">사각형</button>
+          <button class="tab-btn" onclick="selectPolygon(5)">오각형</button>
+          <button class="tab-btn" onclick="selectPolygon(6)">육각형</button>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="actions-group">
+          <button class="act-btn btn-cut" onclick="triggerCut()">
+            <span>✂️</span> 외각 자르기
+          </button>
+          <button class="act-btn btn-assemble" onclick="triggerAssemble()">
+            <span>✨</span> 한 점으로 모으기
+          </button>
+          <button class="act-btn btn-reset" onclick="triggerReset()">
+            <span>🔄</span> 초기화
+          </button>
+        </div>
+      </div>
+
+      <!-- PROGRESS SLIDER -->
+      <div class="slider-row">
+        <span class="slider-label">🎚️ 모으기 진행률</span>
+        <input type="range" id="progressSlider" class="slider-input" min="0" max="100" value="0" oninput="onSliderInput(this.value)" />
+        <span class="slider-val" id="sliderValText">0%</span>
+      </div>
+    </div>
+
+    <!-- WORKSPACE SPLIT GRID -->
+    <div class="workspace-grid">
+      <!-- LEFT PANEL: POLYGON VIEW -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>🔷</span>
+            <span id="leftPanelTitle">삼각형과 외각 부채꼴</span>
+          </div>
+          <div class="panel-hint">💡 꼭짓점을 드래그하여 모양 변경 가능</div>
+        </div>
+        <div class="canvas-container" id="leftCanvasContainer">
+          <canvas id="leftCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: ASSEMBLY VIEW -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>🎯</span>
+            <span>외각 결합 기준점</span>
+          </div>
+          <div class="panel-hint">✋ 조각을 기준점 근처로 드래그하면 자동 결합</div>
+        </div>
+        <div class="canvas-container" id="rightCanvasContainer">
+          <canvas id="rightCanvas"></canvas>
+
+          <!-- COMPLETION BADGE OVERLAY -->
+          <div class="completion-badge" id="completionBadge">
+            <div class="completion-title">✨ 외각의 크기의 합 = 360° ✨</div>
+            <div class="completion-sub">모든 다각형의 외각 조각을 모으면 완벽한 360° 원이 완성됩니다!</div>
+            <div class="angle-formula-list" id="angleFormulaList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ------------------------------------------------------------------
+    // Color Configuration per Polygon Type
+    // (Triangle: Orange, Quadrilateral: Cyan, Pentagon: Purple, Hexagon: Yellow)
+    // ------------------------------------------------------------------
+    const POLYGON_CONFIGS = {
+      3: {
+        name: '삼각형',
+        baseColor: '#f97316',
+        pastelBg: '#fff7ed',
+        shades: ['#f97316', '#fb923c', '#ea580c'],
+        strokeColor: '#c2410c'
+      },
+      4: {
+        name: '사각형',
+        baseColor: '#06b6d4',
+        pastelBg: '#ecfeff',
+        shades: ['#06b6d4', '#22d3ee', '#0891b2', '#0e7490'],
+        strokeColor: '#0f766e'
+      },
+      5: {
+        name: '오각형',
+        baseColor: '#a855f7',
+        pastelBg: '#faf5ff',
+        shades: ['#a855f7', '#c084fc', '#9333ea', '#7e22ce', '#6b21a8'],
+        strokeColor: '#581c87'
+      },
+      6: {
+        name: '육각형',
+        baseColor: '#eab308',
+        pastelBg: '#fefce8',
+        shades: ['#eab308', '#facc15', '#d97706', '#ca8a04', '#a16207', '#854d0e'],
+        strokeColor: '#854d0e'
+      }
+    };
+
+    // ------------------------------------------------------------------
+    // Application State
+    // ------------------------------------------------------------------
+    let sides = 3;
+    let vertices = []; // [{x, y}]
+    let isCut = false;
+    let progress = 0; // 0 to 1
+    let isAnimating = false;
+    let animReq = null;
+
+    // Piece states for drag & drop
+    // [{ id, startAngle, extAngle, radius, currentPos: {x,y}, snapped: boolean, color }]
+    let pieces = [];
+
+    // Dragging state
+    let draggedPieceIndex = -1;
+    let dragOffset = { x: 0, y: 0 };
+    let draggedVertexIndex = -1;
+
+    // Canvas & Context References
+    let leftCanvas, leftCtx, rightCanvas, rightCtx;
+    let leftContainer, rightContainer;
+
+    // Target center in right canvas
+    let rightTargetCenter = { x: 200, y: 200 };
+
+    // ------------------------------------------------------------------
+    // Initialization
+    // ------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      leftCanvas = document.getElementById('leftCanvas');
+      leftCtx = leftCanvas.getContext('2d');
+      rightCanvas = document.getElementById('rightCanvas');
+      rightCtx = rightCanvas.getContext('2d');
+      leftContainer = document.getElementById('leftCanvasContainer');
+      rightContainer = document.getElementById('rightCanvasContainer');
+
+      resizeCanvases();
+      window.addEventListener('resize', resizeCanvases);
+
+      initEvents();
+      selectPolygon(3);
+    });
+
+    function resizeCanvases() {
+      if (!leftContainer || !rightContainer) return;
+
+      const lw = leftContainer.clientWidth;
+      const lh = leftContainer.clientHeight;
+      leftCanvas.width = lw;
+      leftCanvas.height = lh;
+
+      const rw = rightContainer.clientWidth;
+      const rh = rightContainer.clientHeight;
+      rightCanvas.width = rw;
+      rightCanvas.height = rh;
+
+      rightTargetCenter = { x: rw / 2, y: rh / 2 };
+
+      // Re-generate vertices if size changed dramatically
+      if (vertices.length === 0) {
+        generateDefaultVertices(sides);
+      }
+      render();
+    }
+
+    // ------------------------------------------------------------------
+    // Vertex Generation (Convex polygon generation)
+    // ------------------------------------------------------------------
+    function generateDefaultVertices(n) {
+      const w = leftCanvas.width || 400;
+      const h = leftCanvas.height || 400;
+      const center = { x: w / 2, y: h / 2 };
+      const radius = Math.min(w, h) * 0.28;
+
+      vertices = [];
+      const startAngle = -Math.PI / 2;
+
+      for (let i = 0; i < n; i++) {
+        let angle = startAngle + (i * 2 * Math.PI) / n;
+        // Add slight organic asymmetry for regular-looking convex polygon
+        let r = radius;
+        if (n === 4 && i === 1) r *= 1.08;
+        if (n === 5 && i === 2) r *= 0.95;
+        if (n === 6 && i === 3) r *= 1.05;
+
+        vertices.push({
+          x: center.x + r * Math.cos(angle),
+          y: center.y + r * Math.sin(angle)
+        });
+      }
+      calculatePieces();
+    }
+
+    // ------------------------------------------------------------------
+    // Calculate Exterior Angles & Sector Pieces
+    // ------------------------------------------------------------------
+    function calculatePieces() {
+      pieces = [];
+      const n = vertices.length;
+      const cfg = POLYGON_CONFIGS[n];
+
+      let cumulativeAssemblyAngle = 0;
+
+      for (let i = 0; i < n; i++) {
+        const prev = vertices[(i - 1 + n) % n];
+        const curr = vertices[i];
+        const next = vertices[(i + 1) % n];
+
+        // Incoming side vector (prev -> curr)
+        const vIn = { x: curr.x - prev.x, y: curr.y - prev.y };
+        const angleIn = Math.atan2(vIn.y, vIn.x);
+
+        // Outgoing side vector (curr -> next)
+        const vOut = { x: next.x - curr.x, y: next.y - curr.y };
+        const angleOut = Math.atan2(vOut.y, vOut.x);
+
+        // Exterior angle magnitude (counter-clockwise turn from extended incoming line to outgoing line)
+        let extAngle = angleOut - angleIn;
+        while (extAngle <= 0) extAngle += Math.PI * 2;
+        while (extAngle > Math.PI * 2) extAngle -= Math.PI * 2;
+
+        const pieceRadius = 48;
+        const color = cfg.shades[i % cfg.shades.length];
+
+        pieces.push({
+          id: i,
+          vertex: curr,
+          prevVertex: prev,
+          nextVertex: next,
+          angleIn: angleIn,      // Direction of extended dotted line
+          angleOut: angleOut,    // Direction of next polygon edge
+          extAngle: extAngle,    // Exterior angle magnitude in radians
+          extAngleDeg: Math.round((extAngle * 180) / Math.PI),
+          radius: pieceRadius,
+          color: color,
+          targetStartAngle: cumulativeAssemblyAngle,
+          targetEndAngle: cumulativeAssemblyAngle + extAngle,
+          snapped: false,
+          currentPos: { x: curr.x, y: curr.y },
+          currentCanvas: 'left' // 'left' or 'right'
+        });
+
+        cumulativeAssemblyAngle += extAngle;
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Tab & Action Handlers
+    // ------------------------------------------------------------------
+    function selectPolygon(n) {
+      sides = n;
+      isCut = false;
+      progress = 0;
+      document.getElementById('progressSlider').value = 0;
+      document.getElementById('sliderValText').innerText = '0%';
+      document.getElementById('completionBadge').classList.remove('show');
+
+      // Update active tab UI
+      const btns = document.querySelectorAll('.tab-btn');
+      btns.forEach((btn, idx) => {
+        if (idx === n - 3) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+
+      document.getElementById('leftPanelTitle').innerText = `${POLYGON_CONFIGS[n].name}와 외각 부채꼴`;
+
+      generateDefaultVertices(n);
+      render();
+    }
+
+    function triggerCut() {
+      isCut = true;
+      if (progress === 0) {
+        progress = 0.15; // float slightly outwards
+        document.getElementById('progressSlider').value = 15;
+        document.getElementById('sliderValText').innerText = '15%';
+      }
+      render();
+    }
+
+    function triggerAssemble() {
+      isCut = true;
+      animateProgress(1.0, 800);
+    }
+
+    function triggerReset() {
+      isCut = false;
+      progress = 0;
+      document.getElementById('progressSlider').value = 0;
+      document.getElementById('sliderValText').innerText = '0%';
+      document.getElementById('completionBadge').classList.remove('show');
+
+      pieces.forEach(p => {
+        p.snapped = false;
+        p.currentCanvas = 'left';
+        p.currentPos = { x: p.vertex.x, y: p.vertex.y };
+      });
+
+      generateDefaultVertices(sides);
+      render();
+    }
+
+    function onSliderInput(val) {
+      progress = parseFloat(val) / 100;
+      document.getElementById('sliderValText').innerText = `${Math.round(progress * 100)}%`;
+      if (progress > 0) isCut = true;
+
+      if (progress >= 0.99) {
+        document.getElementById('completionBadge').classList.add('show');
+        updateFormulaList();
+      } else {
+        document.getElementById('completionBadge').classList.remove('show');
+      }
+
+      render();
+    }
+
+    function animateProgress(targetVal, duration) {
+      if (isAnimating) cancelAnimationFrame(animReq);
+
+      const startVal = progress;
+      const startTime = performance.now();
+      isAnimating = true;
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const p = Math.min(1, elapsed / duration);
+        // Ease out cubic
+        const ease = 1 - Math.pow(1 - p, 3);
+        progress = startVal + (targetVal - startVal) * ease;
+
+        document.getElementById('progressSlider').value = Math.round(progress * 100);
+        document.getElementById('sliderValText').innerText = `${Math.round(progress * 100)}%`;
+
+        if (progress >= 0.99) {
+          document.getElementById('completionBadge').classList.add('show');
+          updateFormulaList();
+        }
+
+        render();
+
+        if (p < 1) {
+          animReq = requestAnimationFrame(step);
+        } else {
+          isAnimating = false;
+        }
+      }
+
+      animReq = requestAnimationFrame(step);
+    }
+
+    function updateFormulaList() {
+      const listContainer = document.getElementById('angleFormulaList');
+      if (!listContainer) return;
+
+      let html = '';
+      let sum = 0;
+      pieces.forEach((p, idx) => {
+        const deg = p.extAngleDeg;
+        sum += deg;
+        html += `<span class="angle-tag">∠${String.fromCharCode(65 + idx)} = ${deg}°</span>`;
+      });
+      html += `<span class="angle-tag" style="background:#fae8ff; border-color:#c084fc; font-weight:900; color:#581c87">총합 = 360°</span>`;
+      listContainer.innerHTML = html;
+    }
+
+    // ------------------------------------------------------------------
+    // Event Listeners for Touch & Mouse Dragging
+    // ------------------------------------------------------------------
+    function initEvents() {
+      const handleStart = (e) => {
+        const rectL = leftCanvas.getBoundingClientRect();
+        const rectR = rightCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const posL = { x: clientX - rectL.left, y: clientY - rectL.top };
+        const posR = { x: clientX - rectR.left, y: clientY - rectR.top };
+
+        // 1. Check vertex dragging in left canvas (only when progress == 0)
+        if (progress === 0 && posL.x >= 0 && posL.x <= leftCanvas.width && posL.y >= 0 && posL.y <= leftCanvas.height) {
+          for (let i = 0; i < vertices.length; i++) {
+            const dx = posL.x - vertices[i].x;
+            const dy = posL.y - vertices[i].y;
+            if (Math.hypot(dx, dy) < 22) {
+              draggedVertexIndex = i;
+              return;
+            }
+          }
+        }
+
+        // 2. Check piece dragging
+        if (isCut) {
+          // Check right canvas pieces first
+          for (let i = 0; i < pieces.length; i++) {
+            const p = pieces[i];
+            let px = p.currentPos.x;
+            let py = p.currentPos.y;
+            let container = p.currentCanvas;
+
+            let checkPos = (container === 'right') ? posR : posL;
+            if (Math.hypot(checkPos.x - px, checkPos.y - py) < p.radius + 10) {
+              draggedPieceIndex = i;
+              dragOffset = { x: checkPos.x - px, y: checkPos.y - py };
+              return;
+            }
+          }
+        }
+      };
+
+      const handleMove = (e) => {
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        if (draggedVertexIndex >= 0) {
+          const rectL = leftCanvas.getBoundingClientRect();
+          vertices[draggedVertexIndex] = {
+            x: Math.max(30, Math.min(leftCanvas.width - 30, clientX - rectL.left)),
+            y: Math.max(30, Math.min(leftCanvas.height - 30, clientY - rectL.top))
+          };
+          calculatePieces();
+          render();
+          return;
+        }
+
+        if (draggedPieceIndex >= 0) {
+          const rectR = rightCanvas.getBoundingClientRect();
+          const rectL = leftCanvas.getBoundingClientRect();
+
+          const isOverRight = (clientX >= rectR.left && clientX <= rectR.right);
+          const p = pieces[draggedPieceIndex];
+
+          if (isOverRight) {
+            p.currentCanvas = 'right';
+            p.currentPos = {
+              x: clientX - rectR.left - dragOffset.x,
+              y: clientY - rectR.top - dragOffset.y
+            };
+
+            // Snap detection to target center in right canvas
+            const distToTarget = Math.hypot(p.currentPos.x - rightTargetCenter.x, p.currentPos.y - rightTargetCenter.y);
+            if (distToTarget < 75) {
+              p.snapped = true;
+              p.currentPos = { x: rightTargetCenter.x, y: rightTargetCenter.y };
+            } else {
+              p.snapped = false;
+            }
+          } else {
+            p.currentCanvas = 'left';
+            p.currentPos = {
+              x: clientX - rectL.left - dragOffset.x,
+              y: clientY - rectL.top - dragOffset.y
+            };
+            p.snapped = false;
+          }
+
+          // Check if all pieces snapped manually
+          const allSnapped = pieces.every(pc => pc.snapped);
+          if (allSnapped) {
+            progress = 1.0;
+            document.getElementById('progressSlider').value = 100;
+            document.getElementById('sliderValText').innerText = '100%';
+            document.getElementById('completionBadge').classList.add('show');
+            updateFormulaList();
+          }
+
+          render();
+        }
+      };
+
+      const handleEnd = () => {
+        draggedVertexIndex = -1;
+        draggedPieceIndex = -1;
+      };
+
+      leftCanvas.addEventListener('mousedown', handleStart);
+      rightCanvas.addEventListener('mousedown', handleStart);
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleEnd);
+
+      leftCanvas.addEventListener('touchstart', handleStart, { passive: false });
+      rightCanvas.addEventListener('touchstart', handleStart, { passive: false });
+      window.addEventListener('touchmove', handleMove, { passive: false });
+      window.addEventListener('touchend', handleEnd);
+    }
+
+    // ------------------------------------------------------------------
+    // Main Rendering Engine
+    // ------------------------------------------------------------------
+    function render() {
+      renderLeftCanvas();
+      renderRightCanvas();
+    }
+
+    // --- LEFT CANVAS RENDERER ---
+    function renderLeftCanvas() {
+      const w = leftCanvas.width;
+      const h = leftCanvas.height;
+      const cfg = POLYGON_CONFIGS[sides];
+
+      leftCtx.clearRect(0, 0, w, h);
+
+      // Background grid lines
+      leftCtx.strokeStyle = 'rgba(203, 213, 225, 0.25)';
+      leftCtx.lineWidth = 1;
+      for (let x = 0; x < w; x += 30) {
+        leftCtx.beginPath(); leftCtx.moveTo(x, 0); leftCtx.lineTo(x, h); leftCtx.stroke();
+      }
+      for (let y = 0; y < h; y += 30) {
+        leftCtx.beginPath(); leftCtx.moveTo(0, y); leftCtx.lineTo(w, y); leftCtx.stroke();
+      }
+
+      if (vertices.length < 3) return;
+
+      // 1. Extended Dotted Lines at vertices
+      leftCtx.strokeStyle = '#ef4444';
+      leftCtx.lineWidth = 2;
+      leftCtx.setLineDash([5, 5]);
+
+      pieces.forEach(p => {
+        const extLen = 70;
+        leftCtx.beginPath();
+        leftCtx.moveTo(p.vertex.x, p.vertex.y);
+        leftCtx.lineTo(
+          p.vertex.x + extLen * Math.cos(p.angleIn),
+          p.vertex.y + extLen * Math.sin(p.angleIn)
+        );
+        leftCtx.stroke();
+      });
+
+      leftCtx.setLineDash([]); // Reset line dash
+
+      // 2. Draw Polygon Base Body
+      leftCtx.beginPath();
+      leftCtx.moveTo(vertices[0].x, vertices[0].y);
+      for (let i = 1; i < vertices.length; i++) {
+        leftCtx.lineTo(vertices[i].x, vertices[i].y);
+      }
+      leftCtx.closePath();
+
+      // Soft fill gradient
+      leftCtx.fillStyle = cfg.pastelBg;
+      leftCtx.fill();
+      leftCtx.strokeStyle = cfg.strokeColor;
+      leftCtx.lineWidth = 3.5;
+      leftCtx.stroke();
+
+      // 3. Render Exterior Angle Sector Pieces (if progress < 1 or floating on left)
+      pieces.forEach(p => {
+        if (p.snapped || p.currentCanvas === 'right') return;
+
+        // Calculate position based on slider progress
+        let renderPos = { x: p.vertex.x, y: p.vertex.y };
+        let renderStartAngle = p.angleIn;
+        let renderEndAngle = p.angleIn + p.extAngle;
+
+        if (progress > 0) {
+          // Interpolate between polygon vertex and target center in right canvas
+          // If manually dragged, use currentPos
+          if (draggedPieceIndex === p.id) {
+            renderPos = p.currentPos;
+          } else {
+            // Outward shift vector
+            const bisect = p.angleIn + p.extAngle / 2;
+            const shiftDist = progress * 35;
+            renderPos = {
+              x: p.vertex.x + shiftDist * Math.cos(bisect),
+              y: p.vertex.y + shiftDist * Math.sin(bisect)
+            };
+          }
+        }
+
+        drawSector(leftCtx, renderPos.x, renderPos.y, p.radius, renderStartAngle, renderEndAngle, p.color, `∠${String.fromCharCode(65 + p.id)}`);
+      });
+
+      // 4. Render Vertex Drag Handles (when progress == 0)
+      if (progress === 0) {
+        vertices.forEach((v, idx) => {
+          leftCtx.beginPath();
+          leftCtx.arc(v.x, v.y, 7, 0, Math.PI * 2);
+          leftCtx.fillStyle = '#ffffff';
+          leftCtx.fill();
+          leftCtx.strokeStyle = cfg.strokeColor;
+          leftCtx.lineWidth = 2.5;
+          leftCtx.stroke();
+
+          // Vertex Name Label
+          leftCtx.fillStyle = '#1e1b4b';
+          leftCtx.font = 'bold 12px Pretendard';
+          leftCtx.fillText(String.fromCharCode(65 + idx), v.x - 12, v.y - 12);
+        });
+      }
+    }
+
+    // --- RIGHT CANVAS RENDERER ---
+    function renderRightCanvas() {
+      const w = rightCanvas.width;
+      const h = rightCanvas.height;
+      const target = rightTargetCenter;
+
+      rightCtx.clearRect(0, 0, w, h);
+
+      // Background grid lines
+      rightCtx.strokeStyle = 'rgba(203, 213, 225, 0.25)';
+      rightCtx.lineWidth = 1;
+      for (let x = 0; x < w; x += 30) {
+        rightCtx.beginPath(); rightCtx.moveTo(x, 0); rightCtx.lineTo(x, h); rightCtx.stroke();
+      }
+      for (let y = 0; y < h; y += 30) {
+        rightCtx.beginPath(); rightCtx.moveTo(0, y); rightCtx.lineTo(w, y); rightCtx.stroke();
+      }
+
+      // 1. Target Reference Crosshair & Circle
+      rightCtx.beginPath();
+      rightCtx.arc(target.x, target.y, 50, 0, Math.PI * 2);
+      rightCtx.strokeStyle = 'rgba(139, 92, 246, 0.3)';
+      rightCtx.lineWidth = 2;
+      rightCtx.setLineDash([4, 4]);
+      rightCtx.stroke();
+      rightCtx.setLineDash([]);
+
+      // Center cross lines
+      rightCtx.strokeStyle = 'rgba(139, 92, 246, 0.5)';
+      rightCtx.lineWidth = 1.5;
+      rightCtx.beginPath();
+      rightCtx.moveTo(target.x - 12, target.y); rightCtx.lineTo(target.x + 12, target.y);
+      rightCtx.moveTo(target.x, target.y - 12); rightCtx.lineTo(target.x, target.y + 12);
+      rightCtx.stroke();
+
+      // 2. Render Pieces on Right Canvas (Slider animated or manually dragged/snapped)
+      pieces.forEach(p => {
+        let shouldDraw = false;
+        let pos = { x: target.x, y: target.y };
+        let startAng = p.targetStartAngle;
+        let endAng = p.targetEndAngle;
+
+        if (progress > 0 && draggedPieceIndex !== p.id) {
+          // Interpolated animation position from Left to Right target
+          shouldDraw = true;
+
+          // Interpolate position from left canvas to right target
+          const t = progress;
+          const startPos = p.vertex;
+
+          pos = {
+            x: (1 - t) * startPos.x + t * target.x,
+            y: (1 - t) * startPos.y + t * target.y
+          };
+
+          // Rotation interpolation: from angleIn to targetStartAngle
+          const rotOffset = (1 - t) * 0 + t * (p.targetStartAngle - p.angleIn);
+          startAng = p.angleIn + rotOffset;
+          endAng = startAng + p.extAngle;
+        } else if (p.currentCanvas === 'right' || p.snapped) {
+          shouldDraw = true;
+          pos = p.currentPos;
+          if (p.snapped) {
+            pos = target;
+            startAng = p.targetStartAngle;
+            endAng = p.targetEndAngle;
+          } else {
+            startAng = p.angleIn;
+            endAng = p.angleIn + p.extAngle;
+          }
+        }
+
+        if (shouldDraw) {
+          drawSector(rightCtx, pos.x, pos.y, p.radius, startAng, endAng, p.color, `∠${String.fromCharCode(65 + p.id)}`);
+        }
+      });
+    }
+
+    // --- HELPER: DRAW SECTOR PIECE ---
+    function drawSector(ctx, cx, cy, r, startAngle, endAngle, color, label) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, startAngle, endAngle);
+      ctx.closePath();
+
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.88;
+      ctx.fill();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 1.0;
+      ctx.stroke();
+
+      // Sector Label Text
+      const midAngle = (startAngle + endAngle) / 2;
+      const textR = r * 0.58;
+      const tx = cx + textR * Math.cos(midAngle);
+      const ty = cy + textR * Math.sin(midAngle);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px Pretendard';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, tx, ty);
+
+      ctx.restore();
+    }
+  </script>
+</body>
+</html>
