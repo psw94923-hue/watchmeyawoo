@@ -873,7 +873,7 @@
             .order('score', { ascending: false })
             .limit(10);
           if (!error && data && data.length > 0) {
-            rankings = data;
+            rankings = data.filter(rk => rk.student_id_name !== '테스트유저');
           }
         } catch (err) {}
       }

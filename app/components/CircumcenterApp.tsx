@@ -284,7 +284,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         .limit(10);
 
       if (!error && data && data.length > 0) {
-        loadedRankings = data;
+        loadedRankings = data.filter((rk) => rk.student_id_name !== "테스트유저");
         isSupabaseLoaded = true;
       }
     } catch (err) {
