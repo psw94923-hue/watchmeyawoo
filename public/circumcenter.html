@@ -817,6 +817,12 @@
     }
     requestAnimationFrame(renderLoop);
 
+    const DEFAULT_RANKINGS = [
+      { student_id_name: "서해나", score: 1485, created_at: "2026-09-01T10:00:00.000Z" },
+      { student_id_name: "김태섭", score: 1453, created_at: "2026-09-01T10:05:00.000Z" },
+      { student_id_name: "오은중", score: 1453, created_at: "2026-09-01T10:10:00.000Z" }
+    ];
+
     async function handleRankSubmit(e) {
       e.preventDefault();
       const input = document.getElementById('student-id-name');
@@ -838,8 +844,15 @@
       }
 
       try {
-        const local = JSON.parse(localStorage.getItem('circumcenter_rankings') || '[]');
+        const rawLocal = localStorage.getItem('circumcenter_rankings');
+        let local = rawLocal ? JSON.parse(rawLocal) : [...DEFAULT_RANKINGS];
+        DEFAULT_RANKINGS.forEach((def) => {
+          if (!local.some((item) => item.student_id_name === def.student_id_name && item.score === def.score)) {
+            local.push(def);
+          }
+        });
         local.push(payload);
+        local.sort((a, b) => b.score - a.score);
         localStorage.setItem('circumcenter_rankings', JSON.stringify(local));
       } catch (err) {}
 
@@ -867,10 +880,19 @@
 
       if (rankings.length === 0) {
         try {
-          rankings = JSON.parse(localStorage.getItem('circumcenter_rankings') || '[]');
-          rankings.sort((a, b) => b.score - a.score);
-          rankings = rankings.slice(0, 10);
-        } catch (e) {}
+          const rawLocal = localStorage.getItem('circumcenter_rankings');
+          let local = rawLocal ? JSON.parse(rawLocal) : [];
+          DEFAULT_RANKINGS.forEach((def) => {
+            if (!local.some((item) => item.student_id_name === def.student_id_name && item.score === def.score)) {
+              local.push(def);
+            }
+          });
+          local.sort((a, b) => b.score - a.score);
+          localStorage.setItem('circumcenter_rankings', JSON.stringify(local));
+          rankings = local.slice(0, 10);
+        } catch (e) {
+          rankings = DEFAULT_RANKINGS;
+        }
       }
 
       if (rankings.length === 0) {

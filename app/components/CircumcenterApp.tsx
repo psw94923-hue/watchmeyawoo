@@ -51,6 +51,13 @@ interface RankingRecord {
   score: number;
 }
 
+const DEFAULT_RANKINGS: RankingRecord[] = [
+  { student_id_name: "서해나", score: 1485, created_at: "2026-09-01T10:00:00.000Z" },
+  { student_id_name: "김태섭", score: 1453, created_at: "2026-09-01T10:05:00.000Z" },
+  { student_id_name: "오은중", score: 1453, created_at: "2026-09-01T10:10:00.000Z" },
+];
+
+
 interface CircumcenterAppProps {
   onBack: () => void;
 }
@@ -266,6 +273,9 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
   // Fetch Leaderboard
   const fetchLeaderboard = useCallback(async () => {
     setIsLoadingRankings(true);
+    let loadedRankings: RankingRecord[] = [];
+    let isSupabaseLoaded = false;
+
     try {
       const { data, error } = await supabase
         .from("rankings")
@@ -273,22 +283,31 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         .order("score", { ascending: false })
         .limit(10);
 
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setRankings(data);
-        setIsLoadingRankings(false);
-        return;
+      if (!error && data && data.length > 0) {
+        loadedRankings = data;
+        isSupabaseLoaded = true;
       }
     } catch (err) {
       console.warn("Supabase fetch rankings error (using fallback):", err);
     }
 
-    try {
-      const local = JSON.parse(localStorage.getItem("circumcenter_rankings") || "[]");
-      local.sort((a: RankingRecord, b: RankingRecord) => b.score - a.score);
-      setRankings(local.slice(0, 10));
-    } catch (e) {
-      setRankings([]);
+    if (isSupabaseLoaded) {
+      setRankings(loadedRankings);
+    } else {
+      try {
+        const rawLocal = localStorage.getItem("circumcenter_rankings");
+        let local: RankingRecord[] = rawLocal ? JSON.parse(rawLocal) : [];
+        DEFAULT_RANKINGS.forEach((def) => {
+          if (!local.some((item) => item.student_id_name === def.student_id_name && item.score === def.score)) {
+            local.push(def);
+          }
+        });
+        local.sort((a, b) => b.score - a.score);
+        localStorage.setItem("circumcenter_rankings", JSON.stringify(local));
+        setRankings(local.slice(0, 10));
+      } catch (e) {
+        setRankings(DEFAULT_RANKINGS);
+      }
     }
     setIsLoadingRankings(false);
   }, []);
@@ -404,8 +423,15 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
     }
 
     try {
-      const local = JSON.parse(localStorage.getItem("circumcenter_rankings") || "[]");
+      const rawLocal = localStorage.getItem("circumcenter_rankings");
+      let local: RankingRecord[] = rawLocal ? JSON.parse(rawLocal) : [...DEFAULT_RANKINGS];
+      DEFAULT_RANKINGS.forEach((def) => {
+        if (!local.some((item) => item.student_id_name === def.student_id_name && item.score === def.score)) {
+          local.push(def);
+        }
+      });
       local.push(payload);
+      local.sort((a, b) => b.score - a.score);
       localStorage.setItem("circumcenter_rankings", JSON.stringify(local));
     } catch (err) {
       console.error(err);
