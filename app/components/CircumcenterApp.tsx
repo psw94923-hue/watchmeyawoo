@@ -281,10 +281,19 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         .from("rankings")
         .select("*")
         .order("score", { ascending: false })
-        .limit(10);
+        .limit(50);
 
       if (!error && data && data.length > 0) {
-        loadedRankings = data.filter((rk) => rk.student_id_name !== "테스트유저");
+        const filtered = data.filter((rk) => rk.student_id_name !== "테스트유저");
+        const seenNames = new Set<string>();
+        const unique: RankingRecord[] = [];
+        for (const item of filtered) {
+          if (!seenNames.has(item.student_id_name)) {
+            seenNames.add(item.student_id_name);
+            unique.push(item);
+          }
+        }
+        loadedRankings = unique;
         isSupabaseLoaded = true;
       }
     } catch (err) {
@@ -292,21 +301,39 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
     }
 
     if (isSupabaseLoaded) {
-      setRankings(loadedRankings);
+      const seen = new Set(loadedRankings.map((r) => r.student_id_name));
+      DEFAULT_RANKINGS.forEach((def) => {
+        if (!seen.has(def.student_id_name)) {
+          loadedRankings.push(def);
+          seen.add(def.student_id_name);
+        }
+      });
+      loadedRankings.sort((a, b) => b.score - a.score);
+      setRankings(loadedRankings.slice(0, 10));
     } else {
       try {
         const rawLocal = localStorage.getItem("circumcenter_rankings");
         let local: RankingRecord[] = rawLocal ? JSON.parse(rawLocal) : [];
+        local = local.filter((rk) => rk.student_id_name !== "테스트유저");
+        const seenNames = new Set<string>();
+        const uniqueLocal: RankingRecord[] = [];
+        for (const item of local) {
+          if (!seenNames.has(item.student_id_name)) {
+            seenNames.add(item.student_id_name);
+            uniqueLocal.push(item);
+          }
+        }
         DEFAULT_RANKINGS.forEach((def) => {
-          if (!local.some((item) => item.student_id_name === def.student_id_name && item.score === def.score)) {
-            local.push(def);
+          if (!seenNames.has(def.student_id_name)) {
+            uniqueLocal.push(def);
+            seenNames.add(def.student_id_name);
           }
         });
-        local.sort((a, b) => b.score - a.score);
-        localStorage.setItem("circumcenter_rankings", JSON.stringify(local));
-        setRankings(local.slice(0, 10));
+        uniqueLocal.sort((a, b) => b.score - a.score);
+        localStorage.setItem("circumcenter_rankings", JSON.stringify(uniqueLocal));
+        setRankings(uniqueLocal.slice(0, 10));
       } catch (e) {
-        setRankings(DEFAULT_RANKINGS);
+        setRankings(DEFAULT_RANKINGS.slice(0, 10));
       }
     }
     setIsLoadingRankings(false);
