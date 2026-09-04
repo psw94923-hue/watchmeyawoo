@@ -309,7 +309,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         }
       });
       loadedRankings.sort((a, b) => b.score - a.score);
-      setRankings(loadedRankings.slice(0, 10));
+      setRankings(loadedRankings.slice(0, 20));
     } else {
       try {
         const rawLocal = localStorage.getItem("circumcenter_rankings");
@@ -331,9 +331,9 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
         });
         uniqueLocal.sort((a, b) => b.score - a.score);
         localStorage.setItem("circumcenter_rankings", JSON.stringify(uniqueLocal));
-        setRankings(uniqueLocal.slice(0, 10));
+        setRankings(uniqueLocal.slice(0, 20));
       } catch (e) {
-        setRankings(DEFAULT_RANKINGS.slice(0, 10));
+        setRankings(DEFAULT_RANKINGS.slice(0, 20));
       }
     }
     setIsLoadingRankings(false);
@@ -1175,7 +1175,7 @@ export default function CircumcenterApp({ onBack }: CircumcenterAppProps) {
           <div className="bg-slate-900/95 backdrop-blur-xl border border-indigo-500/40 rounded-3xl p-6 w-full shadow-2xl animate-fade-in flex flex-col max-h-[85vh]">
             <div className="text-center mb-4">
               <span className="text-xs font-bold text-yellow-400 bg-yellow-950/80 px-3 py-1 rounded-full border border-yellow-500/40">
-                실시간 랭킹 Top 10
+                실시간 랭킹 Top 20
               </span>
               <h2 className="text-2xl font-black text-white mt-2">🏆 명예의 전당</h2>
             </div>
