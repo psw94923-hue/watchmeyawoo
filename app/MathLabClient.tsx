@@ -263,8 +263,35 @@ export default function MathLabClient() {
           </div>
 
           {/* MAIN APP SELECTION CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl">
-            {/* CARD 1: CHEESE CUTTING APP */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full max-w-7xl">
+            {/* CARD 1: PIZZA CUTTING APP */}
+            <div
+              onClick={() => { window.location.href = '/pizza.html'; }}
+              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-orange-200 hover:border-orange-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100/50 rounded-full blur-2xl group-hover:bg-orange-200/60 transition-all pointer-events-none" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-orange-100 border border-orange-300 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  🍕
+                </div>
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[11px] font-bold mb-2">
+                  중1 수학 • 부채꼴의 성질
+                </div>
+                <h2 className="text-xl font-black text-orange-950 mb-2 group-hover:text-orange-600 transition-colors">
+                  피자를 잘라보자!
+                </h2>
+                <p className="text-xs sm:text-sm text-orange-900/80 leading-relaxed mb-6">
+                  피자를 반죽하고 구운 뒤 원하는 조각으로 잘라 요리사에게 먹여보며 부채꼴의 중심각, 호, 넓이의 관계를 탐구해보세요!
+                </p>
+              </div>
+
+              <button className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-extrabold text-sm shadow-md group-hover:from-orange-600 group-hover:to-red-600 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>피자 잘라보기</span>
+                <span>➔</span>
+              </button>
+            </div>
+
+            {/* CARD 2: CHEESE CUTTING APP */}
             <div
               onClick={() => setActiveApp('cheese')}
               className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-amber-200 hover:border-amber-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"

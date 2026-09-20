@@ -96,6 +96,27 @@
     .step-indicator {
       display: flex;
       gap: 10px;
+      align-items: center;
+    }
+
+    .home-link-btn {
+      font-family: var(--font-jua);
+      font-size: 1.05rem;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.25);
+      color: white;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .home-link-btn:hover {
+      background: rgba(0, 0, 0, 0.45);
+      transform: scale(1.05);
     }
 
     .step-badge {
@@ -487,6 +508,7 @@
       <span>부채꼴의 성질 탐구</span>
     </div>
     <div class="step-indicator">
+      <a href="/" class="home-link-btn">🏠 메인으로</a>
       <div class="step-badge active" id="badgeStep1">1. 만들기</div>
       <div class="step-badge" id="badgeStep2">2. 굽기</div>
       <div class="step-badge" id="badgeStep3">3. 자르고 먹이기</div>
