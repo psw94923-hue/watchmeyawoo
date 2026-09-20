@@ -1011,9 +1011,11 @@
   }
 
   /* ==========================================================================
-     FLOATING DRAG VISUAL & CHEF FEEDING MECHANICS
+     FLOATING DRAG VISUAL & FANNING OUT (부채 촤르륵 펼쳐지기) MECHANICS
      ========================================================================== */
   let isDragging = false;
+  let fanProgress = 0; // 0 (stacked) to 1 (fully fanned out)
+  let fanAnimFrame = null;
   const chefPanel = document.getElementById('chefPanel');
 
   canvas.addEventListener('mousedown', startDrag);
@@ -1050,20 +1052,142 @@
   }
 
   function renderFloatingSlice(slice, mouseX, mouseY) {
-    floatCanvas.width = 360;
-    floatCanvas.height = 360;
+    floatCanvas.width = 440;
+    floatCanvas.height = 440;
     floatCtx.clearRect(0, 0, floatCanvas.width, floatCanvas.height);
 
     floatCtx.save();
-    floatCtx.translate(180, 180);
+    floatCtx.translate(220, 220);
 
-    // Draw single slice centered on floating canvas
-    drawSingleSector(floatCtx, slice, true);
+    const K = slice.stackLevel;
+    const unitAngle = (Math.PI * 2) / currentSliceCount;
+
+    if (K === 1) {
+      // Single slice floating
+      drawSingleSector(floatCtx, slice, true);
+    } else {
+      // Multiple stacked slices: FAN OUT SIDE-BY-SIDE (부채처럼 촤르륵!)
+      renderFloatingFannedSlices(floatCtx, slice, fanProgress);
+    }
+
     floatCtx.restore();
 
     floatCanvas.style.left = mouseX + 'px';
     floatCanvas.style.top = mouseY + 'px';
     floatCanvas.style.display = 'block';
+  }
+
+  function renderFloatingFannedSlices(targetCtx, slice, fProgress) {
+    const K = slice.stackLevel;
+    const unitAngle = (Math.PI * 2) / currentSliceCount;
+    const totalAngle = unitAngle * K;
+    const midFanAngle = (unitAngle + (totalAngle - unitAngle) * fProgress) / 2;
+
+    targetCtx.save();
+    targetCtx.rotate(-midFanAngle);
+
+    // Background fan glow
+    targetCtx.beginPath();
+    targetCtx.moveTo(0, 0);
+    targetCtx.arc(0, 0, radius + 4, 0, unitAngle + (totalAngle - unitAngle) * fProgress);
+    targetCtx.closePath();
+    targetCtx.fillStyle = 'rgba(255, 183, 3, 0.2)';
+    targetCtx.fill();
+
+    // Render K sub-sectors fanning out
+    for (let i = 0; i < K; i++) {
+      const sA = i * unitAngle * fProgress;
+      const eA = sA + unitAngle;
+
+      targetCtx.save();
+      targetCtx.beginPath();
+      targetCtx.moveTo(0, 0);
+      targetCtx.arc(0, 0, radius, sA, eA);
+      targetCtx.closePath();
+
+      // Golden Baked Texture Fill
+      const grad = targetCtx.createRadialGradient(0, 0, 10, 0, 0, radius);
+      grad.addColorStop(0, '#ffe57f');
+      grad.addColorStop(0.7, '#ffc107');
+      grad.addColorStop(1, '#d7ccc8');
+      targetCtx.fillStyle = grad;
+      targetCtx.fill();
+
+      // Outer Crust (호)
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, radius, sA, eA);
+      targetCtx.lineWidth = 14;
+      targetCtx.strokeStyle = '#c17817';
+      targetCtx.stroke();
+
+      // Cheese Surface
+      targetCtx.beginPath();
+      targetCtx.moveTo(0, 0);
+      targetCtx.arc(0, 0, radius - 12, sA, eA);
+      targetCtx.closePath();
+      targetCtx.fillStyle = '#ffb703';
+      targetCtx.fill();
+
+      // Clip & Draw Toppings inside sub-slice
+      targetCtx.save();
+      targetCtx.clip();
+      targetCtx.rotate(sA - slice.angleStart);
+      toppings.forEach(t => {
+        drawToppingItem(targetCtx, t.x, t.y, t.type);
+      });
+      targetCtx.restore();
+
+      // Radial cut lines between sectors
+      targetCtx.beginPath();
+      targetCtx.moveTo(0, 0);
+      targetCtx.arc(0, 0, radius, sA, eA);
+      targetCtx.closePath();
+      targetCtx.lineWidth = 3.5;
+      targetCtx.strokeStyle = '#e63946';
+      targetCtx.stroke();
+
+      // Sub-slice index badge (1, 2, 3...) when fanned out
+      if (K > 1 && fProgress > 0.4) {
+        const midSubA = (sA + eA) / 2;
+        const tagR = radius * 0.58;
+        const tx = Math.cos(midSubA) * tagR;
+        const ty = Math.sin(midSubA) * tagR;
+
+        targetCtx.beginPath();
+        targetCtx.arc(tx, ty, 15, 0, Math.PI * 2);
+        targetCtx.fillStyle = '#e63946';
+        targetCtx.fill();
+        targetCtx.strokeStyle = '#fff';
+        targetCtx.lineWidth = 2;
+        targetCtx.stroke();
+
+        targetCtx.fillStyle = '#fff';
+        targetCtx.font = 'bold 14px Pretendard';
+        targetCtx.textAlign = 'center';
+        targetCtx.textBaseline = 'middle';
+        targetCtx.fillText(`${i + 1}`, tx, ty);
+      }
+
+      targetCtx.restore();
+    }
+
+    const currentSpan = unitAngle + (totalAngle - unitAngle) * fProgress;
+
+    // Highlighted Continuous Outer Arc (호의 길이 비례)
+    targetCtx.beginPath();
+    targetCtx.arc(0, 0, radius + 3, 0, currentSpan);
+    targetCtx.lineWidth = 6;
+    targetCtx.strokeStyle = '#00f5d4';
+    targetCtx.stroke();
+
+    // Highlighted Central Angle Arc (중심각의 크기 비례)
+    targetCtx.beginPath();
+    targetCtx.arc(0, 0, 48, 0, currentSpan);
+    targetCtx.lineWidth = 5;
+    targetCtx.strokeStyle = '#ff007f';
+    targetCtx.stroke();
+
+    targetCtx.restore();
   }
 
   function hideFloatingSlice() {
@@ -1078,26 +1202,48 @@
       draggedSliceIndex = hitIdx;
       selectedSliceIndex = hitIdx;
       isDragging = true;
+      fanProgress = 0;
 
-      // Render floating preview slice that follows mouse/touch
+      // Animate fan progress from 0 to 1
+      let startTime = performance.now();
+      function animateFan(now) {
+        let elapsed = now - startTime;
+        fanProgress = Math.min(1, elapsed / 180); // 180ms smooth fanning
+        if (isDragging && draggedSliceIndex === hitIdx) {
+          renderFloatingSlice(slices[hitIdx], lastMouseX, lastMouseY);
+          if (fanProgress < 1) {
+            fanAnimFrame = requestAnimationFrame(animateFan);
+          }
+        }
+      }
+
+      lastMouseX = coords.rawX;
+      lastMouseY = coords.rawY;
       renderFloatingSlice(slices[hitIdx], coords.rawX, coords.rawY);
+      fanAnimFrame = requestAnimationFrame(animateFan);
 
-      // Show sector info tooltip
-      const deg = Math.round((360 / currentSliceCount) * slices[hitIdx].stackLevel);
-      showTooltip(coords.rawX, coords.rawY, `중심각: ${deg}° (${slices[hitIdx].stackLevel}조각)`);
+      if (slices[hitIdx].stackLevel > 1) {
+        playSound('slice');
+      }
+
+      updateTooltipAndSpeechForDrag(slices[hitIdx], coords.rawX, coords.rawY);
       drawSlicedPizza();
     }
   }
 
+  let lastMouseX = 0, lastMouseY = 0;
+
   function moveDrag(e) {
     if (!isDragging || draggedSliceIndex === -1) return;
     const coords = getCanvasCoords(e);
+    lastMouseX = coords.rawX;
+    lastMouseY = coords.rawY;
 
     // Update floating slice position
     floatCanvas.style.left = coords.rawX + 'px';
     floatCanvas.style.top = coords.rawY + 'px';
 
-    showTooltip(coords.rawX, coords.rawY, `중심각: ${Math.round((360 / currentSliceCount) * slices[draggedSliceIndex].stackLevel)}° (${slices[draggedSliceIndex].stackLevel}조각)`);
+    updateTooltipAndSpeechForDrag(slices[draggedSliceIndex], coords.rawX, coords.rawY);
 
     // Check if dragging over Chef Panel
     const chefRect = chefPanel.getBoundingClientRect();
@@ -1106,6 +1252,18 @@
       chefPanel.classList.add('drag-over');
     } else {
       chefPanel.classList.remove('drag-over');
+    }
+  }
+
+  function updateTooltipAndSpeechForDrag(slice, x, y) {
+    const K = slice.stackLevel;
+    const unitDeg = Math.round(360 / currentSliceCount);
+    const totalDeg = unitDeg * K;
+
+    if (K === 1) {
+      showTooltip(x, y, `1조각 | 중심각: ${totalDeg}°`);
+    } else {
+      showTooltip(x, y, `🪭 ${K}조각 펼쳐짐! | 중심각: ${totalDeg}° (${unitDeg}°×${K}) | 호의 길이 & 넓이 ${K}배!`);
     }
   }
 
