@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>피자를 잘라보자! 🍕 | 부채꼴 탐구 인터랙티브 웹앱</title>
+  <!-- Google Fonts: Jua & Pretendard -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-red: #e63946;
+      --primary-orange: #ff7b00;
+      --gold-yellow: #ffb703;
+      --dough-color: #f4d35e;
+      --baked-gold: #e09f3e;
+      --crust-color: #c17817;
+      --bg-dark: #1f1412;
+      --panel-bg: rgba(255, 255, 255, 0.94);
+      --font-jua: 'Jua', sans-serif;
+      --font-main: 'Pretendard', -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-dark);
+      background-image: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.65)), url('images/oven_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Screen Wrapper - 16:9 Optimized for Laptop/Projector */
+    .app-container {
+      width: 96vw;
+      max-width: 1400px;
+      height: 92vh;
+      max-height: 820px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border-radius: 28px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* TOP HEADER */
+    header {
+      background: linear-gradient(135deg, #e63946, #d62828);
+      color: white;
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 15px rgba(230, 57, 70, 0.35);
+      z-index: 20;
+    }
+
+    .app-title {
+      font-family: var(--font-jua);
+      font-size: 2.1rem;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.25);
+    }
+
+    .app-title span {
+      font-size: 1.1rem;
+      background: rgba(255, 255, 255, 0.25);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .step-indicator {
+      display: flex;
+      gap: 10px;
+    }
+
+    .step-badge {
+      font-family: var(--font-jua);
+      font-size: 1.05rem;
+      padding: 6px 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.75);
+      transition: all 0.3s ease;
+    }
+
+    .step-badge.active {
+      background: #ffb703;
+      color: #1f1412;
+      font-weight: bold;
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    /* MAIN CONTENT AREA */
+    .main-workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+      padding: 20px;
+      position: relative;
+      height: calc(100% - 65px);
+    }
+
+    /* LEFT WORKSPACE (PIZZA AREA) */
+    .pizza-area {
+      background: radial-gradient(circle at center, #fffdfa 0%, #f7edd8 100%);
+      border-radius: 24px;
+      border: 3px dashed #e2cbb0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+    }
+
+    /* TOOLBAR CONTROLS */
+    .action-bar {
+      position: absolute;
+      top: 15px;
+      display: flex;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    .slice-btn {
+      font-family: var(--font-jua);
+      font-size: 1.3rem;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 50px;
+      background: white;
+      color: #444;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slice-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    .slice-btn.active {
+      background: linear-gradient(135deg, #ff7b00, #ff5400);
+      color: white;
+      box-shadow: 0 6px 20px rgba(255, 123, 0, 0.45);
+    }
+
+    /* PIZZA CONTAINER & CANVAS */
+    .pizza-stage {
+      width: 440px;
+      height: 440px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cutting-board {
+      position: absolute;
+      width: 480px;
+      height: 480px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #e0a96d 0%, #b87b3b 80%, #8a531b 100%);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.25), inset 0 4px 10px rgba(255,255,255,0.3);
+      z-index: 1;
+    }
+
+    /* Interactive Canvas for Phase 1 & Phase 3 */
+    #pizzaCanvas {
+      position: absolute;
+      z-index: 2;
+      cursor: grab;
+    }
+    #pizzaCanvas:active {
+      cursor: grabbing;
+    }
+
+    /* FLOATING CANVAS FOR DRAGGING SLICES OUTSIDE PIZZA */
+    #floatingSliceCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 2000;
+      display: none;
+      filter: drop-shadow(0 15px 25px rgba(0,0,0,0.35));
+      transform: translate(-50%, -50%) scale(1.1);
+      transition: transform 0.05s linear;
+    }
+
+    /* Cutter Animation Overlay */
+    .cutter-knife {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23d0d0d0" stroke="%23666" stroke-width="6"/><circle cx="50" cy="50" r="10" fill="%23444"/><line x1="50" y1="50" x2="50" y2="10" stroke="%23e63946" stroke-width="12" stroke-linecap="round"/></svg>') no-repeat center/contain;
+      z-index: 30;
+      pointer-events: none;
+      display: none;
+      filter: drop-shadow(4px 8px 10px rgba(0,0,0,0.4));
+    }
+
+    /* Topping Selector Bar for Phase 1 */
+    .topping-bar {
+      position: absolute;
+      bottom: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 24px;
+      border-radius: 50px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .topping-item {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+
+    .topping-item:hover, .topping-item.selected {
+      transform: scale(1.15);
+      border-color: #ff7b00;
+      box-shadow: 0 6px 14px rgba(255, 123, 0, 0.35);
+    }
+
+    .btn-main {
+      font-family: var(--font-jua);
+      font-size: 1.35rem;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #2a9d8f, #264653);
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(42, 157, 143, 0.4);
+      transition: all 0.2s;
+    }
+
+    .btn-main:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 8px 20px rgba(42, 157, 143, 0.5);
+    }
+
+    .btn-primary-orange {
+      background: linear-gradient(135deg, #ff7b00, #e63946);
+      box-shadow: 0 6px 16px rgba(255, 123, 0, 0.4);
+    }
+
+    /* RIGHT SIDE: CHEF CHARACTER PANEL */
+    .chef-panel {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 18px;
+      position: relative;
+      overflow: hidden;
+      border: 3px solid #f0e6df;
+      transition: all 0.2s ease;
+    }
+
+    /* Speech Bubble */
+    .speech-bubble {
+      background: #fff;
+      border: 3px solid #ff7b00;
+      border-radius: 22px;
+      padding: 14px 18px;
+      width: 100%;
+      text-align: center;
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: #2b2d42;
+      position: relative;
+      margin-bottom: 12px;
+      box-shadow: 0 6px 18px rgba(255, 123, 0, 0.18);
+      line-height: 1.45;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 14px 12px 0;
+      border-style: solid;
+      border-color: #ff7b00 transparent;
+      display: block;
+      width: 0;
+    }
+
+    /* Chef Image Frame */
+    .chef-avatar-box {
+      width: 250px;
+      height: 250px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    .chef-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,0.12));
+    }
+
+    .chef-img.pop {
+      transform: scale(1.12);
+    }
+
+    /* Feed Drop Target Glow */
+    .chef-panel.drag-over {
+      background: #fff4e6;
+      border: 4px dashed #ff7b00;
+      transform: scale(1.02);
+      box-shadow: 0 0 25px rgba(255, 123, 0, 0.4);
+    }
+
+    .eaten-counter {
+      font-family: var(--font-jua);
+      font-size: 1.3rem;
+      color: #e63946;
+      background: #ffe3e3;
+      padding: 6px 20px;
+      border-radius: 20px;
+      margin-top: 4px;
+    }
+
+    .reset-controls {
+      margin-top: auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* OVEN BAKING OVERLAY (PHASE 2) */
+    .oven-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(20, 10, 5, 0.88);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .oven-modal.active {
+      display: flex;
+    }
+
+    .oven-flame-box {
+      width: 200px;
+      height: 200px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .flame-icon {
+      font-size: 6rem;
+      animation: flameBounce 0.6s infinite alternate ease-in-out;
+    }
+
+    @keyframes flameBounce {
+      from { transform: scale(0.9) translateY(0); filter: drop-shadow(0 0 15px #ff4500); }
+      to { transform: scale(1.15) translateY(-10px); filter: drop-shadow(0 0 35px #ffb703); }
+    }
+
+    .oven-text {
+      font-family: var(--font-jua);
+      font-size: 2.3rem;
+      margin-top: 15px;
+      color: #ffb703;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .progress-bar-bg {
+      width: 340px;
+      height: 20px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      margin-top: 22px;
+      overflow: hidden;
+      border: 2px solid rgba(255,183,3,0.6);
+    }
+
+    .progress-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff7b00, #ffb703);
+      transition: width 0.1s linear;
+    }
+
+    /* Floating Math Tooltip */
+    .sector-tooltip {
+      position: fixed;
+      background: rgba(0, 0, 0, 0.85);
+      color: #ffb703;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 2500;
+      display: none;
+      transform: translate(-50%, -140%);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,183,3,0.5);
+    }
+
+    /* Confetti Canvas */
+    #confettiCanvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 150;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- HEADER -->
+  <header>
+    <div class="app-title">
+      🍕 피자를 잘라보자!
+      <span>부채꼴의 성질 탐구</span>
+    </div>
+    <div class="step-indicator">
+      <div class="step-badge active" id="badgeStep1">1. 만들기</div>
+      <div class="step-badge" id="badgeStep2">2. 굽기</div>
+      <div class="step-badge" id="badgeStep3">3. 자르고 먹이기</div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="main-workspace">
+    <!-- LEFT: PIZZA STAGE -->
+    <div class="pizza-area" id="pizzaArea">
+
+      <!-- Phase 3 Slicing Toolbar (Shown only after baking before eating) -->
+      <div class="action-bar" id="sliceToolbar" style="display: none;">
+        <button class="slice-btn active" id="btnSlice4" onclick="setSliceCount(4)">
+          <span>✂️</span> 4조각 (90°)
+        </button>
+        <button class="slice-btn" id="btnSlice6" onclick="setSliceCount(6)">
+          <span>✂️</span> 6조각 (60°)
+        </button>
+        <button class="slice-btn" id="btnSlice8" onclick="setSliceCount(8)">
+          <span>✂️</span> 8조각 (45°)
+        </button>
+      </div>
+
+      <!-- Pizza Display Stage -->
+      <div class="pizza-stage">
+        <div class="cutting-board"></div>
+        <canvas id="pizzaCanvas" width="440" height="440"></canvas>
+        <div class="cutter-knife" id="cutterKnife"></div>
+      </div>
+
+      <!-- Phase 1 Topping Selector Bar -->
+      <div class="topping-bar" id="toppingBar">
+        <span style="font-family: var(--font-jua); font-size: 1.15rem; color: #555;">토핑 선택:</span>
+        <div class="topping-item selected" onclick="selectTopping('pepperoni')" title="페퍼로니">🍕</div>
+        <div class="topping-item" onclick="selectTopping('mushroom')" title="버섯">🍄</div>
+        <div class="topping-item" onclick="selectTopping('pepper')" title="피망">🫑</div>
+        <div class="topping-item" onclick="selectTopping('olive')" title="올리브">🫒</div>
+        <button class="btn-main btn-primary-orange" id="btnBakeStart" onclick="startBakingPhase()" style="margin-left: 10px;">
+          🔥 화덕에 구우러 가기!
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT: CHEF CHARACTER PANEL -->
+    <div class="chef-panel" id="chefPanel">
+      <div class="speech-bubble" id="speechBubble">
+        안녕! 맛있는 피자를 만들어줘!<br>다 구워지면 요리사에게 보내줘! 😋
+      </div>
+
+      <div class="chef-avatar-box">
+        <img src="images/chef_waiting.jpg" id="chefImg" class="chef-img" alt="요리사 이미지">
+      </div>
+
+      <div class="eaten-counter" id="eatenCounter" style="display: none;">
+        먹은 피자: <span id="eatenCountText">0</span>조각
+      </div>
+
+      <div class="reset-controls" id="resetControls" style="display: none;">
+        <button class="btn-main btn-primary-orange" onclick="resetToBakedState()">
+          ✂️ 다시 자르고 먹이기
+        </button>
+        <button class="btn-main" onclick="resetToCraftState()">
+          🍕 처음부터 다시 만들기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVEN BAKING OVERLAY (PHASE 2) -->
+  <div class="oven-modal" id="ovenModal">
+    <div class="oven-flame-box">
+      <div class="flame-icon">🔥</div>
+    </div>
+    <div class="oven-text">화덕에서 노릇노릇 피자가 구워지는 중...</div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="ovenProgress"></div>
+    </div>
+  </div>
+
+  <!-- FLOATING SLICE CANVAS FOR VISUAL DRAGGING -->
+  <canvas id="floatingSliceCanvas" width="360" height="360"></canvas>
+
+  <!-- Sector Info Tooltip -->
+  <div class="sector-tooltip" id="sectorTooltip"></div>
+
+  <!-- Confetti Canvas -->
+  <canvas id="confettiCanvas"></canvas>
+</div>
+
+<script>
+  /* ==========================================================================
+     AUDIO SYNTHESIZER (Web Audio API - Pure & Instant)
+     ========================================================================== */
+  const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playSound(type) {
+    if (AudioCtx.state === 'suspended') AudioCtx.resume();
+    const osc = AudioCtx.createOscillator();
+    const gain = AudioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(AudioCtx.destination);
+
+    const now = AudioCtx.currentTime;
+    if (type === 'click') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (type === 'slice') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+      gain.gain.setValueAtTime(0.4, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } else if (type === 'eat') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    } else if (type === 'bake') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(350, now + 0.3);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === 'win') {
+      [400, 523.25, 659.25, 783.99].forEach((freq, idx) => {
+        const o = AudioCtx.createOscillator();
+        const g = AudioCtx.createGain();
+        o.connect(g);
+        g.connect(AudioCtx.destination);
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freq, now + idx * 0.1);
+        g.gain.setValueAtTime(0.3, now + idx * 0.1);
+        g.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+        o.start(now + idx * 0.1);
+        o.stop(now + idx * 0.1 + 0.25);
+      });
+    }
+  }
+
+  /* ==========================================================================
+     APP STATE & VARIABLES
+     ========================================================================== */
+  const canvas = document.getElementById('pizzaCanvas');
+  const ctx = canvas.getContext('2d');
+  const floatCanvas = document.getElementById('floatingSliceCanvas');
+  const floatCtx = floatCanvas.getContext('2d');
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const radius = 175; // Top-down pizza radius
+
+  let currentPhase = 1; // 1: Crafting, 2: Baking, 3: Sliced/Interactive
+  let currentSliceCount = 4; // 4, 6, 8
+  let selectedTopping = 'pepperoni';
+  let toppings = []; // Array of {x, y, type}
+
+  // Slice state in Phase 3
+  let slices = []; // Array of slice objects
+  let selectedSliceIndex = -1;
+  let draggedSliceIndex = -1;
+  let isFeedingStarted = false;
+  let eatenTotalCount = 0;
+
+  /* ==========================================================================
+     PHASE 1: PIZZA CRAFTING
+     ========================================================================== */
+  canvas.addEventListener('click', (e) => {
+    if (currentPhase !== 1) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const dist = Math.hypot(clickX - cx, clickY - cy);
+
+    if (dist < radius - 20) {
+      toppings.push({ x: clickX - cx, y: clickY - cy, type: selectedTopping });
+      playSound('click');
+      drawCraftPizza();
+    }
+  });
+
+  function selectTopping(type) {
+    selectedTopping = type;
+    document.querySelectorAll('.topping-item').forEach(el => el.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    playSound('click');
+  }
+
+  function drawCraftPizza() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Raw Dough Crust
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#f4d35e';
+    ctx.shadowColor = 'rgba(0,0,0,0.15)';
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = '#e0a96d';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Tomato Sauce Base
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 16, 0, Math.PI * 2);
+    ctx.fillStyle = '#e63946';
+    ctx.fill();
+
+    // Raw Cheese Layers
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - 24, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffea00';
+    ctx.fill();
+
+    // Render Toppings
+    toppings.forEach(t => {
+      drawToppingItem(ctx, cx + t.x, cy + t.y, t.type);
+    });
+  }
+
+  function drawToppingItem(targetCtx, x, y, type) {
+    targetCtx.save();
+    targetCtx.translate(x, y);
+    if (type === 'pepperoni') {
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, 16, 0, Math.PI * 2);
+      targetCtx.fillStyle = '#b71c1c';
+      targetCtx.fill();
+      targetCtx.strokeStyle = '#7f0000';
+      targetCtx.lineWidth = 3;
+      targetCtx.stroke();
+      targetCtx.fillStyle = '#ff8a80';
+      targetCtx.beginPath();
+      targetCtx.arc(-4, -4, 3, 0, Math.PI * 2);
+      targetCtx.arc(5, 3, 2, 0, Math.PI * 2);
+      targetCtx.fill();
+    } else if (type === 'mushroom') {
+      targetCtx.fillStyle = '#f5f5f5';
+      targetCtx.beginPath();
+      targetCtx.arc(0, -4, 14, Math.PI, 0);
+      targetCtx.fill();
+      targetCtx.fillRect(-5, -4, 10, 14);
+      targetCtx.strokeStyle = '#9e9e9e';
+      targetCtx.lineWidth = 2;
+      targetCtx.stroke();
+    } else if (type === 'pepper') {
+      targetCtx.strokeStyle = '#2e7d32';
+      targetCtx.lineWidth = 6;
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, 12, 0, Math.PI * 1.2);
+      targetCtx.stroke();
+    } else if (type === 'olive') {
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, 12, 0, Math.PI * 2);
+      targetCtx.fillStyle = '#212121';
+      targetCtx.fill();
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, 5, 0, Math.PI * 2);
+      targetCtx.fillStyle = '#ffea00';
+      targetCtx.fill();
+    }
+    targetCtx.restore();
+  }
+
+  /* ==========================================================================
+     PHASE 2: OVEN BAKING
+     ========================================================================== */
+  function startBakingPhase() {
+    if (toppings.length === 0) {
+      for (let i = 0; i < 10; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const r = Math.random() * (radius - 50);
+        toppings.push({
+          x: Math.cos(ang) * r,
+          y: Math.sin(ang) * r,
+          type: ['pepperoni', 'mushroom', 'pepper', 'olive'][i % 4]
+        });
+      }
+    }
+
+    currentPhase = 2;
+    document.getElementById('badgeStep1').classList.remove('active');
+    document.getElementById('badgeStep2').classList.add('active');
+
+    const ovenModal = document.getElementById('ovenModal');
+    const progressBar = document.getElementById('ovenProgress');
+    ovenModal.classList.add('active');
+    playSound('bake');
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      progressBar.style.width = progress + '%';
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          ovenModal.classList.remove('active');
+          initSlicedPhase();
+        }, 300);
+      }
+    }, 100);
+  }
+
+  /* ==========================================================================
+     PHASE 3 & 4: SLICED PIZZA & CHEF FEEDING INTERACTION
+     ========================================================================== */
+  function initSlicedPhase() {
+    currentPhase = 3;
+    document.getElementById('badgeStep2').classList.remove('active');
+    document.getElementById('badgeStep3').classList.add('active');
+
+    document.getElementById('toppingBar').style.display = 'none';
+    document.getElementById('sliceToolbar').style.display = 'flex';
+    document.getElementById('eatenCounter').style.display = 'block';
+
+    updateSpeechBubble("우와! 노릇노릇 피자가 구워졌어! 🍕<br>피자 조각을 드래그해서 요리사에게 먹여줘!");
+
+    buildSlices(currentSliceCount);
+    drawSlicedPizza();
+  }
+
+  function setSliceCount(count) {
+    if (isFeedingStarted) return;
+    currentSliceCount = count;
+    document.querySelectorAll('.slice-btn').forEach(btn => btn.classList.remove('active'));
+    if (count === 4) document.getElementById('btnSlice4').classList.add('active');
+    if (count === 6) document.getElementById('btnSlice6').classList.add('active');
+    if (count === 8) document.getElementById('btnSlice8').classList.add('active');
+
+    playSound('slice');
+    animateKnifeCut(count, () => {
+      buildSlices(count);
+      drawSlicedPizza();
+    });
+  }
+
+  function animateKnifeCut(count, callback) {
+    const knife = document.getElementById('cutterKnife');
+    knife.style.display = 'block';
+    let angleStep = (Math.PI * 2) / count;
+    let step = 0;
+
+    const runCut = () => {
+      if (step >= count / 2) {
+        knife.style.display = 'none';
+        if (callback) callback();
+        return;
+      }
+      let currentAngle = step * angleStep;
+      let startX = cx + Math.cos(currentAngle) * (radius + 20) - 45;
+      let startY = cy + Math.sin(currentAngle) * (radius + 20) - 45;
+      let endX = cx - Math.cos(currentAngle) * (radius + 20) - 45;
+      let endY = cy - Math.sin(currentAngle) * (radius + 20) - 45;
+
+      knife.style.left = startX + 'px';
+      knife.style.top = startY + 'px';
+
+      knife.animate([
+        { left: startX + 'px', top: startY + 'px' },
+        { left: endX + 'px', top: endY + 'px' }
+      ], {
+        duration: 250,
+        easing: 'ease-in-out'
+      }).onfinish = () => {
+        step++;
+        runCut();
+      };
+    };
+    runCut();
+  }
+
+  function buildSlices(count) {
+    slices = [];
+    let anglePerSlice = (Math.PI * 2) / count;
+    for (let i = 0; i < count; i++) {
+      slices.push({
+        id: i,
+        angleStart: i * anglePerSlice,
+        angleEnd: (i + 1) * anglePerSlice,
+        isEaten: false,
+        explodeOffset: 12,
+        stackLevel: 1
+      });
+    }
+  }
+
+  function drawSlicedPizza() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    slices.forEach((slice, idx) => {
+      if (slice.isEaten) return;
+
+      // Faded placeholder if slice is currently being dragged around!
+      const isBeingDragged = (idx === draggedSliceIndex);
+
+      const midAngle = (slice.angleStart + slice.angleEnd) / 2;
+      const offsetX = Math.cos(midAngle) * slice.explodeOffset;
+      const offsetY = Math.sin(midAngle) * slice.explodeOffset;
+
+      ctx.save();
+      ctx.translate(cx + offsetX, cy + offsetY);
+      if (isBeingDragged) {
+        ctx.globalAlpha = 0.25; // Faded in main canvas while floating preview moves!
+      }
+
+      // Render Sector Geometry (부채꼴)
+      drawSingleSector(ctx, slice, false);
+
+      ctx.restore();
+    });
+  }
+
+  function drawSingleSector(targetCtx, slice, isFloating = false) {
+    const startA = isFloating ? 0 : slice.angleStart;
+    const endA = isFloating ? (slice.angleEnd - slice.angleStart) : slice.angleEnd;
+    const centerOffX = isFloating ? 0 : 0;
+    const centerOffY = isFloating ? 0 : 0;
+
+    targetCtx.beginPath();
+    targetCtx.moveTo(centerOffX, centerOffY);
+    targetCtx.arc(centerOffX, centerOffY, radius, startA, endA);
+    targetCtx.closePath();
+
+    // Golden Baked Texture Fill
+    const grad = targetCtx.createRadialGradient(0, 0, 10, 0, 0, radius);
+    grad.addColorStop(0, '#ffe57f');
+    grad.addColorStop(0.7, '#ffc107');
+    grad.addColorStop(1, '#d7ccc8');
+    targetCtx.fillStyle = grad;
+    targetCtx.fill();
+
+    // Outer Crust (호)
+    targetCtx.beginPath();
+    targetCtx.arc(centerOffX, centerOffY, radius, startA, endA);
+    targetCtx.lineWidth = 14;
+    targetCtx.strokeStyle = '#c17817';
+    targetCtx.stroke();
+
+    // Cheese Surface
+    targetCtx.beginPath();
+    targetCtx.moveTo(centerOffX, centerOffY);
+    targetCtx.arc(centerOffX, centerOffY, radius - 12, startA, endA);
+    targetCtx.closePath();
+    targetCtx.fillStyle = '#ffb703';
+    targetCtx.fill();
+
+    // Clip & Draw Toppings inside slice
+    targetCtx.save();
+    targetCtx.clip();
+    if (isFloating) {
+      // Rotate toppings to match floating slice frame
+      targetCtx.rotate(-slice.angleStart);
+    }
+    toppings.forEach(t => {
+      drawToppingItem(targetCtx, t.x, t.y, t.type);
+    });
+    targetCtx.restore();
+
+    // Outer Outline
+    targetCtx.beginPath();
+    targetCtx.moveTo(centerOffX, centerOffY);
+    targetCtx.arc(centerOffX, centerOffY, radius, startA, endA);
+    targetCtx.closePath();
+    targetCtx.lineWidth = 3;
+    targetCtx.strokeStyle = isFloating ? '#e63946' : 'rgba(0,0,0,0.35)';
+    targetCtx.stroke();
+
+    // Stack level badge
+    if (slice.stackLevel > 1) {
+      const midA = (startA + endA) / 2;
+      const bx = Math.cos(midA) * (radius * 0.55);
+      const by = Math.sin(midA) * (radius * 0.55);
+      targetCtx.beginPath();
+      targetCtx.arc(bx, by, 18, 0, Math.PI * 2);
+      targetCtx.fillStyle = '#e63946';
+      targetCtx.fill();
+      targetCtx.strokeStyle = '#fff';
+      targetCtx.lineWidth = 2.5;
+      targetCtx.stroke();
+
+      targetCtx.fillStyle = '#fff';
+      targetCtx.font = 'bold 16px Pretendard';
+      targetCtx.textAlign = 'center';
+      targetCtx.textBaseline = 'middle';
+      targetCtx.fillText(`x${slice.stackLevel}`, bx, by);
+    }
+  }
+
+  /* ==========================================================================
+     FLOATING DRAG VISUAL & CHEF FEEDING MECHANICS
+     ========================================================================== */
+  let isDragging = false;
+  const chefPanel = document.getElementById('chefPanel');
+
+  canvas.addEventListener('mousedown', startDrag);
+  canvas.addEventListener('touchstart', startDrag, { passive: false });
+
+  window.addEventListener('mousemove', moveDrag);
+  window.addEventListener('touchmove', moveDrag, { passive: false });
+
+  window.addEventListener('mouseup', endDrag);
+  window.addEventListener('touchend', endDrag);
+
+  function getCanvasCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height),
+      rawX: clientX,
+      rawY: clientY
+    };
+  }
+
+  function findSliceIndexAt(x, y) {
+    const dx = x - cx;
+    const dy = y - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > radius + 15) return -1;
+
+    let angle = Math.atan2(dy, dx);
+    if (angle < 0) angle += Math.PI * 2;
+
+    return slices.findIndex(s => !s.isEaten && angle >= s.angleStart && angle <= s.angleEnd);
+  }
+
+  function renderFloatingSlice(slice, mouseX, mouseY) {
+    floatCanvas.width = 360;
+    floatCanvas.height = 360;
+    floatCtx.clearRect(0, 0, floatCanvas.width, floatCanvas.height);
+
+    floatCtx.save();
+    floatCtx.translate(180, 180);
+
+    // Draw single slice centered on floating canvas
+    drawSingleSector(floatCtx, slice, true);
+    floatCtx.restore();
+
+    floatCanvas.style.left = mouseX + 'px';
+    floatCanvas.style.top = mouseY + 'px';
+    floatCanvas.style.display = 'block';
+  }
+
+  function hideFloatingSlice() {
+    floatCanvas.style.display = 'none';
+  }
+
+  function startDrag(e) {
+    if (currentPhase !== 3) return;
+    const coords = getCanvasCoords(e);
+    const hitIdx = findSliceIndexAt(coords.x, coords.y);
+    if (hitIdx !== -1) {
+      draggedSliceIndex = hitIdx;
+      selectedSliceIndex = hitIdx;
+      isDragging = true;
+
+      // Render floating preview slice that follows mouse/touch
+      renderFloatingSlice(slices[hitIdx], coords.rawX, coords.rawY);
+
+      // Show sector info tooltip
+      const deg = Math.round((360 / currentSliceCount) * slices[hitIdx].stackLevel);
+      showTooltip(coords.rawX, coords.rawY, `중심각: ${deg}° (${slices[hitIdx].stackLevel}조각)`);
+      drawSlicedPizza();
+    }
+  }
+
+  function moveDrag(e) {
+    if (!isDragging || draggedSliceIndex === -1) return;
+    const coords = getCanvasCoords(e);
+
+    // Update floating slice position
+    floatCanvas.style.left = coords.rawX + 'px';
+    floatCanvas.style.top = coords.rawY + 'px';
+
+    showTooltip(coords.rawX, coords.rawY, `중심각: ${Math.round((360 / currentSliceCount) * slices[draggedSliceIndex].stackLevel)}° (${slices[draggedSliceIndex].stackLevel}조각)`);
+
+    // Check if dragging over Chef Panel
+    const chefRect = chefPanel.getBoundingClientRect();
+    if (coords.rawX >= chefRect.left && coords.rawX <= chefRect.right &&
+        coords.rawY >= chefRect.top && coords.rawY <= chefRect.bottom) {
+      chefPanel.classList.add('drag-over');
+    } else {
+      chefPanel.classList.remove('drag-over');
+    }
+  }
+
+  function endDrag(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    chefPanel.classList.remove('drag-over');
+    hideFloatingSlice();
+    hideTooltip();
+
+    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+
+    const chefRect = chefPanel.getBoundingClientRect();
+    if (clientX >= chefRect.left && clientX <= chefRect.right &&
+        clientY >= chefRect.top && clientY <= chefRect.bottom) {
+      // Feed to Chef!
+      feedSliceToChef(draggedSliceIndex);
+    } else {
+      // Check if dropped onto another slice for STACKING (부채꼴 포개기)
+      const coords = getCanvasCoords(e);
+      const targetIdx = findSliceIndexAt(coords.x, coords.y);
+      if (targetIdx !== -1 && targetIdx !== draggedSliceIndex) {
+        // Stack dragged slice onto target slice!
+        slices[targetIdx].stackLevel += slices[draggedSliceIndex].stackLevel;
+        slices[draggedSliceIndex].isEaten = true;
+        playSound('click');
+        const deg = Math.round((360 / currentSliceCount) * slices[targetIdx].stackLevel);
+        updateSpeechBubble(`피자 조각을 서로 포개었어요! 🍕<br>중심각이 <b>${deg}°</b>(${slices[targetIdx].stackLevel}조각)로 늘어났어!`);
+      }
+    }
+
+    draggedSliceIndex = -1;
+    drawSlicedPizza();
+  }
+
+  function feedSliceToChef(sliceIndex) {
+    if (sliceIndex === -1 || slices[sliceIndex].isEaten) return;
+
+    if (!isFeedingStarted) {
+      isFeedingStarted = true;
+      document.getElementById('sliceToolbar').style.display = 'none';
+    }
+
+    const fedCount = slices[sliceIndex].stackLevel;
+    slices[sliceIndex].isEaten = true;
+    eatenTotalCount += fedCount;
+
+    document.getElementById('eatenCountText').innerText = eatenTotalCount;
+    playSound('eat');
+
+    const chefImg = document.getElementById('chefImg');
+    chefImg.src = 'images/chef_eating.jpg';
+    chefImg.classList.add('pop');
+    setTimeout(() => chefImg.classList.remove('pop'), 450);
+
+    if (fedCount === 1) {
+      updateSpeechBubble(`1조각을 먹었어! 냠냠! 😋`);
+    } else {
+      updateSpeechBubble(`${fedCount}조각을 한 번에 먹었어! 우와~ 😋🍕`);
+    }
+
+    const remainingSlices = slices.filter(s => !s.isEaten);
+    if (remainingSlices.length === 0) {
+      setTimeout(() => {
+        triggerAllEatenCelebration();
+      }, 600);
+    } else {
+      setTimeout(() => {
+        chefImg.src = 'images/chef_waiting.jpg';
+      }, 1200);
+    }
+
+    drawSlicedPizza();
+  }
+
+  function triggerAllEatenCelebration() {
+    playSound('win');
+    const chefImg = document.getElementById('chefImg');
+    chefImg.src = 'images/chef_full.jpg';
+    updateSpeechBubble(`음! 배부르다! 🎉<br>피자를 다 먹었어요! 참 잘했어요!`);
+
+    document.getElementById('resetControls').style.display = 'flex';
+    startConfetti();
+  }
+
+  function updateSpeechBubble(text) {
+    document.getElementById('speechBubble').innerHTML = text;
+  }
+
+  function showTooltip(x, y, text) {
+    const tip = document.getElementById('sectorTooltip');
+    tip.innerHTML = text;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+    tip.style.display = 'block';
+  }
+
+  function hideTooltip() {
+    document.getElementById('sectorTooltip').style.display = 'none';
+  }
+
+  /* ==========================================================================
+     RESET CONTROLS
+     ========================================================================== */
+  function resetToBakedState() {
+    eatenTotalCount = 0;
+    isFeedingStarted = false;
+    document.getElementById('eatenCountText').innerText = '0';
+    document.getElementById('resetControls').style.display = 'none';
+    document.getElementById('sliceToolbar').style.display = 'flex';
+    document.getElementById('chefImg').src = 'images/chef_waiting.jpg';
+
+    updateSpeechBubble("다시 자르고 요리사에게 먹여보자! ✂️");
+    buildSlices(currentSliceCount);
+    drawSlicedPizza();
+  }
+
+  function resetToCraftState() {
+    eatenTotalCount = 0;
+    isFeedingStarted = false;
+    toppings = [];
+    currentPhase = 1;
+
+    document.getElementById('badgeStep3').classList.remove('active');
+    document.getElementById('badgeStep1').classList.add('active');
+
+    document.getElementById('toppingBar').style.display = 'flex';
+    document.getElementById('sliceToolbar').style.display = 'none';
+    document.getElementById('eatenCounter').style.display = 'none';
+    document.getElementById('resetControls').style.display = 'none';
+    document.getElementById('chefImg').src = 'images/chef_waiting.jpg';
+
+    updateSpeechBubble("안녕! 새로운 맛있는 피자를 만들어줘! 🍕");
+    drawCraftPizza();
+  }
+
+  /* ==========================================================================
+     CELEBRATION CONFETTI EFFECT
+     ========================================================================== */
+  function startConfetti() {
+    const cCanvas = document.getElementById('confettiCanvas');
+    cCanvas.width = window.innerWidth;
+    cCanvas.height = window.innerHeight;
+    cCtx = cCanvas.getContext('2d');
+    const particles = [];
+    const colors = ['#e63946', '#ffb703', '#ff7b00', '#2a9d8f', '#457b9d'];
+
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: Math.random() * cCanvas.width,
+        y: Math.random() * cCanvas.height - cCanvas.height,
+        size: Math.random() * 10 + 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vy: Math.random() * 4 + 2,
+        vx: Math.random() * 2 - 1
+      });
+    }
+
+    let frame = 0;
+    function renderConfetti() {
+      if (frame > 130) {
+        cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+        return;
+      }
+      cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+      particles.forEach(p => {
+        p.y += p.vy;
+        p.x += p.vx;
+        cCtx.fillStyle = p.color;
+        cCtx.fillRect(p.x, p.y, p.size, p.size);
+      });
+      frame++;
+      requestAnimationFrame(renderConfetti);
+    }
+    renderConfetti();
+  }
+
+  // Initial draw
+  drawCraftPizza();
+</script>
+</body>
+</html>
