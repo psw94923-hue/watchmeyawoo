@@ -1256,14 +1256,15 @@
   }
 
   function updateTooltipAndSpeechForDrag(slice, x, y) {
+    // Hide floating black box tooltip so it doesn't cover the pizza graphics
+    hideTooltip();
+
     const K = slice.stackLevel;
     const unitDeg = Math.round(360 / currentSliceCount);
     const totalDeg = unitDeg * K;
 
-    if (K === 1) {
-      showTooltip(x, y, `1조각 | 중심각: ${totalDeg}°`);
-    } else {
-      showTooltip(x, y, `🪭 ${K}조각 펼쳐짐! | 중심각: ${totalDeg}° (${unitDeg}°×${K}) | 호의 길이 & 넓이 ${K}배!`);
+    if (K > 1) {
+      updateSpeechBubble(`🪭 <b>${K}조각 펼쳐짐!</b><br>중심각 <b>${totalDeg}°</b> (${unitDeg}°×${K}) | 호의 길이 & 넓이 ${K}배!`);
     }
   }
 
