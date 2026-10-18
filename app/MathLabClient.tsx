@@ -262,6 +262,69 @@ export default function MathLabClient() {
             </h1>
           </div>
 
+          {/* NEW FEATURED APP ROW */}
+          <div className="w-full max-w-7xl mb-8 animate-fade-in">
+            <div
+              onClick={() => { window.location.href = '/similarity.html'; }}
+              className="group cursor-pointer bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[3px] rounded-3xl shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 transform hover:-translate-y-1.5"
+            >
+              <div className="bg-white rounded-[22px] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+                {/* Background glowing aura */}
+                <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100/60 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-100/80 transition-all" />
+
+                {/* Left Info Column */}
+                <div className="flex-1 z-10">
+                  <div className="flex flex-wrap items-center gap-2.5 mb-3">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500 text-white font-black text-xs tracking-wider animate-pulse shadow-md shadow-red-500/30">
+                      <span>✨</span>
+                      <span>NEW!</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
+                      중2 수학 • 도형의 닮음
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                      히든포크스 스타일 탐색 게임
+                    </span>
+                  </div>
+
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors flex items-center gap-2">
+                    <span>🔍 닮은 그림 찾기!</span>
+                  </h2>
+
+                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mb-6">
+                    워밍업 4단계를 통과하고, 아기자기한 손그림 마을에서 실생활 속 <b>5가지 닮음</b>을 찾아보세요! 
+                    색연필로 직접 체크하고 학습지를 채워보는 즐거운 수학 탐험.
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-4">
+                    <button className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-black text-sm sm:text-base shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 active:scale-95 transition-all flex items-center gap-2">
+                      <span>지금 탐험 시작하기</span>
+                      <span className="text-lg">➔</span>
+                    </button>
+                    <span className="text-xs font-bold text-slate-400">
+                      💡 모바일 터치 & PC 마우스 완벽 지원
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right Visual Preview */}
+                <div className="w-full md:w-80 h-44 sm:h-48 rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md relative group-hover:border-indigo-300 transition-colors flex-shrink-0 bg-slate-50">
+                  <img
+                    src="/images/similarity/hidden_folks_map.jpg"
+                    alt="닮은 그림 찾기 맵 미리보기"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-3.5">
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="text-2xl">✏️</span>
+                      <span className="text-xs font-extrabold tracking-tight">지도를 확대하고 색연필로 콕!</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* MAIN APP SELECTION CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full max-w-7xl">
             {/* CARD 1: PIZZA CUTTING APP */}

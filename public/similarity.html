@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+  <title>닮은 그림 찾기! | 세원쌤의 수학 실험실</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@700;800;900&family=Pretendard:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --accent: #f59e0b;
+      --accent-coral: #ef4444;
+      --bg-cream: #faf7f2;
+      --card-bg: #ffffff;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --font-jua: 'Jua', sans-serif;
+      --font-sans: 'Pretendard', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-cream);
+      color: var(--text-dark);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP NAVBAR */
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 2px solid #e2e8f0;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .home-btn {
+      font-family: var(--font-jua);
+      font-size: 1rem;
+      padding: 7px 16px;
+      border-radius: 9999px;
+      background: #f1f5f9;
+      color: #334155;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1.5px solid #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .home-btn:hover {
+      background: #e2e8f0;
+      transform: translateY(-1px);
+    }
+
+    .game-title {
+      font-family: var(--font-jua);
+      font-size: 1.35rem;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-sub {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 800;
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 3px 10px;
+      border-radius: 9999px;
+    }
+
+    .progress-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-jua);
+      font-size: 1.05rem;
+      color: var(--primary);
+    }
+
+    /* APP CONTAINER */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ----------------------------------------------------
+       VIEW 1: WARMUP GAME
+       ---------------------------------------------------- */
+    #warmupView {
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .warmup-header-card {
+      background: #ffffff;
+      border-radius: 24px;
+      border: 2px solid #e2e8f0;
+      padding: 18px 24px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .question-badge {
+      display: inline-block;
+      font-family: var(--font-jua);
+      font-size: 1.15rem;
+      color: var(--primary);
+      background: #eef2ff;
+      padding: 4px 14px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+    }
+
+    .question-title {
+      font-family: var(--font-jua);
+      font-size: 1.35rem;
+      color: #1e293b;
+      line-height: 1.4;
+    }
+
+    .question-media-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 20px;
+      border: 2px dashed #cbd5e1;
+    }
+
+    .question-img-tag {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .question-img-label {
+      font-family: var(--font-jua);
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    /* 2x2 SELECTION GRID */
+    .choices-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+    }
+
+    @media (max-width: 600px) {
+      .choices-grid {
+        grid-template-columns: 1fr;
+      }
+      .question-img-tag {
+        width: 85px;
+        height: 85px;
+      }
+    }
+
+    .choice-card {
+      background: #ffffff;
+      border-radius: 22px;
+      border: 2.5px solid #e2e8f0;
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      user-select: none;
+    }
+
+    .choice-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+      box-shadow: 0 12px 25px rgba(99, 102, 241, 0.15);
+    }
+
+    .choice-num {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      font-family: var(--font-jua);
+      font-size: 1rem;
+      color: #fff;
+      background: #475569;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .choice-card:hover .choice-num {
+      background: var(--primary);
+    }
+
+    .choice-img {
+      width: 100%;
+      max-width: 220px;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+      border-radius: 16px;
+      background: #ffffff;
+      transition: transform 0.2s;
+    }
+
+    .choice-card:hover .choice-img {
+      transform: scale(1.02);
+    }
+
+    /* ERROR FLASH & COOLDOWN OVERLAY */
+    .cooldown-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(239, 68, 68, 0.35);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      animation: sirenFlash 0.5s infinite alternate ease-in-out;
+    }
+
+    @keyframes sirenFlash {
+      from { background: rgba(239, 68, 68, 0.2); }
+      to { background: rgba(239, 68, 68, 0.45); }
+    }
+
+    .cooldown-box {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 24px 36px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      border: 4px solid #ef4444;
+      text-align: center;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .cooldown-title {
+      font-family: var(--font-jua);
+      font-size: 1.8rem;
+      color: #b91c1c;
+      margin-bottom: 8px;
+    }
+
+    .cooldown-timer {
+      font-family: var(--font-jua);
+      font-size: 3.5rem;
+      color: #ef4444;
+      line-height: 1;
+    }
+
+    .cooldown-desc {
+      font-size: 0.95rem;
+      color: #64748b;
+      margin-top: 6px;
+      font-weight: 700;
+    }
+
+    /* SUCCESS POPUP */
+    .success-toast {
+      position: fixed;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #10b981;
+      color: white;
+      font-family: var(--font-jua);
+      font-size: 1.5rem;
+      padding: 14px 32px;
+      border-radius: 9999px;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .success-toast.active {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ----------------------------------------------------
+       PASSCODE MODAL (AFTER 4 STAGES)
+       ---------------------------------------------------- */
+    .code-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .code-card {
+      background: #ffffff;
+      border-radius: 32px;
+      max-width: 480px;
+      width: 100%;
+      padding: 32px 28px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      border: 3px solid #e0e7ff;
+      text-align: center;
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .code-emoji {
+      font-size: 3.5rem;
+      margin-bottom: 12px;
+    }
+
+    .code-title {
+      font-family: var(--font-jua);
+      font-size: 1.7rem;
+      color: #1e1b4b;
+      margin-bottom: 8px;
+    }
+
+    .code-hint-box {
+      background: #f1f5f9;
+      border-radius: 16px;
+      padding: 12px 18px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #475569;
+      margin: 16px 0 20px;
+      border: 1px dashed #cbd5e1;
+    }
+
+    .code-input {
+      width: 100%;
+      font-family: var(--font-jua);
+      font-size: 1.5rem;
+      text-align: center;
+      padding: 12px;
+      border-radius: 16px;
+      border: 2px solid #cbd5e1;
+      outline: none;
+      transition: all 0.2s;
+      letter-spacing: 2px;
+      text-transform: lowercase;
+    }
+
+    .code-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+    }
+
+    .code-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      font-family: var(--font-jua);
+      font-size: 1.25rem;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+      transition: all 0.2s;
+    }
+
+    .code-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(79, 70, 229, 0.45);
+    }
+
+    .code-error-msg {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #dc2626;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* ----------------------------------------------------
+       TUTORIAL POPUP MODAL
+       ---------------------------------------------------- */
+    .tutorial-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 130;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .tutorial-card {
+      background: #ffffff;
+      border-radius: 32px;
+      max-width: 600px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      border: 3px solid #e0e7ff;
+      text-align: center;
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .tutorial-img-wrap {
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 2px solid #e2e8f0;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+      background: #ffffff;
+    }
+
+    .tutorial-img-tag {
+      width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .tutorial-text {
+      font-family: var(--font-jua);
+      font-size: 1.35rem;
+      color: #0f172a;
+      line-height: 1.4;
+    }
+
+    .tutorial-subtext {
+      font-size: 0.95rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .tutorial-start-btn {
+      padding: 14px 40px;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-family: var(--font-jua);
+      font-size: 1.3rem;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s;
+    }
+
+    .tutorial-start-btn:hover {
+      transform: translateY(-2px) scale(1.03);
+    }
+
+    /* ----------------------------------------------------
+       VIEW 2: MAIN GAME (HIDDEN FOLKS MAP EXPLORER)
+       ---------------------------------------------------- */
+    #mainGameView {
+      display: none;
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #f8fafc;
+      user-select: none;
+    }
+
+    /* MAP PAN & ZOOM CANVAS CONTAINER */
+    .map-viewport {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .map-viewport.mode-pen {
+      cursor: crosshair;
+    }
+
+    .map-viewport:active {
+      cursor: grabbing;
+    }
+
+    .map-viewport.mode-pen:active {
+      cursor: crosshair;
+    }
+
+    .map-world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    .map-img {
+      display: block;
+      width: 1800px; /* Base rendering width for crisp line art */
+      height: auto;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* CIRCLE MARKERS DRAWN ON MAP */
+    .drawn-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .drawn-marker svg {
+      width: 110px;
+      height: 110px;
+      filter: drop-shadow(0 4px 10px rgba(239, 68, 68, 0.4));
+    }
+
+    /* FLOATING BOTTOM TOOLBAR DOCK */
+    .game-dock {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border-radius: 28px;
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 60;
+      max-width: 95vw;
+      overflow-x: auto;
+    }
+
+    .dock-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dock-label {
+      font-family: var(--font-jua);
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-right: 4px;
+    }
+
+    .tool-btn {
+      background: #f1f5f9;
+      border: 2px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 8px 16px;
+      font-family: var(--font-jua);
+      font-size: 1.05rem;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tool-btn.active {
+      background: #eef2ff;
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .dock-divider {
+      width: 2px;
+      height: 32px;
+      background: #e2e8f0;
+    }
+
+    /* TARGET HINTS LIST */
+    .targets-list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .target-chip {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-jua);
+      font-size: 0.95rem;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .target-chip:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+    }
+
+    .target-chip.found {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #065f46;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    }
+
+    .target-chip.found .chip-check {
+      display: inline-block;
+    }
+
+    .chip-check {
+      display: none;
+      color: #10b981;
+      font-weight: bold;
+    }
+
+    /* ZOOM CONTROLS (TOP RIGHT OF MAP) */
+    .zoom-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 60;
+    }
+
+    .zoom-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+      color: #334155;
+      font-size: 1.4rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .zoom-btn:hover {
+      background: #ffffff;
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    /* ----------------------------------------------------
+       INFO POPUP CARD (FOUND EXPLANATION)
+       ---------------------------------------------------- */
+    .info-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(5px);
+      z-index: 150;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .info-modal-backdrop.active {
+      display: flex;
+    }
+
+    .info-card {
+      background: #ffffff;
+      border-radius: 30px;
+      max-width: 540px;
+      width: 100%;
+      padding: 30px 28px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+      border: 3px solid #6366f1;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .info-badge-top {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-family: var(--font-jua);
+      font-size: 1.05rem;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+    }
+
+    .info-title {
+      font-family: var(--font-jua);
+      font-size: 1.6rem;
+      color: #0f172a;
+      margin-bottom: 14px;
+    }
+
+    .info-desc-box {
+      background: #f8fafc;
+      border-radius: 20px;
+      border: 2px solid #e2e8f0;
+      padding: 18px 20px;
+      font-size: 1.15rem;
+      color: #1e293b;
+      line-height: 1.6;
+      font-weight: 700;
+      margin-bottom: 22px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    .info-desc-box mark {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .info-close-btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 18px;
+      background: #0f172a;
+      color: white;
+      font-family: var(--font-jua);
+      font-size: 1.15rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .info-close-btn:hover {
+      background: #334155;
+    }
+
+    /* ALL COMPLETE BANNER */
+    .complete-banner {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.95);
+      backdrop-filter: blur(8px);
+      color: white;
+      font-family: var(--font-jua);
+      font-size: 1.25rem;
+      padding: 10px 24px;
+      border-radius: 9999px;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+      z-index: 65;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header>
+    <div class="brand-wrap">
+      <a href="/" class="home-btn">🏠 메인으로</a>
+      <div class="game-title">
+        <span>🔍 닮은 그림 찾기!</span>
+        <span class="badge-sub">중2 수학</span>
+      </div>
+    </div>
+    <div class="progress-box" id="headerProgress">
+      <span>워밍업 1 / 4</span>
+    </div>
+  </header>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main>
+    <!-- VIEW 1: WARMUP 4-STAGE QUIZ -->
+    <div id="warmupView">
+      <div class="warmup-header-card">
+        <div>
+          <div class="question-badge" id="warmupBadge">Stage 1</div>
+          <h2 class="question-title" id="warmupQuestion">1번. 다음 그림과 닮음 관계에 있는 그림은?</h2>
+        </div>
+        <div class="question-media-wrap">
+          <img id="warmupOrigImg" class="question-img-tag" src="/images/similarity/stage1/bear_original.png" alt="원본 문제 그림">
+          <span class="question-img-label">기준 그림</span>
+        </div>
+      </div>
+
+      <!-- 2x2 CHOICES GRID -->
+      <div class="choices-grid" id="choicesGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- VIEW 2: HIDDEN FOLKS MAP EXPLORER -->
+    <div id="mainGameView">
+      <!-- ZOOM BUTTONS -->
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomInBtn" title="확대">+</button>
+        <button class="zoom-btn" id="zoomOutBtn" title="축소">−</button>
+        <button class="zoom-btn" id="zoomResetBtn" style="font-size:0.9rem;" title="화면 맞춤">⟲</button>
+      </div>
+
+      <!-- ALL COMPLETE BANNER -->
+      <div class="complete-banner" id="completeBanner">
+        <span>🎉 모든 닮음을 다 찾았어요! '둘러보기' 상태로 마음껏 감상해 보세요!</span>
+      </div>
+
+      <!-- INTERACTIVE MAP VIEWPORT -->
+      <div class="map-viewport mode-pen" id="mapViewport">
+        <div class="map-world" id="mapWorld">
+          <img class="map-img" id="mapImgTag" src="/images/similarity/hidden_folks_map.jpg" alt="닮음 마을 지도">
+          <!-- Found Marker Circles placed dynamically -->
+          <div id="markersLayer"></div>
+        </div>
+      </div>
+
+      <!-- FLOATING DOCK TOOLBAR -->
+      <div class="game-dock">
+        <div class="dock-group">
+          <span class="dock-label">도구:</span>
+          <button class="tool-btn active" id="toolPenBtn">
+            <span>✏️</span>
+            <span>색연필</span>
+          </button>
+          <button class="tool-btn" id="toolLensBtn">
+            <span>🔍</span>
+            <span>돋보기</span>
+          </button>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <div class="dock-group">
+          <span class="dock-label">찾을 것 (5개):</span>
+          <div class="targets-list" id="targetsList">
+            <!-- Target Chips -->
+            <div class="target-chip" id="chip-map" onclick="reopenTargetModal('map')">
+              <span>🗺️ 지도</span>
+              <span class="chip-check">✓</span>
+            </div>
+            <div class="target-chip" id="chip-camera" onclick="reopenTargetModal('camera')">
+              <span>📷 카메라</span>
+              <span class="chip-check">✓</span>
+            </div>
+            <div class="target-chip" id="chip-mirror" onclick="reopenTargetModal('mirror')">
+              <span>🪞 거울</span>
+              <span class="chip-check">✓</span>
+            </div>
+            <div class="target-chip" id="chip-blueprint" onclick="reopenTargetModal('blueprint')">
+              <span>📐 설계도</span>
+              <span class="chip-check">✓</span>
+            </div>
+            <div class="target-chip" id="chip-shoes" onclick="reopenTargetModal('shoes')">
+              <span>👟 신발</span>
+              <span class="chip-check">✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SUCCESS TOAST -->
+  <div class="success-toast" id="successToast">
+    <span>✨ 정답입니다! 다음 단계로 넘어갑니다!</span>
+  </div>
+
+  <!-- WRONG ANSWER COOLDOWN OVERLAY -->
+  <div class="cooldown-overlay" id="cooldownOverlay" style="display: none;">
+    <div class="cooldown-box">
+      <div class="cooldown-title">🚨 오답입니다!</div>
+      <div class="cooldown-timer" id="cooldownTimer">3</div>
+      <div class="cooldown-desc">모양이 찌그러지지 않고 크기만 확대/축소된 그림을 찾아보세요!</div>
+    </div>
+  </div>
+
+  <!-- PASSCODE MODAL (AFTER 4 STAGES) -->
+  <div class="code-modal-backdrop" id="codeModal" style="display: none;">
+    <div class="code-card">
+      <div class="code-emoji">🏆</div>
+      <h3 class="code-title">워밍업 4단계 완료!</h3>
+      <p style="color:#64748b; font-weight:700;">다음 게임으로 넘어가기 위해 암호 코드를 입력해 주세요.</p>
+      
+      <div class="code-hint-box">
+        💡 힌트: '닮은', '비슷한'이라는 뜻을 가진 영어 단어는? (7글자)
+      </div>
+
+      <input type="text" id="passcodeInput" class="code-input" placeholder="코드 입력" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="code-error-msg" id="codeErrorMsg">❌ 올바른 영단어 코드를 입력해 주세요!</div>
+      <button class="code-btn" id="passcodeSubmitBtn">본게임 입장하기 ➔</button>
+    </div>
+  </div>
+
+  <!-- TUTORIAL MODAL -->
+  <div class="tutorial-modal-backdrop" id="tutorialModal" style="display: none;">
+    <div class="tutorial-card">
+      <div class="tutorial-img-wrap">
+        <img class="tutorial-img-tag" src="/images/similarity/tutorial_example.jpg" alt="튜토리얼 예시">
+      </div>
+      <h3 class="tutorial-text">&lt;서로 닮은 관계에 있는 것들을 찾아서<br>색연필로 체크해보세요!&gt;</h3>
+      <p class="tutorial-subtext">
+        ✏️ <b>색연필 도구</b>로 맵을 누르면 닮음 관계인 물체를 동그라미 칠 수 있어요!<br>
+        🔍 <b>돋보기 도구</b>를 누르면 화면을 자유롭게 확대하고 움직여 볼 수 있습니다.<br>
+        숨겨진 5개의 닮음을 찾아 학습지에 적을 내용을 탐색해 보세요!
+      </p>
+      <button class="tutorial-start-btn" id="tutorialStartBtn">탐험 시작하기! 🚀</button>
+    </div>
+  </div>
+
+  <!-- FOUND EXPLANATION MODAL -->
+  <div class="info-modal-backdrop" id="infoModal">
+    <div class="info-card">
+      <div class="info-badge-top" id="infoBadge">🎯 발견 완료!</div>
+      <h3 class="info-title" id="infoTitle">지도</h3>
+      <div class="info-desc-box" id="infoDesc">
+        지도상의 거리는 실제 거리와 닮음 관계를 이루며, 축척을 이용해 실제 거리를 계산할 수 있습니다.
+      </div>
+      <button class="info-close-btn" onclick="closeInfoModal()">학습지에 메모하고 닫기</button>
+    </div>
+  </div>
+
+  <script>
+    // --------------------------------------------------------
+    // WEB AUDIO SYNTHESIZER (NO EXTERNAL AUDIO FILES NEEDED)
+    // --------------------------------------------------------
+    class SoundFx {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playCorrect() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        freqs.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.4);
+        });
+      }
+      playWrong() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.3);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+      playPop() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+      playFanfare() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+        const times = [0, 0.12, 0.24, 0.36, 0.54, 0.72];
+        notes.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + times[idx]);
+          gain.gain.setValueAtTime(0.25, now + times[idx]);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + times[idx] + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + times[idx]);
+          osc.stop(now + times[idx] + 0.45);
+        });
+      }
+    }
+    const sfx = new SoundFx();
+
+    // --------------------------------------------------------
+    // WARMUP 4-STAGE CONFIGURATION
+    // --------------------------------------------------------
+    const WARMUP_STAGES = [
+      {
+        stageNum: 1,
+        title: "1번. 다음 곰돌이와 닮음 관계에 있는 그림은?",
+        origImg: "/images/similarity/stage1/bear_original.png",
+        correctIndex: 2, // 2번 정답
+        choices: [
+          { img: "/images/similarity/stage1/opt1_vert.png", desc: "세로로 늘린 것" },
+          { img: "/images/similarity/stage1/opt2_similar.png", desc: "정비율 확대 (정답)" },
+          { img: "/images/similarity/stage1/opt3_horiz.png", desc: "가로로 늘린 것" },
+          { img: "/images/similarity/stage1/opt4_cat.png", desc: "고양이 인형" }
+        ]
+      },
+      {
+        stageNum: 2,
+        title: "2번. 다음 새싹 화분과 닮음 관계에 있는 그림은?",
+        origImg: "/images/similarity/stage2/plant_original.png",
+        correctIndex: 1, // 1번 정답
+        choices: [
+          { img: "/images/similarity/stage2/opt1_similar.png", desc: "정비율 확대 (정답)" },
+          { img: "/images/similarity/stage2/opt2_vert.png", desc: "세로로 늘린 것" },
+          { img: "/images/similarity/stage2/opt3_horiz.png", desc: "가로로 늘린 것" },
+          { img: "/images/similarity/stage2/opt4_flower.png", desc: "꽃으로 자란 화분" }
+        ]
+      },
+      {
+        stageNum: 3,
+        title: "3번. 다음 박지훈 아기 사진과 닮음 관계에 있는 그림은?",
+        origImg: "/images/similarity/stage3/jihoon_original.png",
+        correctIndex: 4, // 4번 정답
+        choices: [
+          { img: "/images/similarity/stage3/opt1_horiz.png", desc: "가로로 늘린 것" },
+          { img: "/images/similarity/stage3/opt2_vert.png", desc: "세로로 늘린 것" },
+          { img: "/images/similarity/stage3/opt3_adult.png", desc: "어른 박지훈 사진" },
+          { img: "/images/similarity/stage3/opt4_similar.png", desc: "정비율 확대 (정답)" }
+        ]
+      },
+      {
+        stageNum: 4,
+        title: "4번. 다음 삼각형과 닮음 관계에 있는 그림은?",
+        origImg: "/images/similarity/stage4/triangle_original.png",
+        correctIndex: 3, // 3번 정답
+        choices: [
+          { img: "/images/similarity/stage4/opt1_right.png", desc: "직각삼각형" },
+          { img: "/images/similarity/stage4/opt2_different.png", desc: "모양이 다른 삼각형" },
+          { img: "/images/similarity/stage4/opt3_similar.png", desc: "축소되고 뒤집힌 삼각형 (정답)" },
+          { img: "/images/similarity/stage4/opt4_obtuse.png", desc: "둔각삼각형" }
+        ]
+      }
+    ];
+
+    let currentWarmupIndex = 0;
+    let isCooldownActive = false;
+
+    function renderWarmupStage(index) {
+      const stage = WARMUP_STAGES[index];
+      document.getElementById('headerProgress').innerText = `워밍업 ${stage.stageNum} / 4`;
+      document.getElementById('warmupBadge').innerText = `Stage ${stage.stageNum}`;
+      document.getElementById('warmupQuestion').innerText = stage.title;
+      document.getElementById('warmupOrigImg').src = stage.origImg;
+
+      const grid = document.getElementById('choicesGrid');
+      grid.innerHTML = '';
+
+      stage.choices.forEach((c, idx) => {
+        const choiceNum = idx + 1;
+        const card = document.createElement('div');
+        card.className = 'choice-card';
+        card.onclick = () => handleChoiceClick(choiceNum);
+
+        card.innerHTML = `
+          <div class="choice-num">${choiceNum}</div>
+          <img class="choice-img" src="${c.img}" alt="선택지 ${choiceNum}번">
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function handleChoiceClick(chosenNum) {
+      if (isCooldownActive) return;
+
+      const stage = WARMUP_STAGES[currentWarmupIndex];
+      if (chosenNum === stage.correctIndex) {
+        // CORRECT
+        sfx.playCorrect();
+        showSuccessToast();
+
+        setTimeout(() => {
+          if (currentWarmupIndex < WARMUP_STAGES.length - 1) {
+            currentWarmupIndex++;
+            renderWarmupStage(currentWarmupIndex);
+          } else {
+            // Completed all 4 stages -> show code modal
+            document.getElementById('codeModal').style.display = 'flex';
+            setTimeout(() => {
+              document.getElementById('passcodeInput').focus();
+            }, 100);
+          }
+        }, 800);
+      } else {
+        // WRONG -> 3s COOLDOWN
+        sfx.playWrong();
+        startCooldownTimer(3);
+      }
+    }
+
+    function showSuccessToast() {
+      const toast = document.getElementById('successToast');
+      toast.classList.add('active');
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 700);
+    }
+
+    function startCooldownTimer(seconds) {
+      isCooldownActive = true;
+      const overlay = document.getElementById('cooldownOverlay');
+      const timerEl = document.getElementById('cooldownTimer');
+      overlay.style.display = 'flex';
+
+      let remain = seconds;
+      timerEl.innerText = remain;
+
+      const interval = setInterval(() => {
+        remain--;
+        if (remain > 0) {
+          timerEl.innerText = remain;
+        } else {
+          clearInterval(interval);
+          overlay.style.display = 'none';
+          isCooldownActive = false;
+        }
+      }, 1000);
+    }
+
+    // --------------------------------------------------------
+    // PASSCODE CHECK ('similar')
+    // --------------------------------------------------------
+    document.getElementById('passcodeSubmitBtn').addEventListener('click', checkPasscode);
+    document.getElementById('passcodeInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkPasscode();
+    });
+
+    function checkPasscode() {
+      const input = document.getElementById('passcodeInput').value.trim().toLowerCase();
+      const err = document.getElementById('codeErrorMsg');
+      if (input === 'similar') {
+        sfx.playCorrect();
+        document.getElementById('codeModal').style.display = 'none';
+        // Open Tutorial Modal
+        document.getElementById('tutorialModal').style.display = 'flex';
+      } else {
+        sfx.playWrong();
+        err.style.display = 'block';
+      }
+    }
+
+    document.getElementById('tutorialStartBtn').addEventListener('click', () => {
+      sfx.playPop();
+      document.getElementById('tutorialModal').style.display = 'none';
+      launchMainGame();
+    });
+
+    // --------------------------------------------------------
+    // MAIN GAME (HIDDEN FOLKS MAP EXPLORATION)
+    // --------------------------------------------------------
+    const TARGETS = {
+      map: {
+        id: 'map',
+        name: '🗺️ 지도',
+        title: '지도 (축척)',
+        badge: '발견 1/5 • 축척과 지도',
+        desc: '지도상의 거리는 실제 거리와 <mark>닮음 관계</mark>를 이루며, 축척을 이용해 실제 거리를 계산할 수 있습니다.',
+        // Relative bounding box on 1376x768 (ratio 0.0 ~ 1.0)
+        box: { xMin: 0.08, xMax: 0.23, yMin: 0.15, yMax: 0.38 },
+        markerPos: { x: 0.165, y: 0.26 }
+      },
+      camera: {
+        id: 'camera',
+        name: '📷 카메라',
+        title: '카메라 사진',
+        badge: '발견 2/5 • 렌즈와 센서',
+        desc: '카메라로 찍힌 물체와 실제 물체는 <mark>닮음 관계</mark>에 있습니다.',
+        box: { xMin: 0.26, xMax: 0.44, yMin: 0.42, yMax: 0.65 },
+        markerPos: { x: 0.345, y: 0.53 }
+      },
+      mirror: {
+        id: 'mirror',
+        name: '🪞 거울',
+        title: '거울 속의 상',
+        badge: '발견 3/5 • 반사와 상',
+        desc: '거울 속에 비친 물체의 크기와 실제 물체의 크기는 <mark>닮음 관계</mark>에 있습니다.',
+        box: { xMin: 0.77, xMax: 0.88, yMin: 0.14, yMax: 0.38 },
+        markerPos: { x: 0.83, y: 0.25 }
+      },
+      blueprint: {
+        id: 'blueprint',
+        name: '📐 설계도',
+        title: '건축 설계도와 건물',
+        badge: '발견 4/5 • 건축과 설계',
+        desc: '정해진 설계도에 따라 만들어지는 제품이나 공장에서 대량 생산하는 물건은 서로 <mark>닮음 관계</mark>에 있도록 작게 그린 것입니다.',
+        box: { xMin: 0.71, xMax: 0.91, yMin: 0.35, yMax: 0.64 },
+        markerPos: { x: 0.81, y: 0.49 }
+      },
+      shoes: {
+        id: 'shoes',
+        name: '👟 신발',
+        title: '신발과 옷의 치수',
+        badge: '발견 5/5 • 기성품 사이즈',
+        desc: '신발, 옷 등 사이즈가 여러 가지인 제품들은 서로 <mark>닮음 관계</mark>에 있습니다.',
+        box: { xMin: 0.79, xMax: 0.96, yMin: 0.70, yMax: 0.94 },
+        markerPos: { x: 0.88, y: 0.82 }
+      }
+    };
+
+    const foundTargets = new Set();
+    let currentTool = 'pen'; // 'pen' or 'lens'
+
+    function launchMainGame() {
+      document.getElementById('warmupView').style.display = 'none';
+      document.getElementById('mainGameView').style.display = 'block';
+      document.getElementById('headerProgress').innerText = '발견: 0 / 5';
+
+      initMapInteractions();
+    }
+
+    // MAP INTERACTION (PAN & ZOOM ENGINE)
+    let scale = 1.0;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let dragDistance = 0;
+
+    const viewport = document.getElementById('mapViewport');
+    const world = document.getElementById('mapWorld');
+    const mapImg = document.getElementById('mapImgTag');
+
+    function updateTransform() {
+      world.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
+
+    function fitMapToScreen() {
+      const vRect = viewport.getBoundingClientRect();
+      const imgWidth = 1800;
+      const imgHeight = imgWidth * (768 / 1376);
+
+      scale = Math.max(vRect.width / imgWidth, vRect.height / imgHeight) * 0.95;
+      panX = (vRect.width - imgWidth * scale) / 2;
+      panY = (vRect.height - imgHeight * scale) / 2;
+      updateTransform();
+    }
+
+    function initMapInteractions() {
+      fitMapToScreen();
+      window.addEventListener('resize', fitMapToScreen);
+
+      // Mouse drag handlers
+      viewport.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+        dragDistance = 0;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const newX = e.clientX - startX;
+        const newY = e.clientY - startY;
+        dragDistance += Math.hypot(newX - panX, newY - panY);
+        panX = newX;
+        panY = newY;
+        updateTransform();
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+      });
+
+      // Wheel Zoom
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+        applyZoom(zoomFactor, e.clientX, e.clientY);
+      }, { passive: false });
+
+      // Click for finding targets
+      viewport.addEventListener('click', (e) => {
+        // If dragged more than 8px, it was a pan gesture, not a click
+        if (dragDistance > 8) return;
+
+        handleMapClick(e.clientX, e.clientY);
+      });
+
+      // Touch events (Pan & Pinch Zoom)
+      let initialDist = 0;
+      let initialScale = 1;
+
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          startX = e.touches[0].clientX - panX;
+          startY = e.touches[0].clientY - panY;
+          dragDistance = 0;
+        } else if (e.touches.length === 2) {
+          isDragging = false;
+          initialDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          initialScale = scale;
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && isDragging) {
+          const newX = e.touches[0].clientX - startX;
+          const newY = e.touches[0].clientY - startY;
+          dragDistance += Math.hypot(newX - panX, newY - panY);
+          panX = newX;
+          panY = newY;
+          updateTransform();
+        } else if (e.touches.length === 2 && initialDist > 0) {
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          scale = Math.min(3.5, Math.max(0.4, initialScale * (dist / initialDist)));
+          updateTransform();
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', (e) => {
+        if (e.touches.length === 0) {
+          if (dragDistance < 10 && e.changedTouches.length === 1) {
+            handleMapClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+          }
+          isDragging = false;
+        }
+      });
+
+      // Zoom Buttons
+      document.getElementById('zoomInBtn').onclick = () => {
+        const vRect = viewport.getBoundingClientRect();
+        applyZoom(1.25, vRect.left + vRect.width / 2, vRect.top + vRect.height / 2);
+      };
+      document.getElementById('zoomOutBtn').onclick = () => {
+        const vRect = viewport.getBoundingClientRect();
+        applyZoom(0.8, vRect.left + vRect.width / 2, vRect.top + vRect.height / 2);
+      };
+      document.getElementById('zoomResetBtn').onclick = fitMapToScreen;
+
+      // Tool Switch Buttons
+      const toolPen = document.getElementById('toolPenBtn');
+      const toolLens = document.getElementById('toolLensBtn');
+
+      toolPen.onclick = () => {
+        currentTool = 'pen';
+        toolPen.classList.add('active');
+        toolLens.classList.remove('active');
+        viewport.classList.add('mode-pen');
+        sfx.playPop();
+      };
+
+      toolLens.onclick = () => {
+        currentTool = 'lens';
+        toolLens.classList.add('active');
+        toolPen.classList.remove('active');
+        viewport.classList.remove('mode-pen');
+        sfx.playPop();
+      };
+    }
+
+    function applyZoom(factor, clientX, clientY) {
+      const vRect = viewport.getBoundingClientRect();
+      const mouseX = clientX - vRect.left;
+      const mouseY = clientY - vRect.top;
+
+      const newScale = Math.min(3.5, Math.max(0.45, scale * factor));
+      panX = mouseX - (mouseX - panX) * (newScale / scale);
+      panY = mouseY - (mouseY - panY) * (newScale / scale);
+      scale = newScale;
+      updateTransform();
+    }
+
+    // CHECK IF CLICK HITS A TARGET SPOT
+    function handleMapClick(clientX, clientY) {
+      const vRect = viewport.getBoundingClientRect();
+      // Calculate coordinates relative to mapWorld
+      const worldX = (clientX - vRect.left - panX) / scale;
+      const worldY = (clientY - vRect.top - panY) / scale;
+
+      const mapW = 1800;
+      const mapH = 1800 * (768 / 1376);
+
+      const ratioX = worldX / mapW;
+      const ratioY = worldY / mapH;
+
+      for (const [key, target] of Object.entries(TARGETS)) {
+        if (
+          ratioX >= target.box.xMin &&
+          ratioX <= target.box.xMax &&
+          ratioY >= target.box.yMin &&
+          ratioY <= target.box.yMax
+        ) {
+          // HIT!
+          if (!foundTargets.has(key)) {
+            findTarget(key);
+          } else {
+            // Already found -> re-open info modal
+            reopenTargetModal(key);
+          }
+          return;
+        }
+      }
+
+      // If clicked empty space while in pen mode, play a subtle tick
+      if (currentTool === 'pen') {
+        sfx.playPop();
+      }
+    }
+
+    function findTarget(key) {
+      foundTargets.add(key);
+      const target = TARGETS[key];
+
+      sfx.playCorrect();
+
+      // Add Sketchy Colored Pencil Circle on map
+      const mapW = 1800;
+      const mapH = 1800 * (768 / 1376);
+      const markerX = target.markerPos.x * mapW;
+      const markerY = target.markerPos.y * mapH;
+
+      const markerDiv = document.createElement('div');
+      markerDiv.className = 'drawn-marker';
+      markerDiv.style.left = `${markerX}px`;
+      markerDiv.style.top = `${markerY}px`;
+      markerDiv.onclick = (e) => {
+        e.stopPropagation();
+        reopenTargetModal(key);
+      };
+
+      markerDiv.innerHTML = `
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="50" cy="50" rx="43" ry="40" stroke="#ef4444" stroke-width="4.5" stroke-dasharray="140 10" transform="rotate(-6 50 50)" stroke-linecap="round"/>
+          <ellipse cx="51" cy="49" rx="46" ry="43" stroke="#f43f5e" stroke-width="3" stroke-dasharray="120 15" transform="rotate(8 50 50)" stroke-linecap="round"/>
+          <ellipse cx="49" cy="51" rx="41" ry="38" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="100 20" transform="rotate(-15 50 50)" stroke-linecap="round"/>
+        </svg>
+      `;
+      document.getElementById('markersLayer').appendChild(markerDiv);
+
+      // Update Target Chip
+      const chip = document.getElementById(`chip-${key}`);
+      if (chip) chip.classList.add('found');
+
+      // Update Header Progress
+      document.getElementById('headerProgress').innerText = `발견: ${foundTargets.size} / 5`;
+
+      // Show Info Popup
+      showInfoModal(target);
+
+      // Check All Complete
+      if (foundTargets.size === 5) {
+        setTimeout(() => {
+          triggerAllComplete();
+        }, 600);
+      }
+    }
+
+    function showInfoModal(target) {
+      document.getElementById('infoBadge').innerText = target.badge;
+      document.getElementById('infoTitle').innerText = target.title;
+      document.getElementById('infoDesc').innerHTML = target.desc;
+      document.getElementById('infoModal').classList.add('active');
+    }
+
+    function closeInfoModal() {
+      sfx.playPop();
+      document.getElementById('infoModal').classList.remove('active');
+    }
+
+    function reopenTargetModal(key) {
+      if (foundTargets.has(key)) {
+        sfx.playPop();
+        showInfoModal(TARGETS[key]);
+      }
+    }
+
+    function triggerAllComplete() {
+      sfx.playFanfare();
+      document.getElementById('completeBanner').style.display = 'flex';
+
+      // Confetti celebration
+      const count = 200;
+      const defaults = { origin: { y: 0.7 } };
+
+      function fire(particleRatio, opts) {
+        confetti(Object.assign({}, defaults, opts, {
+          particleCount: Math.floor(count * particleRatio)
+        }));
+      }
+
+      fire(0.25, { spread: 26, startVelocity: 55 });
+      fire(0.2, { spread: 60 });
+      fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+      fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+      fire(0.1, { spread: 120, startVelocity: 45 });
+    }
+
+    // START FIRST WARMUP STAGE ON LOAD
+    renderWarmupStage(0);
+  </script>
+</body>
+</html>
