@@ -42,29 +42,30 @@
 
     /* TOP NAVBAR */
     header {
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(10px);
-      border-bottom: 2px solid #e2e8f0;
-      padding: 10px 20px;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding: 8px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 50;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+      height: 52px;
     }
 
     .brand-wrap {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .home-btn {
       font-family: var(--font-jua);
-      font-size: 1rem;
-      padding: 7px 16px;
+      font-size: 0.95rem;
+      padding: 5px 12px;
       border-radius: 9999px;
       background: #f1f5f9;
       color: #334155;
@@ -73,40 +74,31 @@
       border: 1.5px solid #cbd5e1;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .home-btn:hover {
       background: #e2e8f0;
-      transform: translateY(-1px);
     }
 
     .game-title {
       font-family: var(--font-jua);
-      font-size: 1.35rem;
+      font-size: 1.15rem;
       color: #0f172a;
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .badge-sub {
-      font-family: var(--font-sans);
-      font-size: 0.75rem;
-      font-weight: 800;
-      background: #e0e7ff;
-      color: #3730a3;
-      padding: 3px 10px;
-      border-radius: 9999px;
+      gap: 6px;
+      white-space: nowrap;
     }
 
     .progress-box {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       font-family: var(--font-jua);
       font-size: 1.05rem;
       color: var(--primary);
+      white-space: nowrap;
     }
 
     /* APP CONTAINER */
@@ -115,134 +107,143 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      height: calc(100vh - 52px);
+      height: calc(100dvh - 52px);
+      overflow: hidden;
     }
 
     /* ----------------------------------------------------
-       VIEW 1: WARMUP GAME
+       VIEW 1: WARMUP GAME (100% 1-SCREEN NO SCROLL 2x2)
        ---------------------------------------------------- */
     #warmupView {
-      max-width: 900px;
+      max-width: 580px;
       width: 100%;
+      height: 100%;
       margin: 0 auto;
-      padding: 24px 16px 40px;
+      padding: 8px 12px 12px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 24px;
+      justify-content: space-between;
+      gap: 8px;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .warmup-header-card {
       background: #ffffff;
-      border-radius: 24px;
+      border-radius: 18px;
       border: 2px solid #e2e8f0;
-      padding: 18px 24px;
+      padding: 8px 14px;
       width: 100%;
-      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.08);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.06);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      flex-wrap: wrap;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .warmup-header-text {
+      flex: 1;
+      min-width: 0;
     }
 
     .question-badge {
       display: inline-block;
       font-family: var(--font-jua);
-      font-size: 1.15rem;
+      font-size: 0.85rem;
       color: var(--primary);
       background: #eef2ff;
-      padding: 4px 14px;
-      border-radius: 12px;
-      margin-bottom: 6px;
+      padding: 2px 10px;
+      border-radius: 8px;
+      margin-bottom: 2px;
     }
 
     .question-title {
       font-family: var(--font-jua);
-      font-size: 1.35rem;
+      font-size: 1.05rem;
       color: #1e293b;
-      line-height: 1.4;
+      line-height: 1.3;
+      word-break: keep-all;
     }
 
     .question-media-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 2px;
       background: #f8fafc;
-      padding: 10px 14px;
-      border-radius: 20px;
-      border: 2px dashed #cbd5e1;
+      padding: 4px 8px;
+      border-radius: 14px;
+      border: 1.5px dashed #cbd5e1;
+      flex-shrink: 0;
     }
 
     .question-img-tag {
-      width: 110px;
-      height: 110px;
+      width: 60px;
+      height: 60px;
       object-fit: contain;
-      border-radius: 14px;
+      border-radius: 10px;
       background: #fff;
     }
 
     .question-img-label {
       font-family: var(--font-jua);
-      font-size: 0.85rem;
+      font-size: 0.72rem;
       color: #64748b;
     }
 
-    /* 2x2 SELECTION GRID */
+    /* 2x2 SELECTION GRID - ALWAYS 2x2 NO SCROLL */
     .choices-grid {
+      flex: 1;
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(2, 1fr) !important;
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px 10px;
       width: 100%;
-    }
-
-    @media (max-width: 600px) {
-      .choices-grid {
-        grid-template-columns: 1fr;
-      }
-      .question-img-tag {
-        width: 85px;
-        height: 85px;
-      }
+      min-height: 0;
     }
 
     .choice-card {
       background: #ffffff;
-      border-radius: 22px;
-      border: 2.5px solid #e2e8f0;
-      padding: 16px;
+      border-radius: 18px;
+      border: 2px solid #e2e8f0;
+      padding: 6px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
       user-select: none;
+      height: 100%;
+      min-height: 0;
     }
 
     .choice-card:hover {
-      transform: translateY(-4px);
+      transform: translateY(-2px);
       border-color: var(--primary);
-      box-shadow: 0 12px 25px rgba(99, 102, 241, 0.15);
+      box-shadow: 0 8px 18px rgba(99, 102, 241, 0.15);
     }
 
     .choice-num {
       position: absolute;
-      top: 12px;
-      left: 14px;
+      top: 6px;
+      left: 8px;
       font-family: var(--font-jua);
-      font-size: 1rem;
+      font-size: 0.85rem;
       color: #fff;
       background: #475569;
-      width: 28px;
-      height: 28px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background 0.2s;
+      z-index: 2;
     }
 
     .choice-card:hover .choice-num {
@@ -251,10 +252,11 @@
 
     .choice-img {
       width: 100%;
-      max-width: 220px;
+      height: 100%;
+      max-height: calc((100dvh - 180px) / 2.3);
       aspect-ratio: 1 / 1;
       object-fit: contain;
-      border-radius: 16px;
+      border-radius: 12px;
       background: #ffffff;
       transition: transform 0.2s;
     }
@@ -580,111 +582,76 @@
       filter: drop-shadow(0 4px 10px rgba(239, 68, 68, 0.4));
     }
 
-    /* FLOATING BOTTOM TOOLBAR DOCK */
+    /* FLOATING BOTTOM TOOLBAR DOCK (SAFE AREA AWARE) */
     .game-dock {
       position: absolute;
-      bottom: 20px;
+      bottom: calc(36px + env(safe-area-inset-bottom, 16px));
       left: 50%;
       transform: translateX(-50%);
       background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(12px);
-      border-radius: 28px;
-      border: 2px solid #e2e8f0;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-      padding: 10px 18px;
+      backdrop-filter: blur(14px);
+      border-radius: 9999px;
+      border: 2px solid #cbd5e1;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08);
+      padding: 8px 14px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       z-index: 60;
-      max-width: 95vw;
-      overflow-x: auto;
-    }
-
-    .dock-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dock-label {
-      font-family: var(--font-jua);
-      font-size: 0.9rem;
-      color: #64748b;
-      margin-right: 4px;
     }
 
     .tool-btn {
-      background: #f1f5f9;
+      background: #f8fafc;
       border: 2px solid #cbd5e1;
-      border-radius: 18px;
-      padding: 8px 16px;
+      border-radius: 9999px;
+      padding: 10px 22px;
       font-family: var(--font-jua);
-      font-size: 1.05rem;
+      font-size: 1.15rem;
       color: #334155;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+      user-select: none;
     }
 
-    .tool-btn.active {
-      background: #eef2ff;
-      border-color: var(--primary);
-      color: var(--primary);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    .tool-btn:hover {
+      background: #ffffff;
       transform: translateY(-2px);
     }
 
-    .dock-divider {
-      width: 2px;
-      height: 32px;
-      background: #e2e8f0;
+    .tool-btn.active {
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+      transform: translateY(-2px) scale(1.04);
     }
 
-    /* TARGET HINTS LIST */
-    .targets-list {
-      display: flex;
+    /* ALL COMPLETE BANNER */
+    .complete-banner {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.96);
+      backdrop-filter: blur(8px);
+      color: white;
+      font-family: var(--font-jua);
+      font-size: 1rem;
+      padding: 9px 20px;
+      border-radius: 9999px;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35);
+      z-index: 65;
+      display: none;
       align-items: center;
       gap: 8px;
-    }
-
-    .target-chip {
-      background: #f8fafc;
-      border: 2px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 6px 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--font-jua);
-      font-size: 0.95rem;
-      color: #475569;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .target-chip:hover {
-      background: #f1f5f9;
-      transform: translateY(-1px);
-    }
-
-    .target-chip.found {
-      background: #ecfdf5;
-      border-color: #10b981;
-      color: #065f46;
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-    }
-
-    .target-chip.found .chip-check {
-      display: inline-block;
-    }
-
-    .chip-check {
-      display: none;
-      color: #10b981;
-      font-weight: bold;
+      max-width: 90%;
+      text-align: center;
+      line-height: 1.35;
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     /* ZOOM CONTROLS (TOP RIGHT OF MAP) */
@@ -843,10 +810,9 @@
   <!-- TOP HEADER -->
   <header>
     <div class="brand-wrap">
-      <a href="/" class="home-btn">🏠 메인으로</a>
+      <a href="/" class="home-btn">🏠 메인</a>
       <div class="game-title">
         <span>🔍 닮은 그림 찾기!</span>
-        <span class="badge-sub">중2 수학</span>
       </div>
     </div>
     <div class="progress-box" id="headerProgress">
@@ -856,15 +822,15 @@
 
   <!-- MAIN VIEW CONTAINER -->
   <main>
-    <!-- VIEW 1: WARMUP 4-STAGE QUIZ -->
+    <!-- VIEW 1: WARMUP 4-STAGE QUIZ (NO SCROLL 2x2) -->
     <div id="warmupView">
       <div class="warmup-header-card">
-        <div>
+        <div class="warmup-header-text">
           <div class="question-badge" id="warmupBadge">Stage 1</div>
           <h2 class="question-title" id="warmupQuestion">1번. 다음 그림과 닮음 관계에 있는 그림은?</h2>
         </div>
         <div class="question-media-wrap">
-          <img id="warmupOrigImg" class="question-img-tag" src="/images/similarity/stage1/bear_original.png" alt="원본 문제 그림">
+          <img id="warmupOrigImg" class="question-img-tag" src="/images/similarity/stage1/bear_original.png" alt="기준 그림">
           <span class="question-img-label">기준 그림</span>
         </div>
       </div>
@@ -898,48 +864,16 @@
         </div>
       </div>
 
-      <!-- FLOATING DOCK TOOLBAR -->
+      <!-- FLOATING DOCK TOOLBAR (ONLY PEN & LENS) -->
       <div class="game-dock">
-        <div class="dock-group">
-          <span class="dock-label">도구:</span>
-          <button class="tool-btn active" id="toolPenBtn">
-            <span>✏️</span>
-            <span>색연필</span>
-          </button>
-          <button class="tool-btn" id="toolLensBtn">
-            <span>🔍</span>
-            <span>돋보기</span>
-          </button>
-        </div>
-
-        <div class="dock-divider"></div>
-
-        <div class="dock-group">
-          <span class="dock-label">찾을 것 (5개):</span>
-          <div class="targets-list" id="targetsList">
-            <!-- Target Chips -->
-            <div class="target-chip" id="chip-map" onclick="reopenTargetModal('map')">
-              <span>🗺️ 지도</span>
-              <span class="chip-check">✓</span>
-            </div>
-            <div class="target-chip" id="chip-camera" onclick="reopenTargetModal('camera')">
-              <span>📷 카메라</span>
-              <span class="chip-check">✓</span>
-            </div>
-            <div class="target-chip" id="chip-mirror" onclick="reopenTargetModal('mirror')">
-              <span>🪞 거울</span>
-              <span class="chip-check">✓</span>
-            </div>
-            <div class="target-chip" id="chip-blueprint" onclick="reopenTargetModal('blueprint')">
-              <span>📐 설계도</span>
-              <span class="chip-check">✓</span>
-            </div>
-            <div class="target-chip" id="chip-shoes" onclick="reopenTargetModal('shoes')">
-              <span>👟 신발</span>
-              <span class="chip-check">✓</span>
-            </div>
-          </div>
-        </div>
+        <button class="tool-btn active" id="toolPenBtn">
+          <span>✏️</span>
+          <span>색연필</span>
+        </button>
+        <button class="tool-btn" id="toolLensBtn">
+          <span>🔍</span>
+          <span>돋보기</span>
+        </button>
       </div>
     </div>
   </main>
