@@ -346,45 +346,93 @@ export default function TypingClient() {
     }
   };
 
-  // 문장 글자 단위 렌더링 (오타 하이라이트)
+  // 문장 글자 단위 렌더링 (하단 입력창 가로 길이에 맞춰 자연스럽게 줄바꿈 및 오타 실시간 하이라이트)
   const renderSentenceWithFeedback = () => {
     const target = currentTarget;
     const input = userInput;
 
     return (
-      <div className="w-full text-center leading-relaxed tracking-wide select-none">
-        <p className="text-xl sm:text-2xl font-medium break-keep inline-block max-w-full text-left">
-          {target.split("").map((char, i) => {
-            let className = "transition-colors duration-75 ";
-            if (i < input.length) {
-              if (input[i] === char) {
-                // 일치하는 글자
-                className += "text-black";
-              } else {
-                // 오타 글자 (빨간색)
-                className += "text-red-600 bg-red-100 underline decoration-red-600 decoration-2 font-bold px-0.5 rounded";
-              }
-            } else if (i === input.length) {
-              // 현재 입력할 글자 위치
-              className += "text-black border-b-2 border-black";
-            } else {
-              // 아직 입력하지 않은 글자
-              className += "text-neutral-400";
-            }
-
-            return (
-              <span key={i} className={className}>
-                {char === " " ? "\u00A0" : char}
-              </span>
-            );
-          })}
-          {/* 목표 문장보다 더 길게 초과 입력한 경우 */}
-          {input.length > target.length && (
-            <span className="text-red-600 bg-red-200 line-through decoration-red-600 font-bold px-1 ml-0.5 rounded text-sm sm:text-base">
-              {input.slice(target.length)}
+      <div className="w-full select-none">
+        <div className="w-full bg-neutral-50/80 border-2 border-neutral-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-neutral-200/70">
+            <span className="text-xs font-bold text-neutral-500 tracking-wider">
+              {screen === "tutorial" ? `연습 단어 (${tutorialIndex + 1}/3)` : `제시 문장 (${currentStage + 1}/5)`}
             </span>
-          )}
-        </p>
+            <span className="text-xs font-semibold text-neutral-500 font-mono">
+              {input.length} / {target.length}자
+            </span>
+          </div>
+          <p className="w-full text-lg sm:text-xl md:text-2xl font-medium leading-relaxed sm:leading-loose break-keep break-words text-left">
+            {target.split("").map((char, i) => {
+              const isTyped = i < input.length;
+              const isCurrentCursor = i === input.length;
+
+              // 1. 공백 처리: 줄바꿈이 자연스럽게 일어나도록 일반 공백 ' ' 유지
+              if (char === " ") {
+                if (isCurrentCursor) {
+                  // 현재 공백 입력 차례인 경우 밑줄 커서 표시
+                  return (
+                    <span
+                      key={i}
+                      className="inline-block border-b-2 border-black min-w-[0.45em] text-transparent"
+                    >
+                      &nbsp;
+                    </span>
+                  );
+                }
+
+                if (isTyped && input[i] !== " ") {
+                  // 공백 자리에 다른 문자를 잘못 입력한 경우 빨간색 강조
+                  return (
+                    <span
+                      key={i}
+                      className="inline-block bg-red-100 text-red-600 underline decoration-red-600 decoration-2 font-bold px-0.5 rounded"
+                    >
+                      {input[i]}
+                    </span>
+                  );
+                }
+
+                // 정상 공백 (입력 전/후)
+                return (
+                  <span
+                    key={i}
+                    className={isTyped ? "text-black" : "text-neutral-400"}
+                  >
+                    {" "}
+                  </span>
+                );
+              }
+
+              // 2. 일반 글자 처리
+              let className = "transition-colors duration-75 ";
+              if (isTyped) {
+                if (input[i] === char) {
+                  className += "text-black";
+                } else {
+                  className += "text-red-600 bg-red-100 underline decoration-red-600 decoration-2 font-bold px-0.5 rounded";
+                }
+              } else if (isCurrentCursor) {
+                className += "text-black border-b-2 border-black font-semibold";
+              } else {
+                className += "text-neutral-400";
+              }
+
+              return (
+                <span key={i} className={className}>
+                  {char}
+                </span>
+              );
+            })}
+
+            {/* 목표 문장보다 더 길게 초과 입력한 경우 */}
+            {input.length > target.length && (
+              <span className="text-red-600 bg-red-200 line-through decoration-red-600 font-bold px-1 ml-0.5 rounded text-sm sm:text-base break-all">
+                {input.slice(target.length)}
+              </span>
+            )}
+          </p>
+        </div>
       </div>
     );
   };
@@ -398,13 +446,13 @@ export default function TypingClient() {
         <div className="w-full max-w-md my-auto flex flex-col items-center justify-center text-center space-y-8 animate-fadeIn">
           <div className="space-y-2">
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-black">
-              교사를 이겨라!
+              모바일 타자 속도전
             </h1>
-            <p className="text-lg font-semibold text-neutral-800">
-              ⚡ 모바일 타자 속도전 ⚡
+            <p className="text-base sm:text-lg font-semibold text-neutral-800">
+              ⚡ 5단계 타자 챌린지 ⚡
             </p>
             <p className="text-xs text-neutral-500 pt-1">
-              5단계를 가장 빠르게 정확히 입력하여 1등을 차지하세요.
+              5단계 문장을 가장 빠르게 오타 없이 입력하여 1등에 도전하세요.
             </p>
           </div>
 
@@ -509,8 +557,8 @@ export default function TypingClient() {
             </div>
           </div>
 
-          {/* 중앙: 제시 문장 (오타 실시간 하이라이트) */}
-          <div className="w-full flex-1 flex flex-col items-center justify-center px-2 py-4">
+          {/* 중앙: 제시 문장 (하단 입력창 폭과 일치) */}
+          <div className="w-full flex-1 flex flex-col items-center justify-center py-4">
             {renderSentenceWithFeedback()}
           </div>
 

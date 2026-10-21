@@ -1,4 +1,4 @@
-// 체육대회 '교사를 이겨라!' 타자 속도전 문장 데이터
+// 체육대회 모바일 타자 속도전 문장 데이터
 
 export interface StageData {
   stage: number;

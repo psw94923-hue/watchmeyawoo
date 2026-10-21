@@ -277,7 +277,7 @@ export default function MathLabClient() {
                     <span className="text-xs text-neutral-400 font-medium">모바일 최적화</span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-                    🏆 교사를 이겨라! 모바일 타자 속도전
+                    🏆 모바일 타자 속도전
                   </h2>
                   <p className="text-xs sm:text-sm text-neutral-300">
                     5단계 문장을 가장 빠르게 오타 없이 입력하고 실시간 랭킹에 등록해보세요!
