@@ -792,29 +792,21 @@ export default function TypingClient() {
             className="w-full space-y-3 text-left"
           >
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label
-                  htmlFor="student-id"
-                  className="block text-xs font-semibold text-neutral-800"
-                >
-                  학번 또는 구분코드
-                </label>
-                <span className="text-[11px] text-neutral-500 font-medium">
-                  교사: &apos;선생님&apos; / 세원쌤: &apos;세원&apos;
-                </span>
-              </div>
+              <label
+                htmlFor="student-id"
+                className="block text-xs font-semibold text-neutral-800 mb-1"
+              >
+                학번 (예: 2101)
+              </label>
               <input
                 id="student-id"
                 type="text"
                 required
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                placeholder="학생 예: 2101 (교사는 '선생님', 세원쌤은 '세원')"
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white placeholder:text-neutral-400 placeholder:text-xs"
+                placeholder="2101"
+                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white placeholder:text-neutral-400 text-black"
               />
-              <p className="text-[11px] text-neutral-500 mt-1">
-                💡 학생은 <b>학번(예: 2101)</b>, 일반 선생님은 <b>선생님</b>, 세원쌤 본인은 <b>세원</b>을 입력하세요.
-              </p>
             </div>
 
             <div>
@@ -822,7 +814,7 @@ export default function TypingClient() {
                 htmlFor="student-name"
                 className="block text-xs font-semibold text-neutral-800 mb-1"
               >
-                이름
+                이름 (예: 홍길동)
               </label>
               <input
                 id="student-name"
@@ -830,8 +822,8 @@ export default function TypingClient() {
                 required
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="홍길동 (교사 예: 박세원)"
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white placeholder:text-neutral-400 placeholder:text-xs"
+                placeholder="홍길동"
+                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white placeholder:text-neutral-400 text-black"
               />
             </div>
 
