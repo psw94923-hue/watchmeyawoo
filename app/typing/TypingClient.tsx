@@ -57,6 +57,44 @@ export default function TypingClient() {
   const [tutorialWords, setTutorialWords] = useState<string[]>([]);
   const [tutorialElapsedMs, setTutorialElapsedMs] = useState<number>(0);
 
+  // 모바일 가상 키보드 높이 실시간 동기화 (iOS Safari & Android Galaxy 완벽 대응)
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateHeight = () => {
+      if (window.visualViewport) {
+        setViewportHeight(window.visualViewport.height);
+        // iOS Safari가 가상 키보드 활성화 시 전체 페이지를 위로 스크롤하는 것을 방지
+        if (window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateHeight);
+      window.visualViewport.addEventListener("scroll", updateHeight);
+      updateHeight();
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", updateHeight);
+        window.visualViewport.removeEventListener("scroll", updateHeight);
+      }
+    };
+  }, []);
+
+  const handleInputFocus = () => {
+    setTimeout(() => {
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    }, 50);
+  };
+
   // 본 게임 상태 (1~5단계)
   const [currentStage, setCurrentStage] = useState<number>(0); // 0 to 4
   const [chosenSentences, setChosenSentences] = useState<string[]>([]);
@@ -429,16 +467,16 @@ export default function TypingClient() {
 
     return (
       <div className="w-full select-none">
-        <div className="w-full bg-neutral-50/80 border-2 border-neutral-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-neutral-200/70">
-            <span className="text-xs font-bold text-neutral-500 tracking-wider">
+        <div className="w-full bg-neutral-50/80 border-2 border-neutral-200/90 rounded-2xl p-3 sm:p-4 shadow-xs">
+          <div className="flex items-center justify-between mb-1.5 pb-1 border-b border-neutral-200/70">
+            <span className="text-[11px] sm:text-xs font-bold text-neutral-500 tracking-wider">
               {screen === "tutorial" ? `연습 단어 (${tutorialIndex + 1}/3)` : `제시 문장 (${currentStage + 1}/5)`}
             </span>
-            <span className="text-xs font-semibold text-neutral-500 font-mono">
+            <span className="text-[11px] sm:text-xs font-semibold text-neutral-500 font-mono">
               {input.length} / {target.length}자
             </span>
           </div>
-          <p className="w-full text-lg sm:text-xl md:text-2xl font-medium leading-relaxed sm:leading-loose break-keep break-words text-left">
+          <p className="w-full text-base sm:text-xl font-medium leading-relaxed sm:leading-loose break-keep break-words text-left">
             {target.split("").map((char, i) => {
               const isTyped = i < input.length;
               const isCurrentCursor = i === input.length;
@@ -516,7 +554,13 @@ export default function TypingClient() {
   const formattedTimer = formatTimer(elapsedMs);
 
   return (
-    <main className="w-full h-[100dvh] max-h-[100dvh] bg-white text-black flex flex-col items-center justify-between overflow-hidden p-4 sm:p-6 font-sans">
+    <main
+      style={{
+        height: viewportHeight ? `${viewportHeight}px` : "100dvh",
+        maxHeight: viewportHeight ? `${viewportHeight}px` : "100dvh",
+      }}
+      className="w-full bg-white text-black flex flex-col items-center justify-between overflow-hidden p-3 sm:p-5 font-sans"
+    >
       {/* 1. 홈 화면 */}
       {screen === "home" && (
         <div className="w-full max-w-md my-auto flex flex-col items-center justify-center text-center space-y-8 animate-fadeIn">
@@ -595,9 +639,9 @@ export default function TypingClient() {
 
       {/* 3. 본 경기(game) 또는 튜토리얼(tutorial) 진행 화면 */}
       {(screen === "game" || screen === "tutorial") && (
-        <div className="w-full max-w-xl h-full flex flex-col justify-between py-2 sm:py-4">
+        <div className="w-full max-w-xl h-full flex flex-col justify-between overflow-hidden">
           {/* 상단 바: 일시정지 & 타이머 & 건너뛰기 */}
-          <div className="w-full flex items-center justify-between border-b border-neutral-200 pb-3">
+          <div className="w-full shrink-0 flex items-center justify-between border-b border-neutral-200 pb-2">
             {screen === "game" ? (
               <div className="flex items-center space-x-2">
                 <button
@@ -633,49 +677,53 @@ export default function TypingClient() {
             </div>
           </div>
 
-          {/* 중앙: 제시 문장 (하단 입력창 폭과 일치) */}
-          <div className="w-full flex-1 flex flex-col items-center justify-center py-4">
-            {renderSentenceWithFeedback()}
-          </div>
-
-          {/* 하단: 띄어쓰기 안내 알림 & 입력창 & 제출하기 버튼 */}
-          <div className="w-full space-y-2 pb-1">
-            {/* 띄어쓰기 알림 (화면 가리지 않는 전용 영역) */}
-            <div className="h-6 flex items-center justify-center">
-              {showSpacingWarning && (
-                <p className="text-xs sm:text-sm font-semibold text-red-600 animate-pulse">
-                  띄어쓰기를 다시 살펴보세요.
-                </p>
-              )}
+          {/* 중앙/하단 워크스페이스: 제시 문장 카드가 입력창 바로 위에 찰떡처럼 밀착 배치 */}
+          <div className="w-full flex-1 min-h-0 flex flex-col justify-end gap-1.5 sm:gap-2 pb-1">
+            {/* 중앙: 제시 문장 (하단 입력창 바로 위 밀착) */}
+            <div className="w-full">
+              {renderSentenceWithFeedback()}
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className={`w-full flex items-center space-x-2 ${
-                isInputError ? "animate-shake" : ""
-              }`}
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                value={userInput}
-                onChange={handleInputChange}
-                disabled={isPaused}
-                placeholder="여기를 터치하여 문장을 입력하세요"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                className="flex-1 min-w-0 bg-neutral-50 border-2 border-black text-black text-base sm:text-lg font-medium px-3.5 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:bg-white placeholder:text-neutral-400 placeholder:text-sm"
-              />
-              <button
-                type="submit"
-                disabled={isPaused || userInput.length === 0}
-                className="shrink-0 bg-black text-white text-base font-bold px-5 py-3 rounded-xl active:scale-95 disabled:opacity-40 disabled:active:scale-100 transition-all"
+            {/* 하단: 띄어쓰기 안내 알림 & 입력창 & 제출하기 버튼 */}
+            <div className="w-full space-y-1">
+              {/* 띄어쓰기 알림 (화면 가리지 않는 전용 영역) */}
+              <div className="h-5 flex items-center justify-center">
+                {showSpacingWarning && (
+                  <p className="text-xs font-semibold text-red-600 animate-pulse">
+                    띄어쓰기를 다시 살펴보세요.
+                  </p>
+                )}
+              </div>
+
+              <form
+                onSubmit={handleSubmit}
+                className={`w-full flex items-center space-x-2 ${
+                  isInputError ? "animate-shake" : ""
+                }`}
               >
-                제출하기
-              </button>
-            </form>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userInput}
+                  onChange={handleInputChange}
+                  onFocus={handleInputFocus}
+                  disabled={isPaused}
+                  placeholder="여기를 터치하여 문장을 입력하세요"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className="flex-1 min-w-0 bg-neutral-50 border-2 border-black text-black text-base sm:text-lg font-medium px-3.5 py-2.5 sm:py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:bg-white placeholder:text-neutral-400 placeholder:text-xs sm:placeholder:text-sm"
+                />
+                <button
+                  type="submit"
+                  disabled={isPaused || userInput.length === 0}
+                  className="shrink-0 bg-black text-white text-sm sm:text-base font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl active:scale-95 disabled:opacity-40 disabled:active:scale-100 transition-all"
+                >
+                  제출하기
+                </button>
+              </form>
+            </div>
           </div>
 
           {/* 일시정지 오버레이 (문장 가림 & 타이머 정지) */}
