@@ -13,6 +13,15 @@ export interface RankingRecord {
   created_at?: string;
 }
 
+// 교사 이름 포맷팅 ("박세원" -> "박세원 선생님")
+export function formatTeacherName(name: string): string {
+  const clean = name.trim();
+  if (clean.endsWith("선생님") || clean.endsWith("교사") || clean.endsWith("쌤")) {
+    return clean;
+  }
+  return `${clean} 선생님`;
+}
+
 // 타이머 포맷팅 유틸 (분 2자리 : 초 2자리 : 밀리초 2자리 = 총 6개 숫자)
 export function formatTimer(ms: number) {
   const safeMs = Math.max(0, Math.floor(ms));
@@ -68,6 +77,73 @@ export default function TypingClient() {
   // 랭킹 목록 상태
   const [rankings, setRankings] = useState<RankingRecord[]>([]);
   const [isLoadingRankings, setIsLoadingRankings] = useState<boolean>(false);
+
+  // 세원쌤 기록, 학생 랭킹, 교사 랭킹 분류 및 1인 1최고기록 중복 제거
+  const { sewonRecord, studentRankings, teacherRankings } = useMemo(() => {
+    // 1. 세원쌤 공식 기록 탐색 (학번이 '세원')
+    const sewonList = rankings.filter(
+      (r) => r.student_id.trim().toLowerCase() === "세원"
+    );
+    let bestSewon: RankingRecord | null = null;
+    if (sewonList.length > 0) {
+      bestSewon = sewonList.reduce((best, curr) =>
+        curr.record_ms < best.record_ms ? curr : best
+      );
+    } else {
+      // DB에 세원쌤 기록이 아직 등록되지 않았을 때의 초기 기준 목표 기록
+      bestSewon = {
+        id: "default_sewon",
+        student_id: "세원",
+        name: "박세원",
+        record_ms: 38500,
+        formatted_time: "00:38:50",
+      };
+    }
+
+    // 2. 교사 기록 (학번이 '선생님' 또는 '세원'인 경우)
+    const rawTeachers = rankings.filter(
+      (r) =>
+        r.student_id.trim() === "선생님" ||
+        r.student_id.trim() === "교사" ||
+        r.student_id.trim() === "세원"
+    );
+    // 교사 1인 1최고기록 (이름 기준)
+    const teacherMap = new Map<string, RankingRecord>();
+    for (const t of rawTeachers) {
+      const key = t.name.trim();
+      const existing = teacherMap.get(key);
+      if (!existing || t.record_ms < existing.record_ms) {
+        teacherMap.set(key, t);
+      }
+    }
+    const sortedTeachers = Array.from(teacherMap.values()).sort(
+      (a, b) => a.record_ms - b.record_ms
+    );
+
+    // 3. 학생 기록 (학번이 '선생님', '교사', '세원'이 아닌 모든 일반 학생 학번)
+    const rawStudents = rankings.filter((r) => {
+      const id = r.student_id.trim();
+      return id !== "선생님" && id !== "교사" && id !== "세원";
+    });
+    // 학생 1인 1최고기록 (학번+이름 기준)
+    const studentMap = new Map<string, RankingRecord>();
+    for (const s of rawStudents) {
+      const key = `${s.student_id.trim()}_${s.name.trim()}`;
+      const existing = studentMap.get(key);
+      if (!existing || s.record_ms < existing.record_ms) {
+        studentMap.set(key, s);
+      }
+    }
+    const sortedStudents = Array.from(studentMap.values()).sort(
+      (a, b) => a.record_ms - b.record_ms
+    );
+
+    return {
+      sewonRecord: bestSewon,
+      studentRankings: sortedStudents,
+      teacherRankings: sortedTeachers,
+    };
+  }, [rankings]);
 
   // 현재 제시 문장
   const currentTarget = useMemo(() => {
@@ -253,7 +329,7 @@ export default function TypingClient() {
         .from("typing_rankings")
         .select("*")
         .order("record_ms", { ascending: true })
-        .limit(50);
+        .limit(100);
 
       if (error) {
         console.warn("Supabase load fallback to localStorage:", error.message);
@@ -638,13 +714,28 @@ export default function TypingClient() {
           </div>
 
           {/* 중앙에 크게 랩 타임 표시 */}
-          <div className="w-full bg-neutral-50 border-2 border-black rounded-2xl p-6 shadow-sm">
-            <p className="text-xs text-neutral-500 font-semibold mb-1">
+          <div className="w-full bg-neutral-50 border-2 border-black rounded-2xl p-5 shadow-sm space-y-1">
+            <p className="text-xs text-neutral-500 font-semibold">
               최종 타이머 기록
             </p>
             <div className="font-mono text-4xl sm:text-5xl font-black tracking-wider text-black">
               {formatTimer(finalLapMs).full}
             </div>
+
+            {/* 세원쌤 기록 대비 피드백 배너 */}
+            {sewonRecord && (
+              <div className="pt-2">
+                {finalLapMs < sewonRecord.record_ms ? (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400 text-black text-xs font-black animate-pulse shadow-sm">
+                    🎉 세원쌤 공식 기록({sewonRecord.formatted_time})을 이겼습니다! 🏆
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-neutral-200 text-neutral-700 text-xs font-semibold">
+                    🎯 목표: 세원쌤 기록({sewonRecord.formatted_time})까지 도전해보세요!
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 학번 & 이름 작성 폼 */}
@@ -653,29 +744,37 @@ export default function TypingClient() {
             className="w-full space-y-3 text-left"
           >
             <div>
-              <label
-                htmlFor="student-id"
-                className="block text-xs font-semibold text-neutral-700 mb-1"
-              >
-                학번 (예: 2101)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="student-id"
+                  className="block text-xs font-semibold text-neutral-800"
+                >
+                  학번 또는 구분코드
+                </label>
+                <span className="text-[11px] text-neutral-500 font-medium">
+                  교사: &apos;선생님&apos; / 세원쌤: &apos;세원&apos;
+                </span>
+              </div>
               <input
                 id="student-id"
                 type="text"
                 required
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                placeholder="2101"
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white"
+                placeholder="학생 예: 2101 (교사는 '선생님', 세원쌤은 '세원')"
+                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white placeholder:text-neutral-400 placeholder:text-xs"
               />
+              <p className="text-[11px] text-neutral-500 mt-1">
+                💡 학생은 <b>학번(예: 2101)</b>, 일반 선생님은 <b>선생님</b>, 세원쌤 본인은 <b>세원</b>을 입력하세요.
+              </p>
             </div>
 
             <div>
               <label
                 htmlFor="student-name"
-                className="block text-xs font-semibold text-neutral-700 mb-1"
+                className="block text-xs font-semibold text-neutral-800 mb-1"
               >
-                이름 (예: 홍길동)
+                이름
               </label>
               <input
                 id="student-name"
@@ -683,8 +782,8 @@ export default function TypingClient() {
                 required
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="홍길동"
-                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white"
+                placeholder="홍길동 (교사 예: 박세원)"
+                className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white placeholder:text-neutral-400 placeholder:text-xs"
               />
             </div>
 
@@ -710,7 +809,7 @@ export default function TypingClient() {
       {screen === "ranking" && (
         <div className="w-full max-w-xl h-full flex flex-col justify-between py-2 sm:py-4">
           {/* 상단 헤더 */}
-          <div className="w-full flex items-center justify-between border-b border-neutral-200 pb-3">
+          <div className="w-full flex items-center justify-between border-b border-neutral-200 pb-2.5">
             <h2 className="text-xl font-extrabold text-black flex items-center gap-1.5">
               <span>🏆</span>
               <span>실시간 타자 랭킹</span>
@@ -732,75 +831,170 @@ export default function TypingClient() {
             </div>
           </div>
 
-          {/* 랭킹 표 (학번, 이름, 타이머 기록 빠른 순서) */}
-          <div className="w-full flex-1 overflow-y-auto my-3 border border-neutral-200 rounded-xl">
-            {isLoadingRankings && rankings.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-sm text-neutral-500">
-                기록을 불러오는 중입니다...
+          {/* A. 상단 세원쌤 기록 배너 */}
+          <div className="w-full mt-2.5 mb-1.5 bg-gradient-to-r from-neutral-900 to-black text-white p-3 sm:p-3.5 rounded-2xl shadow-sm border border-neutral-800 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-400 text-black flex items-center justify-center text-lg sm:text-xl font-black shadow-inner">
+                👑
               </div>
-            ) : rankings.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-sm text-neutral-500">
-                아직 등록된 랭킹 기록이 없습니다.
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                    TARGET BOSS
+                  </span>
+                  <span className="text-[10px] text-neutral-400">
+                    ({sewonRecord?.name ? formatTeacherName(sewonRecord.name) : "박세원 선생님"})
+                  </span>
+                </div>
+                <div className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+                  세원쌤 공식 기록
+                </div>
               </div>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-neutral-100 text-neutral-700 font-semibold sticky top-0 border-b border-neutral-200">
-                  <tr>
-                    <th className="py-2.5 px-3 text-center w-14">순위</th>
-                    <th className="py-2.5 px-3">학번</th>
-                    <th className="py-2.5 px-3">이름</th>
-                    <th className="py-2.5 px-3 text-right">기록</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {rankings.map((item, idx) => {
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-neutral-400 block font-medium">기준 기록</span>
+              <span className="font-mono text-xl sm:text-2xl font-black text-amber-300 tracking-wider">
+                {sewonRecord ? sewonRecord.formatted_time : "00:38:50"}
+              </span>
+            </div>
+          </div>
+
+          {/* B. 2개 칸 분할 배치: 왼쪽 학생 기록 / 오른쪽 교사 기록 */}
+          <div className="w-full flex-1 min-h-0 grid grid-cols-2 gap-2 sm:gap-3 my-1">
+            {/* 1) 왼쪽: 학생 기록 칸 */}
+            <div className="flex flex-col h-full bg-neutral-50/70 border border-neutral-200 rounded-2xl overflow-hidden shadow-2xs">
+              <div className="bg-neutral-100/90 px-2.5 py-2 border-b border-neutral-200 flex items-center justify-between">
+                <div className="flex items-center gap-1 font-bold text-xs sm:text-sm text-neutral-800 truncate">
+                  <span>🎓</span>
+                  <span>학생 기록</span>
+                </div>
+                <span className="text-[10px] font-semibold bg-white text-neutral-600 px-1.5 py-0.5 rounded-full border border-neutral-200 shrink-0">
+                  {studentRankings.length}명
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto p-1 sm:p-1.5 space-y-1">
+                {isLoadingRankings && studentRankings.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-xs text-neutral-400 py-6">
+                    불러오는 중...
+                  </div>
+                ) : studentRankings.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-xs text-neutral-400 py-6 text-center px-2">
+                    아직 등록된 학생 기록이 없습니다.
+                  </div>
+                ) : (
+                  studentRankings.map((item, idx) => {
                     const rankNum = idx + 1;
                     const isMyRecord =
                       registeredId && item.id && item.id.toString() === registeredId.toString();
 
-                    let rankBadge: React.ReactNode = (
-                      <span className="font-semibold text-neutral-600">
-                        {rankNum}
-                      </span>
-                    );
-                    if (rankNum === 1) rankBadge = <span className="text-base">🥇 1</span>;
-                    else if (rankNum === 2) rankBadge = <span className="text-base">🥈 2</span>;
-                    else if (rankNum === 3) rankBadge = <span className="text-base">🥉 3</span>;
+                    let rankIcon = <span className="font-bold text-neutral-500">{rankNum}</span>;
+                    if (rankNum === 1) rankIcon = <span>🥇</span>;
+                    else if (rankNum === 2) rankIcon = <span>🥈</span>;
+                    else if (rankNum === 3) rankIcon = <span>🥉</span>;
 
                     return (
-                      <tr
+                      <div
                         key={item.id || idx}
-                        className={`transition-colors ${
+                        className={`px-2 py-1.5 rounded-xl flex items-center justify-between text-xs transition-colors ${
                           isMyRecord
-                            ? "bg-neutral-100 font-bold border-l-4 border-black"
+                            ? "bg-amber-100/90 border border-amber-300 font-bold"
                             : rankNum <= 3
-                            ? "bg-neutral-50/60"
-                            : "hover:bg-neutral-50"
+                            ? "bg-white border border-neutral-200/60 shadow-2xs"
+                            : "hover:bg-white"
                         }`}
                       >
-                        <td className="py-3 px-3 text-center whitespace-nowrap font-mono">
-                          {rankBadge}
-                        </td>
-                        <td className="py-3 px-3 whitespace-nowrap font-medium text-neutral-800">
-                          {item.student_id}
-                        </td>
-                        <td className="py-3 px-3 whitespace-nowrap font-medium text-black">
-                          {item.name}
-                          {isMyRecord && (
-                            <span className="ml-1.5 text-[11px] bg-black text-white px-1.5 py-0.5 rounded font-normal">
-                              내 기록
+                        <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                          <span className="shrink-0 w-4 text-center font-mono text-xs">
+                            {rankIcon}
+                          </span>
+                          <div className="truncate">
+                            <span className="text-[10px] text-neutral-500 font-mono block sm:inline sm:mr-1">
+                              {item.student_id}
                             </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-right whitespace-nowrap font-mono font-bold text-black">
+                            <span className="font-semibold text-neutral-900 truncate">
+                              {item.name}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="shrink-0 font-mono font-bold text-[11px] sm:text-xs text-black">
                           {item.formatted_time}
-                        </td>
-                      </tr>
+                        </span>
+                      </div>
                     );
-                  })}
-                </tbody>
-              </table>
-            )}
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* 2) 오른쪽: 교사 기록 칸 */}
+            <div className="flex flex-col h-full bg-neutral-50/70 border border-neutral-200 rounded-2xl overflow-hidden shadow-2xs">
+              <div className="bg-neutral-100/90 px-2.5 py-2 border-b border-neutral-200 flex items-center justify-between">
+                <div className="flex items-center gap-1 font-bold text-xs sm:text-sm text-neutral-800 truncate">
+                  <span>👨‍🏫</span>
+                  <span>교사 기록</span>
+                </div>
+                <span className="text-[10px] font-semibold bg-white text-neutral-600 px-1.5 py-0.5 rounded-full border border-neutral-200 shrink-0">
+                  {teacherRankings.length}명
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto p-1 sm:p-1.5 space-y-1">
+                {isLoadingRankings && teacherRankings.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-xs text-neutral-400 py-6">
+                    불러오는 중...
+                  </div>
+                ) : teacherRankings.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-xs text-neutral-400 py-6 text-center px-2">
+                    아직 등록된 교사 기록이 없습니다.
+                  </div>
+                ) : (
+                  teacherRankings.map((item, idx) => {
+                    const rankNum = idx + 1;
+                    const isMyRecord =
+                      registeredId && item.id && item.id.toString() === registeredId.toString();
+                    const isBoss = item.student_id.trim().toLowerCase() === "세원";
+
+                    let rankIcon = <span className="font-bold text-neutral-500">{rankNum}</span>;
+                    if (rankNum === 1) rankIcon = <span>🥇</span>;
+                    else if (rankNum === 2) rankIcon = <span>🥈</span>;
+                    else if (rankNum === 3) rankIcon = <span>🥉</span>;
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className={`px-2 py-1.5 rounded-xl flex items-center justify-between text-xs transition-colors ${
+                          isMyRecord
+                            ? "bg-amber-100/90 border border-amber-300 font-bold"
+                            : isBoss
+                            ? "bg-amber-50/70 border border-amber-200/80 font-medium"
+                            : rankNum <= 3
+                            ? "bg-white border border-neutral-200/60 shadow-2xs"
+                            : "hover:bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                          <span className="shrink-0 w-4 text-center font-mono text-xs">
+                            {rankIcon}
+                          </span>
+                          <div className="truncate">
+                            <span className="font-semibold text-neutral-900 truncate">
+                              {formatTeacherName(item.name)}
+                            </span>
+                            {isBoss && (
+                              <span className="ml-1 text-[9px] bg-black text-amber-300 px-1 py-0.2 rounded font-bold">
+                                세원쌤
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="shrink-0 font-mono font-bold text-[11px] sm:text-xs text-black">
+                          {item.formatted_time}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
 
           {/* 하단 다시 도전 버튼 */}
