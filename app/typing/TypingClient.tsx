@@ -127,15 +127,6 @@ export default function TypingClient() {
       bestSewon = sewonList.reduce((best, curr) =>
         curr.record_ms < best.record_ms ? curr : best
       );
-    } else {
-      // DB에 세원쌤 기록이 아직 등록되지 않았을 때의 초기 기준 목표 기록
-      bestSewon = {
-        id: "default_sewon",
-        student_id: "세원",
-        name: "박세원",
-        record_ms: 38500,
-        formatted_time: "00:38:50",
-      };
     }
 
     // 2. 교사 기록 (학번이 '선생님' 또는 '세원'인 경우)
@@ -770,20 +761,18 @@ export default function TypingClient() {
               {formatTimer(finalLapMs).full}
             </div>
 
-            {/* 세원쌤 기록 대비 피드백 배너 */}
-            {sewonRecord && (
-              <div className="pt-2">
-                {finalLapMs < sewonRecord.record_ms ? (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400 text-black text-xs font-black animate-pulse shadow-sm">
-                    🎉 세원쌤 공식 기록({sewonRecord.formatted_time})을 이겼습니다! 🏆
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-neutral-200 text-neutral-700 text-xs font-semibold">
-                    🎯 목표: 세원쌤 기록({sewonRecord.formatted_time})까지 도전해보세요!
-                  </span>
-                )}
-              </div>
-            )}
+            {/* 세원쌤 기록 도전 배너 */}
+            <div className="pt-2">
+              {sewonRecord && finalLapMs < sewonRecord.record_ms ? (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400 text-black text-xs font-black animate-pulse shadow-sm">
+                  🎉 세원쌤을 이겼습니다! 🏆
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-neutral-200 text-neutral-700 text-xs font-semibold">
+                  🎯 세원쌤 기록 도전!
+                </span>
+              )}
+            </div>
           </div>
 
           {/* 학번 & 이름 작성 폼 */}
@@ -894,7 +883,7 @@ export default function TypingClient() {
             <div className="text-right">
               <span className="text-[10px] text-neutral-400 block font-medium">기준 기록</span>
               <span className="font-mono text-xl sm:text-2xl font-black text-amber-300 tracking-wider">
-                {sewonRecord ? sewonRecord.formatted_time : "00:38:50"}
+                {sewonRecord ? sewonRecord.formatted_time : "도전 대기 중"}
               </span>
             </div>
           </div>
