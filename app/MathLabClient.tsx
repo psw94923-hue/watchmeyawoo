@@ -262,6 +262,35 @@ export default function MathLabClient() {
             </h1>
           </div>
 
+          {/* SPORTS DAY TYPING APP BANNER */}
+          <div className="w-full max-w-7xl mb-6 animate-fade-in">
+            <a
+              href="/typing"
+              className="block group bg-black text-white p-5 sm:p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-white text-black text-xs font-black tracking-wide">
+                      ⚡ 체육대회 특별 종목
+                    </span>
+                    <span className="text-xs text-neutral-400 font-medium">모바일 최적화</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                    🏆 교사를 이겨라! 모바일 타자 속도전
+                  </h2>
+                  <p className="text-xs sm:text-sm text-neutral-300">
+                    5단계 문장을 가장 빠르게 오타 없이 입력하고 실시간 랭킹에 등록해보세요!
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-white text-black font-bold text-sm rounded-xl group-hover:bg-neutral-200 transition-colors">
+                  <span>경기 시작하기</span>
+                  <span>→</span>
+                </div>
+              </div>
+            </a>
+          </div>
+
           {/* NEW FEATURED APP ROW */}
           <div className="w-full max-w-7xl mb-8 animate-fade-in">
             <div
