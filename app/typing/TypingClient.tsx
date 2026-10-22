@@ -115,6 +115,7 @@ export default function TypingClient() {
   // 랭킹 목록 상태
   const [rankings, setRankings] = useState<RankingRecord[]>([]);
   const [isLoadingRankings, setIsLoadingRankings] = useState<boolean>(false);
+  const [isServerConnected, setIsServerConnected] = useState<boolean | null>(null);
 
   // 세원쌤 기록, 학생 랭킹, 교사 랭킹 분류 및 1인 1최고기록 중복 제거
   const { sewonRecord, studentRankings, teacherRankings } = useMemo(() => {
@@ -362,17 +363,125 @@ export default function TypingClient() {
 
       if (error) {
         console.warn("Supabase load fallback to localStorage:", error.message);
+        setIsServerConnected(false);
         loadLocalRankings();
       } else if (data) {
-        setRankings(data as RankingRecord[]);
+        setIsServerConnected(true);
+        // 서버 데이터와 로컬에만 보관된 미동기화 기록 병합
+        const rawLocal = localStorage.getItem("local_typing_rankings");
+        const localList: RankingRecord[] = rawLocal ? JSON.parse(rawLocal) : [];
+        const unsynced = localList.filter(
+          (r) => typeof r.id === "string" && r.id.startsWith("local_")
+        );
+
+        const merged = [...(data as RankingRecord[])];
+        for (const localRec of unsynced) {
+          if (
+            !merged.some(
+              (m) =>
+                m.student_id === localRec.student_id &&
+                m.name === localRec.name &&
+                m.record_ms === localRec.record_ms
+            )
+          ) {
+            merged.push(localRec);
+          }
+        }
+        merged.sort((a, b) => a.record_ms - b.record_ms);
+        setRankings(merged);
+
+        // 로컬에 미전송된 기록이 있다면 백그라운드로 즉시 서버 업로드 시도
+        if (unsynced.length > 0) {
+          syncLocalRecordsToServer();
+        }
       }
     } catch (err) {
       console.warn("Fetch error, fallback to local:", err);
+      setIsServerConnected(false);
       loadLocalRankings();
     } finally {
       setIsLoadingRankings(false);
     }
   };
+
+  // 로컬 미동기화 기록들을 Supabase 서버로 자동 업로드
+  const syncLocalRecordsToServer = async () => {
+    try {
+      const saved = localStorage.getItem("local_typing_rankings");
+      if (!saved) return;
+      const localList: RankingRecord[] = JSON.parse(saved);
+      const unsyncedIndices: number[] = [];
+      localList.forEach((r, idx) => {
+        if (typeof r.id === "string" && r.id.startsWith("local_")) {
+          unsyncedIndices.push(idx);
+        }
+      });
+
+      if (unsyncedIndices.length === 0) return;
+
+      let hasUpdates = false;
+      for (const idx of unsyncedIndices) {
+        const item = localList[idx];
+        const { data, error } = await supabase
+          .from("typing_rankings")
+          .insert([
+            {
+              student_id: item.student_id,
+              name: item.name,
+              record_ms: item.record_ms,
+              formatted_time: item.formatted_time,
+            },
+          ])
+          .select();
+
+        if (!error && data && data[0]) {
+          localList[idx].id = data[0].id;
+          hasUpdates = true;
+          setIsServerConnected(true);
+        }
+      }
+
+      if (hasUpdates) {
+        localStorage.setItem("local_typing_rankings", JSON.stringify(localList));
+        // 서버에서 최신 순위 재조회
+        const { data } = await supabase
+          .from("typing_rankings")
+          .select("*")
+          .order("record_ms", { ascending: true })
+          .limit(100);
+        if (data) {
+          setRankings(data as RankingRecord[]);
+        }
+      }
+    } catch (err) {
+      console.warn("Auto-sync local records failed:", err);
+    }
+  };
+
+  // 앱 로드 시 자동 랭킹 조회, 미전송 기록 동기화 및 실시간 업데이트 구독
+  useEffect(() => {
+    fetchRankings();
+    syncLocalRecordsToServer();
+
+    try {
+      const channel = supabase
+        .channel("typing_rankings_realtime")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "typing_rankings" },
+          () => {
+            fetchRankings();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (err) {
+      console.warn("Realtime subscription error:", err);
+    }
+  }, []);
 
   // 로컬 랭킹 백업 로드
   const loadLocalRankings = () => {
@@ -392,6 +501,7 @@ export default function TypingClient() {
   const openRanking = () => {
     setScreen("ranking");
     fetchRankings();
+    syncLocalRecordsToServer();
   };
 
   // 기록 제출 (Supabase 저장)
@@ -422,12 +532,16 @@ export default function TypingClient() {
 
       if (error) {
         console.warn("Supabase insert error, saving locally:", error.message);
+        setIsServerConnected(false);
         saveLocalRanking(newRecord);
       } else if (data && data[0]) {
+        setIsServerConnected(true);
         setRegisteredId(data[0].id);
+        saveLocalRecordWithId(data[0] as RankingRecord);
       }
     } catch (err) {
       console.warn("Supabase error, fallback local:", err);
+      setIsServerConnected(false);
       saveLocalRanking(newRecord);
     } finally {
       setIsSubmitting(false);
@@ -435,7 +549,7 @@ export default function TypingClient() {
     }
   };
 
-  // 로컬 저장 백업
+  // 로컬 저장 백업 (미연동 상태)
   const saveLocalRanking = (record: RankingRecord) => {
     try {
       const saved = localStorage.getItem("local_typing_rankings");
@@ -450,6 +564,22 @@ export default function TypingClient() {
       console.error(err);
     }
   };
+
+  // 서버에 성공적으로 저장된 기록을 로컬에도 캐시
+  const saveLocalRecordWithId = (record: RankingRecord) => {
+    try {
+      const saved = localStorage.getItem("local_typing_rankings");
+      const list: RankingRecord[] = saved ? JSON.parse(saved) : [];
+      if (!list.some((r) => r.id === record.id)) {
+        list.push(record);
+        list.sort((a, b) => a.record_ms - b.record_ms);
+        localStorage.setItem("local_typing_rankings", JSON.stringify(list));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
 
   // 문장 글자 단위 렌더링 (하단 입력창 가로 길이에 맞춰 자연스럽게 줄바꿈 및 오타 실시간 하이라이트)
   const renderSentenceWithFeedback = () => {
@@ -839,10 +969,24 @@ export default function TypingClient() {
         <div className="w-full max-w-xl h-full flex flex-col justify-between py-2 sm:py-4">
           {/* 상단 헤더 */}
           <div className="w-full flex items-center justify-between border-b border-neutral-200 pb-2.5">
-            <h2 className="text-xl font-extrabold text-black flex items-center gap-1.5">
-              <span>🏆</span>
-              <span>실시간 타자 랭킹</span>
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-extrabold text-black flex items-center gap-1.5">
+                <span>🏆</span>
+                <span>실시간 타자 랭킹</span>
+              </h2>
+              {isServerConnected === true && (
+                <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-300 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  서버 연동됨
+                </span>
+              )}
+              {isServerConnected === false && (
+                <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-300 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  로컬 모드 (연결 대기)
+                </span>
+              )}
+            </div>
             <div className="flex items-center space-x-2">
               <button
                 onClick={fetchRankings}
