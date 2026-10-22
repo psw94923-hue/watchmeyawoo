@@ -136,6 +136,8 @@ export default function TypingClient() {
         r.student_id.trim() === "선생님" ||
         r.student_id.trim() === "교사" ||
         r.student_id.trim() === "세원" ||
+        r.student_id.trim().includes("선생님") ||
+        r.student_id.trim().includes("교사") ||
         r.name.trim().endsWith("선생님") ||
         r.name.trim().endsWith("쌤") ||
         (r.name.trim().includes("정하연") && r.student_id.trim() === "선생님")
@@ -163,6 +165,8 @@ export default function TypingClient() {
         id === "선생님" ||
         id === "교사" ||
         id === "세원" ||
+        id.includes("선생님") ||
+        id.includes("교사") ||
         name.endsWith("선생님") ||
         name.endsWith("쌤")
       ) {
@@ -1036,21 +1040,33 @@ export default function TypingClient() {
             className="w-full space-y-3 text-left"
           >
             <div>
-              <label
-                htmlFor="student-id"
-                className="block text-xs font-semibold text-neutral-800 mb-1"
-              >
-                학번 (예: 2101)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="student-id"
+                  className="block text-xs font-semibold text-neutral-800"
+                >
+                  학번 (선생님은 &apos;선생님&apos;)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setStudentId("선생님")}
+                  className="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 active:scale-95 px-2 py-0.5 rounded-md border border-amber-300 transition-all cursor-pointer shadow-2xs"
+                >
+                  👨‍🏫 선생님이시면 클릭
+                </button>
+              </div>
               <input
                 id="student-id"
                 type="text"
                 required
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                placeholder="2101"
+                placeholder="학생 예: 2101 / 선생님: 선생님"
                 className="w-full bg-neutral-50 border border-neutral-300 rounded-xl px-3.5 py-3 text-base font-medium focus:outline-none focus:border-black focus:bg-white placeholder:text-neutral-400 text-black"
               />
+              <p className="text-[11px] text-neutral-600 mt-1.5 leading-snug">
+                💡 학생은 <b>학번(예: 2101)</b>을, 선생님은 학번 칸에 <b>&apos;선생님&apos;</b>을 적어주세요.
+              </p>
             </div>
 
             <div>
