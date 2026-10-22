@@ -130,17 +130,14 @@ export default function TypingClient() {
       );
     }
 
-    // 2. 교사 기록 (학번이 '선생님', '교사', '세원'이거나 이름에 '선생님'/'쌤'이 붙은 경우)
+    // 2. 교사 기록 (학번에 '선생님', '교사', '세원'이 입력된 경우)
     const rawTeachers = rankings.filter(
       (r) =>
         r.student_id.trim() === "선생님" ||
         r.student_id.trim() === "교사" ||
         r.student_id.trim() === "세원" ||
         r.student_id.trim().includes("선생님") ||
-        r.student_id.trim().includes("교사") ||
-        r.name.trim().endsWith("선생님") ||
-        r.name.trim().endsWith("쌤") ||
-        (r.name.trim().includes("정하연") && r.student_id.trim() === "선생님")
+        r.student_id.trim().includes("교사")
     );
     // 교사 1인 1최고기록 (이름 기준 - 호칭 접미사 정규화하여 중복 방지)
     const teacherMap = new Map<string, RankingRecord>();
@@ -158,25 +155,21 @@ export default function TypingClient() {
     // 3. 학생 기록 (학번이 '선생님', '교사', '세원'이 아닌 모든 일반 학생 학번)
     const rawStudents = rankings.filter((r) => {
       const id = r.student_id.trim();
-      const name = r.name.trim();
 
-      // 교사 기록 제외
+      // 교사 기록 제외 (학번에 교사 구분이 들어간 경우만 제외)
       if (
         id === "선생님" ||
         id === "교사" ||
         id === "세원" ||
         id.includes("선생님") ||
-        id.includes("교사") ||
-        name.endsWith("선생님") ||
-        name.endsWith("쌤")
+        id.includes("교사")
       ) {
         return false;
       }
 
-      // 이전 잘못 등록되었던 정하연 교사 레코드(id: 12 등) 학생 목록에서 제외
+      // 이전 잘못 등록되었던 구 정하연 교사 레코드(id: 12 및 임시 학번) 학생 목록에서 제외
       if (
         r.id === 12 ||
-        name.includes("정하연") ||
         id === "✨️✨️" ||
         id === "✨✨"
       ) {
@@ -400,11 +393,10 @@ export default function TypingClient() {
         // 서버 데이터와 로컬에만 보관된 미동기화 기록 병합
         const localRecords = getAllLocalTypingRecords();
         const rawServerList = (data as RankingRecord[]) || [];
-        // 이전 잘못 등록되었던 구 정하연 학생 레코드(id: 12 등) 제외
+        // 이전 잘못 등록되었던 구 정하연 학생 레코드(id: 12 및 임시 학번) 제외
         const serverList = rawServerList.filter(
           (r) =>
             r.id !== 12 &&
-            !(r.name?.includes("정하연") && r.student_id !== "선생님") &&
             r.student_id?.trim() !== "✨️✨️" &&
             r.student_id?.trim() !== "✨✨"
         );
@@ -451,12 +443,11 @@ export default function TypingClient() {
         String(item.formatted_time || "").trim() ||
         (record_ms > 0 ? formatTimer(record_ms).full : "");
 
-      // 잘못 등록된 구 정하연 학생 레코드(id: 12 및 관련) 배제
+      // 잘못 등록된 구 정하연 학생 레코드(id: 12 및 임시 학번) 배제
       if (
         item.id === 12 ||
         student_id === "✨️✨️" ||
-        student_id === "✨✨" ||
-        (name.includes("정하연") && student_id !== "선생님")
+        student_id === "✨✨"
       ) {
         return;
       }
@@ -613,7 +604,6 @@ export default function TypingClient() {
         const filtered = parsed.filter(
           (r) =>
             r.id !== 12 &&
-            !(r.name?.includes("정하연") && r.student_id !== "선생님") &&
             r.student_id?.trim() !== "✨️✨️" &&
             r.student_id?.trim() !== "✨✨"
         );
