@@ -105,6 +105,18 @@ create policy "Allow anonymous selects typing_rankings"
   for select
   using (true);
 
+drop policy if exists "Allow anonymous deletes typing_rankings" on public.typing_rankings;
+create policy "Allow anonymous deletes typing_rankings"
+  on public.typing_rankings
+  for delete
+  using (true);
+
+drop policy if exists "Allow anonymous updates typing_rankings" on public.typing_rankings;
+create policy "Allow anonymous updates typing_rankings"
+  on public.typing_rankings
+  for update
+  using (true);
+
 -- 실시간 업데이트(Realtime) 활성화
 alter publication supabase_realtime add table public.typing_rankings;
 

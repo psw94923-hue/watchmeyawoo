@@ -130,17 +130,20 @@ export default function TypingClient() {
       );
     }
 
-    // 2. 교사 기록 (학번이 '선생님' 또는 '세원'인 경우)
+    // 2. 교사 기록 (학번이 '선생님', '교사', '세원'이거나 이름에 '선생님'/'쌤'이 붙은 경우)
     const rawTeachers = rankings.filter(
       (r) =>
         r.student_id.trim() === "선생님" ||
         r.student_id.trim() === "교사" ||
-        r.student_id.trim() === "세원"
+        r.student_id.trim() === "세원" ||
+        r.name.trim().endsWith("선생님") ||
+        r.name.trim().endsWith("쌤") ||
+        (r.name.trim().includes("정하연") && r.student_id.trim() === "선생님")
     );
-    // 교사 1인 1최고기록 (이름 기준)
+    // 교사 1인 1최고기록 (이름 기준 - 호칭 접미사 정규화하여 중복 방지)
     const teacherMap = new Map<string, RankingRecord>();
     for (const t of rawTeachers) {
-      const key = t.name.trim();
+      const key = t.name.trim().replace(/\s*선생님$/, "").replace(/\s*쌤$/, "");
       const existing = teacherMap.get(key);
       if (!existing || t.record_ms < existing.record_ms) {
         teacherMap.set(key, t);
@@ -153,7 +156,30 @@ export default function TypingClient() {
     // 3. 학생 기록 (학번이 '선생님', '교사', '세원'이 아닌 모든 일반 학생 학번)
     const rawStudents = rankings.filter((r) => {
       const id = r.student_id.trim();
-      return id !== "선생님" && id !== "교사" && id !== "세원";
+      const name = r.name.trim();
+
+      // 교사 기록 제외
+      if (
+        id === "선생님" ||
+        id === "교사" ||
+        id === "세원" ||
+        name.endsWith("선생님") ||
+        name.endsWith("쌤")
+      ) {
+        return false;
+      }
+
+      // 이전 잘못 등록되었던 정하연 교사 레코드(id: 12 등) 학생 목록에서 제외
+      if (
+        r.id === 12 ||
+        name.includes("정하연") ||
+        id === "✨️✨️" ||
+        id === "✨✨"
+      ) {
+        return false;
+      }
+
+      return true;
     });
     // 학생 1인 1최고기록 (학번+이름 기준)
     const studentMap = new Map<string, RankingRecord>();
@@ -369,7 +395,15 @@ export default function TypingClient() {
         setIsServerConnected(true);
         // 서버 데이터와 로컬에만 보관된 미동기화 기록 병합
         const localRecords = getAllLocalTypingRecords();
-        const serverList = (data as RankingRecord[]) || [];
+        const rawServerList = (data as RankingRecord[]) || [];
+        // 이전 잘못 등록되었던 구 정하연 학생 레코드(id: 12 등) 제외
+        const serverList = rawServerList.filter(
+          (r) =>
+            r.id !== 12 &&
+            !(r.name?.includes("정하연") && r.student_id !== "선생님") &&
+            r.student_id?.trim() !== "✨️✨️" &&
+            r.student_id?.trim() !== "✨✨"
+        );
 
         // 서버에 아직 등록되지 않은 로컬 기록들만 추출
         const unsynced = localRecords.filter((localRec) => {
@@ -412,6 +446,16 @@ export default function TypingClient() {
       const formatted_time =
         String(item.formatted_time || "").trim() ||
         (record_ms > 0 ? formatTimer(record_ms).full : "");
+
+      // 잘못 등록된 구 정하연 학생 레코드(id: 12 및 관련) 배제
+      if (
+        item.id === 12 ||
+        student_id === "✨️✨️" ||
+        student_id === "✨✨" ||
+        (name.includes("정하연") && student_id !== "선생님")
+      ) {
+        return;
+      }
 
       if (student_id && name && record_ms > 0) {
         if (
@@ -561,7 +605,15 @@ export default function TypingClient() {
     try {
       const saved = localStorage.getItem("local_typing_rankings");
       if (saved) {
-        setRankings(JSON.parse(saved));
+        const parsed = (JSON.parse(saved) as RankingRecord[]) || [];
+        const filtered = parsed.filter(
+          (r) =>
+            r.id !== 12 &&
+            !(r.name?.includes("정하연") && r.student_id !== "선생님") &&
+            r.student_id?.trim() !== "✨️✨️" &&
+            r.student_id?.trim() !== "✨✨"
+        );
+        setRankings(filtered);
       } else {
         setRankings([]);
       }
