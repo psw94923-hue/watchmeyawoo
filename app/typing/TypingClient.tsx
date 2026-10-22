@@ -368,31 +368,26 @@ export default function TypingClient() {
       } else if (data) {
         setIsServerConnected(true);
         // 서버 데이터와 로컬에만 보관된 미동기화 기록 병합
-        const rawLocal = localStorage.getItem("local_typing_rankings");
-        const localList: RankingRecord[] = rawLocal ? JSON.parse(rawLocal) : [];
-        const unsynced = localList.filter(
-          (r) => typeof r.id === "string" && r.id.startsWith("local_")
-        );
+        const localRecords = getAllLocalTypingRecords();
+        const serverList = (data as RankingRecord[]) || [];
 
-        const merged = [...(data as RankingRecord[])];
-        for (const localRec of unsynced) {
-          if (
-            !merged.some(
-              (m) =>
-                m.student_id === localRec.student_id &&
-                m.name === localRec.name &&
-                m.record_ms === localRec.record_ms
-            )
-          ) {
-            merged.push(localRec);
-          }
-        }
+        // 서버에 아직 등록되지 않은 로컬 기록들만 추출
+        const unsynced = localRecords.filter((localRec) => {
+          return !serverList.some(
+            (s) =>
+              s.student_id?.trim() === localRec.student_id?.trim() &&
+              s.name?.trim() === localRec.name?.trim() &&
+              Math.abs(s.record_ms - localRec.record_ms) < 100
+          );
+        });
+
+        const merged = [...serverList, ...unsynced];
         merged.sort((a, b) => a.record_ms - b.record_ms);
         setRankings(merged);
 
         // 로컬에 미전송된 기록이 있다면 백그라운드로 즉시 서버 업로드 시도
         if (unsynced.length > 0) {
-          syncLocalRecordsToServer();
+          syncLocalRecordsToServer(false);
         }
       }
     } catch (err) {
@@ -404,24 +399,80 @@ export default function TypingClient() {
     }
   };
 
-  // 로컬 미동기화 기록들을 Supabase 서버로 자동 업로드
-  const syncLocalRecordsToServer = async () => {
-    try {
-      const saved = localStorage.getItem("local_typing_rankings");
-      if (!saved) return;
-      const localList: RankingRecord[] = JSON.parse(saved);
-      const unsyncedIndices: number[] = [];
-      localList.forEach((r, idx) => {
-        if (typeof r.id === "string" && r.id.startsWith("local_")) {
-          unsyncedIndices.push(idx);
+  // 로컬 브라우저 저장소의 모든 타자 기록 추출 헬퍼 (모든 키 탐색)
+  const getAllLocalTypingRecords = (): RankingRecord[] => {
+    if (typeof window === "undefined") return [];
+    const records: RankingRecord[] = [];
+    const keys = ["local_typing_rankings", "typing_rankings", "my_typing_record"];
+    for (const k of keys) {
+      try {
+        const val = localStorage.getItem(k);
+        if (val) {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item && item.student_id && item.name && item.record_ms) {
+                if (
+                  !records.some(
+                    (r) =>
+                      r.student_id === item.student_id &&
+                      r.name === item.name &&
+                      Math.abs(r.record_ms - item.record_ms) < 100
+                  )
+                ) {
+                  records.push(item);
+                }
+              }
+            }
+          } else if (parsed && parsed.student_id && parsed.name && parsed.record_ms) {
+            records.push(parsed);
+          }
         }
+      } catch {}
+    }
+    return records;
+  };
+
+  // 로컬 미동기화 기록들을 Supabase 서버로 자동 업로드
+  const syncLocalRecordsToServer = async (isManual = false) => {
+    try {
+      const localRecords = getAllLocalTypingRecords();
+      if (localRecords.length === 0) {
+        if (isManual) {
+          alert(
+            "이 기기(브라우저)에는 아직 업로드되지 않은 로컬 기록이 없습니다.\n\n어제 58초를 달성하셨던 스마트폰 기기에서 이 사이트에 접속하신 뒤 [기록 동기화]를 눌러주시면 즉시 서버로 업로드됩니다!"
+          );
+        }
+        return;
+      }
+
+      // 서버에 있는 현재 기록 목록 가져오기
+      const { data: serverData } = await supabase
+        .from("typing_rankings")
+        .select("*")
+        .limit(200);
+
+      const serverList = (serverData as RankingRecord[]) || [];
+
+      // 서버에 아직 등록되지 않은 로컬 기록들만 추출
+      const unsynced = localRecords.filter((localRec) => {
+        return !serverList.some(
+          (s) =>
+            s.student_id?.trim() === localRec.student_id?.trim() &&
+            s.name?.trim() === localRec.name?.trim() &&
+            Math.abs(s.record_ms - localRec.record_ms) < 100
+        );
       });
 
-      if (unsyncedIndices.length === 0) return;
+      if (unsynced.length === 0) {
+        if (isManual) {
+          alert("현재 기기의 모든 기록이 이미 서버와 완벽하게 동기화되어 있습니다!");
+        }
+        return;
+      }
 
-      let hasUpdates = false;
-      for (const idx of unsyncedIndices) {
-        const item = localList[idx];
+      let uploadedCount = 0;
+      for (const item of unsynced) {
         const { data, error } = await supabase
           .from("typing_rankings")
           .insert([
@@ -429,34 +480,41 @@ export default function TypingClient() {
               student_id: item.student_id,
               name: item.name,
               record_ms: item.record_ms,
-              formatted_time: item.formatted_time,
+              formatted_time: item.formatted_time || formatTimer(item.record_ms).full,
             },
           ])
           .select();
 
         if (!error && data && data[0]) {
-          localList[idx].id = data[0].id;
-          hasUpdates = true;
+          uploadedCount++;
           setIsServerConnected(true);
         }
       }
 
-      if (hasUpdates) {
-        localStorage.setItem("local_typing_rankings", JSON.stringify(localList));
-        // 서버에서 최신 순위 재조회
-        const { data } = await supabase
+      if (uploadedCount > 0) {
+        // 최신 서버 기록 갱신
+        const { data: latest } = await supabase
           .from("typing_rankings")
           .select("*")
           .order("record_ms", { ascending: true })
           .limit(100);
-        if (data) {
-          setRankings(data as RankingRecord[]);
+
+        if (latest) {
+          setRankings(latest as RankingRecord[]);
+        }
+
+        if (isManual) {
+          alert(`내 기기에서 ${uploadedCount}개의 기록을 찾아 서버로 동기화 완료했습니다! 🎉`);
         }
       }
     } catch (err) {
       console.warn("Auto-sync local records failed:", err);
+      if (isManual) {
+        alert("기록 동기화 중 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
+      }
     }
   };
+
 
   // 앱 로드 시 자동 랭킹 조회, 미전송 기록 동기화 및 실시간 업데이트 구독
   useEffect(() => {
@@ -987,11 +1045,19 @@ export default function TypingClient() {
                 </span>
               )}
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
+              <button
+                onClick={() => syncLocalRecordsToServer(true)}
+                title="내 기기에 남아있는 이전 기록을 서버로 업로드"
+                className="text-xs px-2 sm:px-2.5 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-semibold active:bg-blue-100 flex items-center gap-1"
+              >
+                <span>🔄</span>
+                <span className="hidden sm:inline">기록</span> 동기화
+              </button>
               <button
                 onClick={fetchRankings}
                 disabled={isLoadingRankings}
-                className="text-xs px-2.5 py-1.5 bg-neutral-100 rounded-lg font-semibold active:bg-neutral-200"
+                className="text-xs px-2 sm:px-2.5 py-1.5 bg-neutral-100 rounded-lg font-semibold active:bg-neutral-200"
               >
                 {isLoadingRankings ? "갱신 중" : "새로고침"}
               </button>
@@ -1003,6 +1069,7 @@ export default function TypingClient() {
               </button>
             </div>
           </div>
+
 
           {/* A. 상단 세원쌤 기록 배너 */}
           <div className="w-full mt-2.5 mb-1.5 bg-gradient-to-r from-neutral-900 to-black text-white p-3 sm:p-3.5 rounded-2xl shadow-sm border border-neutral-800 flex items-center justify-between">
