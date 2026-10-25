@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>정다면체 탐구 (3D 메이커) | 세원쌤의 수학 실험실</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js (r128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OrbitControls -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --secondary: #ec4899;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      margin: 0;
+      background: #f8fafc;
+      color: #0f172a;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    }
+    .btn-tab {
+      background: rgba(255, 255, 255, 0.9);
+      color: #334155;
+      border: 2px solid #e2e8f0;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-tab:hover {
+      border-color: #cbd5e1;
+      background: #ffffff;
+      transform: translateY(-1px);
+    }
+    .btn-tab.active {
+      background: #eef2ff;
+      border-color: #6366f1;
+      color: #4f46e5;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+    .bg-grid-dots {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(148, 163, 184, 0.25) 1.2px, transparent 1.2px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    input[type="range"] {
+      accent-color: #6366f1;
+      cursor: pointer;
+    }
+    /* Smooth slide animations for side panel */
+    .slide-panel-open {
+      transform: translateX(0%);
+    }
+    .slide-panel-closed {
+      transform: translateX(100%);
+    }
+    @media (max-width: 640px) {
+      .slide-panel-closed {
+        transform: translateY(100%);
+      }
+      .slide-panel-open {
+        transform: translateY(0%);
+      }
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden relative">
+  <div class="bg-grid-dots"></div>
+
+  <!-- TOP HEADER NAV -->
+  <header class="relative z-30 h-14 md:h-16 px-4 md:px-6 bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between shadow-xs shrink-0">
+    <!-- Back to Hub -->
+    <a href="/" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all active:scale-95 text-xs md:text-sm font-bold shadow-xs">
+      <span>⬅</span>
+      <span class="hidden sm:inline">실험실로</span>
+      <span>돌아가기</span>
+    </a>
+
+    <!-- Center Title & Polyhedron Name Badge -->
+    <div class="flex items-center gap-2 md:gap-3">
+      <span class="text-xl md:text-2xl">🎲</span>
+      <h1 class="text-base md:text-xl font-black text-slate-800 tracking-tight">정다면체 메이커</h1>
+      <span id="currentPolyNameBadge" class="px-2.5 py-0.5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-700 font-extrabold text-xs">
+        정사면체
+      </span>
+    </div>
+
+    <!-- Right Controls: Sound & Open Side Panel Button -->
+    <div class="flex items-center gap-2">
+      <button id="btnSoundToggle" onclick="toggleSound()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors shadow-xs" title="소리 켜기/끄기">
+        <span id="soundIcon">🔊</span>
+      </button>
+
+      <button id="btnToggleSidePanel" onclick="toggleSidePanel()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs md:text-sm shadow-md shadow-indigo-500/25 active:scale-95 transition-all">
+        <span>📊</span>
+        <span>탐구 현황</span>
+        <span id="panelBadge" class="hidden w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN INTERFACE BODY: 3D CANVAS + FLOATING CONTROLS -->
+  <div class="relative flex-1 w-full h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-hidden flex">
+
+    <!-- LEFT STEP CONTROLS (Floating Glass Card) -->
+    <aside id="leftControlPanel" class="absolute top-3 left-3 z-20 w-[calc(100%-1.5rem)] sm:w-80 md:w-96 glass-card rounded-2xl p-4 md:p-5 flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto transition-all duration-300">
+      
+      <!-- STEP 1: SHAPE SELECTION -->
+      <div id="step1Controls" class="flex flex-col gap-3">
+        <!-- 1. Regular Polygon Selection -->
+        <div>
+          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+            <span>1. 정다각형 선택</span>
+            <span class="text-indigo-600 font-extrabold text-xs" id="shapeAngleLabel">한 내각: 60°</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1.5" id="shapeTabs">
+            <button class="btn-tab active py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(3)">
+              <span>🔺</span>
+              <span>정삼각형</span>
+            </button>
+            <button class="btn-tab py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(4)">
+              <span>🟦</span>
+              <span>정사각형</span>
+            </button>
+            <button class="btn-tab py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(5)">
+              <span>⬡</span>
+              <span>정오각형</span>
+            </button>
+            <button class="btn-tab py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(6)">
+              <span>🛑</span>
+              <span>정육각형</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Number of Faces at a Vertex -->
+        <div>
+          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+            <span>2. 한 꼭짓점에 모일 면의 개수</span>
+            <span class="text-slate-400 text-[10px]">최소 3개 필요</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="vertexTabs">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- 3. Angle Sum & Foldability Status Badge -->
+        <div id="angleInfoCard" class="p-3 rounded-xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col gap-1 transition-all">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span class="text-slate-600">한 꼭짓점 내각의 합:</span>
+            <span id="angleSumValue" class="text-indigo-700 font-extrabold text-sm">60° × 3 = 180°</span>
+          </div>
+          <div id="angleDefectBadge" class="text-[11px] text-indigo-600 font-semibold flex items-center gap-1">
+            <span>✨</span>
+            <span id="angleDefectMsg">360°보다 작아 입체로 접을 수 있습니다! (빈틈 180°)</span>
+          </div>
+        </div>
+
+        <!-- Fold Action Button -->
+        <button id="btnFold" onclick="foldStep2()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white font-black text-sm md:text-base shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 active:scale-98 transition-all flex items-center justify-center gap-2">
+          <span>입체로 접기 (시작)</span>
+          <span>➔</span>
+        </button>
+      </div>
+
+      <!-- STEP 2 / 3: BUILD & COMPLETED CONTROLS -->
+      <div id="stepBuildControls" class="hidden flex-col gap-3">
+        <!-- Building status -->
+        <div id="buildingStatusBox" class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
+          <span class="animate-bounce">👉</span>
+          <span id="buildInstructionText">노란색 모서리를 터치해 면을 붙이세요!</span>
+        </div>
+
+        <!-- Progress Counter -->
+        <div class="flex items-center justify-between px-1 text-xs font-bold text-slate-600">
+          <span>조립 진행도:</span>
+          <span id="buildFaceCountText" class="text-indigo-600 font-black text-sm">3 / 4 면</span>
+        </div>
+        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+          <div id="buildProgressBar" class="bg-indigo-600 h-full w-[75%] transition-all duration-300"></div>
+        </div>
+
+        <!-- COMPLETED SECTION (Shows when fully closed) -->
+        <div id="completedActions" class="hidden flex-col gap-3 pt-2 border-t border-slate-200/80">
+          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2">
+            <span class="text-lg">🎉</span>
+            <div>
+              <div class="text-xs font-extrabold" id="completedShapeTitle">정사면체 완성!</div>
+              <div class="text-[11px] text-emerald-700">이제 면, 꼭짓점, 모서리를 탐구해보세요.</div>
+            </div>
+          </div>
+
+          <!-- Unfold/Fold Slider -->
+          <div>
+            <div class="flex items-center justify-between text-xs font-bold text-slate-600 mb-1">
+              <span>전개도로 펼쳐보기</span>
+              <span id="unfoldPercent" class="text-indigo-600 font-extrabold">100% (입체)</span>
+            </div>
+            <input type="range" id="unfoldSlider" min="0" max="100" value="100" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+            <div class="flex justify-between text-[10px] text-slate-400 font-bold px-0.5 mt-0.5">
+              <span>펼침 (전개도)</span>
+              <span>접힘 (입체)</span>
+            </div>
+          </div>
+
+          <!-- Counting Tools Grid -->
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <button onclick="autoCountVertices()" class="py-2.5 px-2 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-800 font-black text-xs active:scale-95 transition-all flex flex-col items-center gap-1 shadow-xs">
+              <span class="text-base">🔴</span>
+              <span>꼭짓점 세기 (자동)</span>
+            </button>
+            <button onclick="autoCountEdges()" class="py-2.5 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-black text-xs active:scale-95 transition-all flex flex-col items-center gap-1 shadow-xs">
+              <span class="text-base">🟡</span>
+              <span>모서리 세기 (자동)</span>
+            </button>
+          </div>
+
+          <div class="text-[11px] text-slate-500 font-bold text-center bg-slate-50 py-1.5 px-2 rounded-lg border border-slate-200/60">
+            👆 3D 도형의 <b>면을 직접 터치</b>하면 색상이 바뀌고 개수가 세어집니다!
+          </div>
+        </div>
+
+        <!-- PROMINENT RESET BUTTON (Crucial User Requirement!) -->
+        <button onclick="resetToStep1()" class="w-full mt-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-sm shadow-lg shadow-rose-500/25 active:scale-98 transition-all flex items-center justify-center gap-2">
+          <span class="text-base">🔄</span>
+          <span>처음부터 다시 만들기</span>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- 3D VIEWPORT CONTAINER -->
+    <div id="viewportContainer" class="relative flex-1 w-full h-full">
+      <div id="threeContainer" class="absolute inset-0"></div>
+
+      <!-- CAMERA VIEW CONTROLS (BOTTOM RIGHT) -->
+      <div class="absolute bottom-4 right-4 z-20 flex flex-col gap-2">
+        <button onclick="resetCamera3D()" class="w-11 h-11 rounded-xl bg-white/90 backdrop-blur border border-slate-200 shadow-md text-slate-700 hover:text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-all" title="3D 입체 시점">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        </button>
+        <button onclick="setCamera2D()" class="w-11 h-11 rounded-xl bg-white/90 backdrop-blur border border-slate-200 shadow-md text-slate-700 hover:text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-all" title="2D 평면 시점">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        </button>
+      </div>
+
+      <!-- CENTER HUD TOAST (FOR ALERTS) -->
+      <div id="hudToast" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-2 px-5 py-2.5 rounded-2xl bg-slate-900/90 backdrop-blur text-white font-bold text-xs md:text-sm shadow-2xl flex items-center gap-2 border border-slate-700">
+        <span id="hudToastIcon">⚠️</span>
+        <span id="hudToastText">안내 메시지</span>
+      </div>
+    </div>
+
+    <!-- RIGHT SLIDE PANEL (EXPLORATION COUNTERS & CHECKLIST) -->
+    <aside id="rightSlidePanel" class="fixed sm:absolute top-14 sm:top-0 right-0 z-30 w-full sm:w-80 md:w-96 h-[calc(100vh-3.5rem)] sm:h-full bg-white/95 backdrop-blur-xl border-l border-slate-200/80 shadow-2xl p-5 flex flex-col gap-4 overflow-y-auto slide-panel-closed transition-transform duration-300">
+      
+      <!-- Panel Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📊</span>
+          <h2 class="text-base font-black text-slate-800">정다면체 탐구 현황</h2>
+        </div>
+        <button onclick="toggleSidePanel(false)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold text-base transition-colors">
+          ✕
+        </button>
+      </div>
+
+      <!-- CURRENT POLYHEDRON COUNT CARD -->
+      <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-50/80 border border-indigo-100 flex flex-col gap-3 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-indigo-700 uppercase tracking-wide">현재 탐구 도형</span>
+          <span id="panelCurrentName" class="px-3 py-1 rounded-full bg-indigo-600 text-white font-black text-xs shadow-xs">
+            정사면체
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 py-1 border-y border-indigo-100/60 font-semibold">
+          <div>면의 모양: <b id="panelFaceShapeText" class="text-slate-900">정삼각형</b></div>
+          <div>한 꼭짓점의 면: <b id="panelFacesAtVertexText" class="text-slate-900">3개</b></div>
+        </div>
+
+        <!-- 1. FACE COUNT (Interactive Touch Count) -->
+        <div class="p-3 rounded-xl bg-white/90 border border-indigo-100 flex flex-col gap-1.5 shadow-xs">
+          <div class="flex items-center justify-between text-xs font-extrabold text-slate-700">
+            <span class="flex items-center gap-1.5">
+              <span>🟩</span>
+              <span>면의 개수 (직접 클릭)</span>
+            </span>
+            <span id="panelFaceCountVal" class="text-indigo-600 font-black text-sm">0 / 4개</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div id="panelFaceProgress" class="bg-indigo-600 h-full w-[0%] transition-all duration-300"></div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span id="faceCountTipText">3D 도형의 면을 탭해 세어보세요.</span>
+            <button onclick="resetFaceCount()" class="text-slate-500 hover:text-rose-600 font-bold underline text-[10px]">초기화</button>
+          </div>
+        </div>
+
+        <!-- 2. VERTEX COUNT (Auto sequential count) -->
+        <div class="p-3 rounded-xl bg-white/90 border border-indigo-100 flex items-center justify-between shadow-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🔴</span>
+            <div>
+              <div class="text-xs font-extrabold text-slate-700">꼭짓점의 개수</div>
+              <div class="text-[10px] text-slate-400 font-medium">자동 카운팅 도구</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="panelVertexCountVal" class="text-violet-700 font-black text-sm md:text-base">- 개</span>
+            <button onclick="autoCountVertices()" class="px-2.5 py-1 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-800 font-bold text-xs transition-colors shadow-xs active:scale-95">
+              세기
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. EDGE COUNT (Auto sequential count) -->
+        <div class="p-3 rounded-xl bg-white/90 border border-indigo-100 flex items-center justify-between shadow-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🟡</span>
+            <div>
+              <div class="text-xs font-extrabold text-slate-700">모서리의 개수</div>
+              <div class="text-[10px] text-slate-400 font-medium">자동 카운팅 도구</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="panelEdgeCountVal" class="text-amber-700 font-black text-sm md:text-base">- 개</span>
+            <button onclick="autoCountEdges()" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold text-xs transition-colors shadow-xs active:scale-95">
+              세기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALL 5 POLYHEDRA PROGRESS CHECKLIST -->
+      <div class="flex flex-col gap-2">
+        <div class="text-xs font-extrabold text-slate-700 flex items-center justify-between">
+          <span>5가지 정다면체 탐구 달성도</span>
+          <span id="totalDiscoveredCount" class="text-indigo-600 font-black">0 / 5</span>
+        </div>
+
+        <div class="flex flex-col gap-2" id="polyhedraChecklist">
+          <!-- Item 1: 정사면체 -->
+          <div id="check_3_3" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">🔺</span>
+              <div>
+                <div class="font-extrabold text-slate-800">정사면체</div>
+                <div class="text-[11px] text-slate-500 font-medium">면 4 • 꼭짓점 4 • 모서리 6</div>
+              </div>
+            </div>
+            <span class="status-icon text-sm font-bold text-slate-300">○</span>
+          </div>
+
+          <!-- Item 2: 정육면체 -->
+          <div id="check_4_3" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">🧊</span>
+              <div>
+                <div class="font-extrabold text-slate-800">정육면체</div>
+                <div class="text-[11px] text-slate-500 font-medium">면 6 • 꼭짓점 8 • 모서리 12</div>
+              </div>
+            </div>
+            <span class="status-icon text-sm font-bold text-slate-300">○</span>
+          </div>
+
+          <!-- Item 3: 정팔면체 -->
+          <div id="check_3_4" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">💎</span>
+              <div>
+                <div class="font-extrabold text-slate-800">정팔면체</div>
+                <div class="text-[11px] text-slate-500 font-medium">면 8 • 꼭짓점 6 • 모서리 12</div>
+              </div>
+            </div>
+            <span class="status-icon text-sm font-bold text-slate-300">○</span>
+          </div>
+
+          <!-- Item 4: 정십이면체 -->
+          <div id="check_5_3" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">⬡</span>
+              <div>
+                <div class="font-extrabold text-slate-800">정십이면체</div>
+                <div class="text-[11px] text-slate-500 font-medium">면 12 • 꼭짓점 20 • 모서리 30</div>
+              </div>
+            </div>
+            <span class="status-icon text-sm font-bold text-slate-300">○</span>
+          </div>
+
+          <!-- Item 5: 정이십면체 -->
+          <div id="check_3_5" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">🌐</span>
+              <div>
+                <div class="font-extrabold text-slate-800">정이십면체</div>
+                <div class="text-[11px] text-slate-500 font-medium">면 20 • 꼭짓점 12 • 모서리 30</div>
+              </div>
+            </div>
+            <span class="status-icon text-sm font-bold text-slate-300">○</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <script>
+    // --- Polyhedron Mathematical Configuration ---
+    const POLYHEDRON_DATA = {
+      '3_3': {
+        shape: 3,
+        shapeName: "정삼각형",
+        interiorAngle: 60,
+        facesAtVertex: 3,
+        totalFaces: 4,
+        totalVertices: 4,
+        totalEdges: 6,
+        dihedral: Math.acos(1 / 3),
+        name: "정사면체",
+        color: 0xef4444 // Vivid Red
+      },
+      '3_4': {
+        shape: 3,
+        shapeName: "정삼각형",
+        interiorAngle: 60,
+        facesAtVertex: 4,
+        totalFaces: 8,
+        totalVertices: 6,
+        totalEdges: 12,
+        dihedral: Math.acos(-1 / 3),
+        name: "정팔면체",
+        color: 0x3b82f6 // Vivid Blue
+      },
+      '3_5': {
+        shape: 3,
+        shapeName: "정삼각형",
+        interiorAngle: 60,
+        facesAtVertex: 5,
+        totalFaces: 20,
+        totalVertices: 12,
+        totalEdges: 30,
+        dihedral: Math.acos(-Math.sqrt(5) / 3),
+        name: "정이십면체",
+        color: 0x10b981 // Vivid Emerald
+      },
+      '3_6': {
+        shape: 3,
+        shapeName: "정삼각형",
+        interiorAngle: 60,
+        facesAtVertex: 6,
+        fail: true,
+        failMsg: "60° × 6 = 360°로 빈틈이 없어 평면(테셀레이션)이 됩니다. 입체로 접을 수 없습니다!"
+      },
+      '4_3': {
+        shape: 4,
+        shapeName: "정사각형",
+        interiorAngle: 90,
+        facesAtVertex: 3,
+        totalFaces: 6,
+        totalVertices: 8,
+        totalEdges: 12,
+        dihedral: Math.PI / 2,
+        name: "정육면체",
+        color: 0xf59e0b // Vivid Amber
+      },
+      '4_4': {
+        shape: 4,
+        shapeName: "정사각형",
+        interiorAngle: 90,
+        facesAtVertex: 4,
+        fail: true,
+        failMsg: "90° × 4 = 360°로 빈틈이 없어 입체로 접을 수 없습니다!"
+      },
+      '5_3': {
+        shape: 5,
+        shapeName: "정오각형",
+        interiorAngle: 108,
+        facesAtVertex: 3,
+        totalFaces: 12,
+        totalVertices: 20,
+        totalEdges: 30,
+        dihedral: Math.acos(-1 / Math.sqrt(5)),
+        name: "정십이면체",
+        color: 0x8b5cf6 // Vivid Violet
+      },
+      '5_4': {
+        shape: 5,
+        shapeName: "정오각형",
+        interiorAngle: 108,
+        facesAtVertex: 4,
+        fail: true,
+        failMsg: "108° × 4 = 432°로 360°를 초과하여 도형이 서로 겹칩니다. 입체 불가!"
+      },
+      '6_3': {
+        shape: 6,
+        shapeName: "정육각형",
+        interiorAngle: 120,
+        facesAtVertex: 3,
+        fail: true,
+        failMsg: "120° × 3 = 360°로 3개만 모여도 평면이 되어 입체로 접을 수 없습니다!"
+      }
+    };
+
+    const SUBTAB_CONFIG = {
+      3: [3, 4, 5, 6],
+      4: [3, 4],
+      5: [3, 4],
+      6: [3]
+    };
+
+    // State Variables
+    let currentShape = 3;
+    let currentFacesAtVertex = 3;
+    let currentMode = 'FLAT'; // 'FLAT', 'BUILD', 'DONE'
+    let soundEnabled = true;
+
+    let faces = [];
+    let hinges = [];
+    let targetDihedral = 0;
+    let isFailed = false;
+    let openEdgeMeshes = [];
+
+    // Exploration Counting State
+    let countedFacesSet = new Set();
+    let vertexMarkersGroup = new THREE.Group();
+    let edgeMarkersGroup = new THREE.Group();
+    let isCountingVertices = false;
+    let isCountingEdges = false;
+    let discoveredPolyhedra = new Set();
+
+    // Raycasting & Interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Web Audio Synthesizer (Zero External Audio File Dependency!)
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.12, volume = 0.25) {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (err) {
+        console.warn("Audio error:", err);
+      }
+    }
+
+    function playChord(freqs) {
+      freqs.forEach((f, i) => {
+        setTimeout(() => playTone(f, 'triangle', 0.3, 0.2), i * 70);
+      });
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundIcon').innerText = soundEnabled ? '🔊' : '🔇';
+      showToast(soundEnabled ? "소리가 켜졌습니다." : "소리가 꺼졌습니다.");
+    }
+
+    // --- Three.js Setup ---
+    const container = document.getElementById('threeContainer');
+    const viewport = document.getElementById('viewportContainer');
+
+    const scene = new THREE.Scene();
+    scene.background = null;
+
+    const camera = new THREE.PerspectiveCamera(10, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0, 50);
+    camera.up.set(0, 0, 1);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe2e8f0, 0.65);
+    hemiLight.position.set(0, 10, 0);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    dirLight.position.set(12, 18, 12);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    scene.add(dirLight);
+
+    const backLight = new THREE.DirectionalLight(0xc7d2fe, 0.5);
+    backLight.position.set(-12, 6, -12);
+    scene.add(backLight);
+
+    let polyhedronGroup = new THREE.Group();
+    scene.add(polyhedronGroup);
+    polyhedronGroup.add(vertexMarkersGroup);
+    polyhedronGroup.add(edgeMarkersGroup);
+
+    // --- UI Helper Functions ---
+    function showToast(msg, icon = 'ℹ️') {
+      const toast = document.getElementById('hudToast');
+      document.getElementById('hudToastIcon').innerText = icon;
+      document.getElementById('hudToastText').innerText = msg;
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 3500);
+    }
+
+    function toggleSidePanel(forceState) {
+      const panel = document.getElementById('rightSlidePanel');
+      const isCurrentlyOpen = panel.classList.contains('slide-panel-open');
+      const open = forceState !== undefined ? forceState : !isCurrentlyOpen;
+
+      if (open) {
+        panel.classList.remove('slide-panel-closed');
+        panel.classList.add('slide-panel-open');
+      } else {
+        panel.classList.remove('slide-panel-open');
+        panel.classList.add('slide-panel-closed');
+      }
+    }
+
+    // --- Polygon & Shape Logic ---
+    function selectShape(n) {
+      currentShape = n;
+      const btns = document.getElementById('shapeTabs').children;
+      for (let i = 0; i < btns.length; i++) {
+        const val = i === 0 ? 3 : (i === 1 ? 4 : (i === 2 ? 5 : 6));
+        if (val === n) {
+          btns[i].classList.add('active');
+        } else {
+          btns[i].classList.remove('active');
+        }
+      }
+      currentFacesAtVertex = 3;
+      renderSubtabs();
+      initStep1();
+      playTone(440, 'sine', 0.08);
+    }
+
+    function selectVertexCount(n) {
+      currentFacesAtVertex = n;
+      renderSubtabs();
+      initStep1();
+      playTone(520, 'sine', 0.08);
+    }
+
+    function renderSubtabs() {
+      const container = document.getElementById('vertexTabs');
+      container.innerHTML = '';
+      const list = SUBTAB_CONFIG[currentShape] || [3];
+      list.forEach(n => {
+        const btn = document.createElement('button');
+        btn.className = `btn-tab px-3.5 py-1.5 rounded-xl text-xs font-bold ${n === currentFacesAtVertex ? 'active' : ''}`;
+        btn.innerText = `${n}개`;
+        btn.onclick = () => selectVertexCount(n);
+        container.appendChild(btn);
+      });
+    }
+
+    // --- 3D Geometry Generation ---
+    function createPolygonVertices(n, edgeLength) {
+      const vertices = [];
+      vertices.push(new THREE.Vector3(-edgeLength / 2, 0, 0));
+      let pos = new THREE.Vector3(edgeLength / 2, 0, 0);
+      vertices.push(pos.clone());
+      let currentAngle = 0;
+      const extAngle = (Math.PI * 2) / n;
+      for (let i = 2; i < n; i++) {
+        currentAngle += extAngle;
+        pos.x += edgeLength * Math.cos(currentAngle);
+        pos.y += edgeLength * Math.sin(currentAngle);
+        vertices.push(pos.clone());
+      }
+      return vertices;
+    }
+
+    function createFaceMesh(n, edgeLength, colorHex) {
+      const verts = createPolygonVertices(n, edgeLength);
+      const shape = new THREE.Shape();
+      shape.moveTo(verts[0].x, verts[0].y);
+      for (let i = 1; i < n; i++) shape.lineTo(verts[i].x, verts[i].y);
+      shape.lineTo(verts[0].x, verts[0].y);
+
+      const geom = new THREE.ShapeGeometry(shape);
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.94,
+        roughness: 0.25,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        clearcoat: 0.4,
+        clearcoatRoughness: 0.1
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      // Dark subtle edge outline
+      const edgesGeom = new THREE.EdgesGeometry(geom);
+      const edgesMat = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.35, linewidth: 2 });
+      const edgesLine = new THREE.LineSegments(edgesGeom, edgesMat);
+      mesh.add(edgesLine);
+
+      mesh.userData = {
+        n,
+        edgeLength,
+        vertices: verts,
+        isFace: true,
+        baseColor: colorHex,
+        faceId: faces.length
+      };
+      return mesh;
+    }
+
+    function createHinge(parentFaceMesh, edgeIndex) {
+      const verts = parentFaceMesh.userData.vertices;
+      const n = parentFaceMesh.userData.n;
+      const v_s = verts[edgeIndex];
+      const v_e = verts[(edgeIndex + 1) % n];
+
+      const C = new THREE.Vector3().addVectors(v_s, v_e).multiplyScalar(0.5);
+      const X = new THREE.Vector3().subVectors(v_s, v_e).normalize();
+      const Y = new THREE.Vector3(-X.y, X.x, 0);
+      const Z = new THREE.Vector3(0, 0, 1);
+
+      const m = new THREE.Matrix4();
+      m.makeBasis(X, Y, Z);
+      m.setPosition(C);
+
+      const hinge = new THREE.Object3D();
+      hinge.rotation.order = 'ZYX';
+      hinge.position.copy(C);
+      hinge.quaternion.setFromRotationMatrix(m);
+      return hinge;
+    }
+
+    // --- Core Lifecycle ---
+    function initStep1() {
+      currentMode = 'FLAT';
+      countedFacesSet.clear();
+      isCountingVertices = false;
+      isCountingEdges = false;
+      clearMarkers();
+      clearOpenEdges();
+
+      document.getElementById('step1Controls').classList.remove('hidden');
+      document.getElementById('stepBuildControls').classList.add('hidden');
+      document.getElementById('completedActions').classList.add('hidden');
+
+      scene.remove(polyhedronGroup);
+      polyhedronGroup = new THREE.Group();
+      scene.add(polyhedronGroup);
+      polyhedronGroup.add(vertexMarkersGroup);
+      polyhedronGroup.add(edgeMarkersGroup);
+
+      faces = [];
+      hinges = [];
+
+      const key = `${currentShape}_${currentFacesAtVertex}`;
+      const data = POLYHEDRON_DATA[key];
+
+      targetDihedral = data.dihedral || 0;
+      isFailed = data.fail || false;
+
+      // Update Panel & HUD info
+      const interiorAngle = data.interiorAngle || (currentShape === 3 ? 60 : (currentShape === 4 ? 90 : (currentShape === 5 ? 108 : 120)));
+      const angleSum = interiorAngle * currentFacesAtVertex;
+      const defect = 360 - angleSum;
+
+      document.getElementById('shapeAngleLabel').innerText = `한 내각: ${interiorAngle}°`;
+      document.getElementById('angleSumValue').innerText = `${interiorAngle}° × ${currentFacesAtVertex} = ${angleSum}°`;
+
+      const angleCard = document.getElementById('angleInfoCard');
+      const defectMsg = document.getElementById('angleDefectMsg');
+      const btnFold = document.getElementById('btnFold');
+
+      if (isFailed) {
+        angleCard.className = "p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex flex-col gap-1";
+        defectMsg.innerText = data.failMsg;
+        btnFold.classList.add('opacity-50', 'pointer-events-none');
+        btnFold.innerHTML = `<span>접기 불가 (입체 형성 불가)</span>`;
+        document.getElementById('currentPolyNameBadge').innerText = "입체 불가";
+        document.getElementById('currentPolyNameBadge').className = "px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-200 text-rose-700 font-extrabold text-xs";
+      } else {
+        angleCard.className = "p-3 rounded-xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col gap-1";
+        defectMsg.innerText = `360°보다 작아 입체로 접을 수 있습니다! (빈틈 ${defect}°)`;
+        btnFold.classList.remove('opacity-50', 'pointer-events-none');
+        btnFold.innerHTML = `<span>입체로 접기 (시작)</span><span>➔</span>`;
+        document.getElementById('currentPolyNameBadge').innerText = data.name;
+        document.getElementById('currentPolyNameBadge').className = "px-2.5 py-0.5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-700 font-extrabold text-xs";
+      }
+
+      // Update Right Panel info
+      document.getElementById('panelCurrentName').innerText = isFailed ? '불가능' : data.name;
+      document.getElementById('panelFaceShapeText').innerText = data.shapeName || `${currentShape}각형`;
+      document.getElementById('panelFacesAtVertexText').innerText = `${currentFacesAtVertex}개 (${angleSum}°)`;
+      document.getElementById('panelFaceCountVal').innerText = `0 / ${data.totalFaces || '-'}개`;
+      document.getElementById('panelFaceProgress').style.width = '0%';
+      document.getElementById('panelVertexCountVal').innerText = `- 개`;
+      document.getElementById('panelEdgeCountVal').innerText = `- 개`;
+
+      // 2D Flat Layout around central vertex
+      const color = data.color || 0x6366f1;
+      let f0 = createFaceMesh(data.shape, 2, color);
+      polyhedronGroup.add(f0);
+      faces.push({ mesh: f0, hinge: null });
+
+      let currentFace = f0;
+      for (let i = 0; i < currentFacesAtVertex - 1; i++) {
+        const attachEdge = data.shape - 1;
+        const nextFace = createFaceMesh(data.shape, 2, color);
+        const hinge = createHinge(currentFace, attachEdge);
+        currentFace.add(hinge);
+        hinge.add(nextFace);
+
+        faces.push({ mesh: nextFace, hinge: hinge });
+        hinges.push(hinge);
+        currentFace = nextFace;
+      }
+
+      // Flat Top-down camera
+      gsap.to(camera.position, { x: 0, y: 0, z: 45, duration: 0.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: 11, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 0.8, ease: "power2.inOut" });
+    }
+
+    // Step 2: 3D Dihedral Folding
+    function foldStep2() {
+      const key = `${currentShape}_${currentFacesAtVertex}`;
+      const data = POLYHEDRON_DATA[key];
+
+      if (isFailed) {
+        showToast(data.failMsg, "❌");
+        playTone(220, 'sawtooth', 0.2);
+        gsap.to(polyhedronGroup.rotation, { z: 0.1, duration: 0.1, yoyo: true, repeat: 3 });
+        return;
+      }
+
+      playTone(587.33, 'triangle', 0.25); // D5
+
+      document.getElementById('step1Controls').classList.add('hidden');
+      document.getElementById('stepBuildControls').classList.remove('hidden');
+
+      const foldAngle = Math.PI - targetDihedral;
+      let completeCount = 0;
+
+      hinges.forEach(hinge => {
+        gsap.to(hinge.rotation, {
+          x: foldAngle,
+          duration: 1.4,
+          ease: "power2.inOut",
+          onComplete: () => {
+            completeCount++;
+            if (completeCount === hinges.length) {
+              enterBuildMode();
+            }
+          }
+        });
+      });
+
+      // Smooth camera transition into 3D
+      gsap.to(camera.position, { x: 6, y: -6, z: 6, duration: 1.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: 42, duration: 1.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1.8, ease: "power2.inOut" });
+    }
+
+    // Step 3: Build Mode (Touch Glowing Edges)
+    function enterBuildMode() {
+      currentMode = 'BUILD';
+      updateOpenEdges();
+      updateBuildProgressUI();
+      showToast("빛나는 노란색 모서리를 터치해 면을 조립하세요!", "✨");
+    }
+
+    function clearOpenEdges() {
+      openEdgeMeshes.forEach(m => polyhedronGroup.remove(m));
+      openEdgeMeshes = [];
+    }
+
+    function updateOpenEdges() {
+      if (currentMode !== 'BUILD') return;
+      clearOpenEdges();
+      polyhedronGroup.updateMatrixWorld(true);
+
+      const key = `${currentShape}_${currentFacesAtVertex}`;
+      const data = POLYHEDRON_DATA[key];
+
+      // If we already have reached total faces, complete!
+      if (faces.length >= data.totalFaces) {
+        onCompleted();
+        return;
+      }
+
+      const edges = [];
+      faces.forEach((faceObj, fIdx) => {
+        const mesh = faceObj.mesh;
+        const verts = mesh.userData.vertices;
+        const n = mesh.userData.n;
+
+        for (let e = 0; e < n; e++) {
+          const v1 = verts[e].clone().applyMatrix4(mesh.matrixWorld);
+          const v2 = verts[(e + 1) % n].clone().applyMatrix4(mesh.matrixWorld);
+          edges.push({ fIdx, e, v1, v2, matched: false });
+        }
+      });
+
+      // Match edges in 3D world space
+      for (let i = 0; i < edges.length; i++) {
+        if (edges[i].matched) continue;
+        for (let j = i + 1; j < edges.length; j++) {
+          if (edges[j].matched) continue;
+          const d1 = edges[i].v1.distanceTo(edges[j].v1) + edges[i].v2.distanceTo(edges[j].v2);
+          const d2 = edges[i].v1.distanceTo(edges[j].v2) + edges[i].v2.distanceTo(edges[j].v1);
+          if (d1 < 0.12 || d2 < 0.12) {
+            edges[i].matched = true;
+            edges[j].matched = true;
+            break;
+          }
+        }
+      }
+
+      const openEdges = edges.filter(e => !e.matched);
+
+      openEdges.forEach(oe => {
+        const dist = oe.v1.distanceTo(oe.v2);
+        // Outer interactive cylinder hitbox
+        const geom = new THREE.CylinderGeometry(0.14, 0.14, dist, 8);
+        geom.translate(0, dist / 2, 0);
+        geom.rotateX(Math.PI / 2);
+
+        const mat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.6 });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.copy(oe.v1);
+        mesh.lookAt(oe.v2);
+
+        mesh.userData = { isEdge: true, fIdx: oe.fIdx, edgeIndex: oe.e };
+        polyhedronGroup.add(mesh);
+        openEdgeMeshes.push(mesh);
+
+        // Core glowing line
+        const coreGeom = new THREE.CylinderGeometry(0.045, 0.045, dist, 8);
+        coreGeom.translate(0, dist / 2, 0);
+        coreGeom.rotateX(Math.PI / 2);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+        const core = new THREE.Mesh(coreGeom, coreMat);
+        mesh.add(core);
+      });
+
+      if (openEdges.length === 0 && faces.length >= data.totalFaces) {
+        onCompleted();
+      }
+    }
+
+    function onEdgeClick(intersect) {
+      if (currentMode !== 'BUILD') return;
+      const data = intersect.object.userData;
+      const parentFaceObj = faces[data.fIdx];
+      const shape = parentFaceObj.mesh.userData.n;
+      const color = parentFaceObj.mesh.userData.baseColor;
+
+      const key = `${currentShape}_${currentFacesAtVertex}`;
+      const polyData = POLYHEDRON_DATA[key];
+      if (faces.length >= polyData.totalFaces) {
+        onCompleted();
+        return;
+      }
+
+      const newFace = createFaceMesh(shape, 2, color);
+      const hinge = createHinge(parentFaceObj.mesh, data.edgeIndex);
+
+      parentFaceObj.mesh.add(hinge);
+      hinge.add(newFace);
+
+      faces.push({ mesh: newFace, hinge: hinge });
+      hinges.push(hinge);
+
+      playTone(440 + faces.length * 30, 'sine', 0.15); // Ascending click pitch
+
+      const foldAngle = Math.PI - targetDihedral;
+      clearOpenEdges();
+
+      gsap.to(hinge.rotation, {
+        x: foldAngle,
+        duration: 0.45,
+        ease: "back.out(1.4)",
+        onComplete: () => {
+          updateBuildProgressUI();
+          updateOpenEdges();
+        }
+      });
+    }
+
+    function updateBuildProgressUI() {
+      const key = `${currentShape}_${currentFacesAtVertex}`;
+      const data = POLYHEDRON_DATA[key];
+      const count = faces.length;
+      const total = data.totalFaces || count;
+      const pct = Math.min(100, Math.round((count / total) * 100));
+
+      document.getElementById('buildFaceCountText').innerText = `${count} / ${total} 면`;
+      document.getElementById('buildProgressBar').style.width = `${pct}%`;
+    }
+
+    // Step 4: Completion & Exploration Mode
+    function onCompleted() {
+      currentMode = 'DONE';
+      clearOpenEdges();
+
+      const key = `${currentShape}_${currentFacesAtVertex}`;
+      const data = POLYHEDRON_DATA[key];
+
+      playChord([523.25, 659.25, 783.99, 1046.5]); // C major celebration chord!
+
+      document.getElementById('buildingStatusBox').classList.add('hidden');
+      document.getElementById('completedActions').classList.remove('hidden');
+      document.getElementById('completedShapeTitle').innerText = `🎉 ${data.name} 완성!`;
+
+      // Mark this polyhedron as discovered in checklist
+      discoveredPolyhedra.add(key);
+      updateDiscoveredChecklist();
+
+      // Unfold Slider configuration
+      const slider = document.getElementById('unfoldSlider');
+      slider.value = 100;
+      document.getElementById('unfoldPercent').innerText = '100% (입체)';
+      slider.oninput = (e) => {
+        const val = e.target.value / 100;
+        document.getElementById('unfoldPercent').innerText = `${e.target.value}% ${e.target.value == 100 ? '(입체)' : (e.target.value == 0 ? '(전개도)' : '')}`;
+        const foldAngle = Math.PI - targetDihedral;
+        hinges.forEach(h => {
+          h.rotation.x = val * foldAngle;
+        });
+      };
+
+      // Gentle celebratory bounce
+      gsap.to(polyhedronGroup.position, { y: 0.4, duration: 0.35, yoyo: true, repeat: 1, ease: "power2.out" });
+      showToast(`🎉 ${data.name} 완성! 면/꼭짓점/모서리를 탐구해보세요.`, "🏆");
+
+      // Auto-open side panel slightly delayed so student notices it
+      setTimeout(() => {
+        toggleSidePanel(true);
+      }, 700);
+    }
+
+    // --- Face Counting (Direct Touch) ---
+    function onFaceClick(intersect) {
+      if (currentMode !== 'DONE') return;
+      const mesh = intersect.object;
+      const id = mesh.userData.faceId;
+
+      if (countedFacesSet.has(id)) {
+        // Toggle OFF
+        countedFacesSet.delete(id);
+        mesh.material.color.setHex(mesh.userData.baseColor);
+        mesh.material.emissive.setHex(0x000000);
+        playTone(350, 'sine', 0.1);
+      } else {
+        // Toggle ON
+        countedFacesSet.add(id);
+        mesh.material.color.setHex(0x10b981); // Radiant Emerald Green
+        mesh.material.emissive.setHex(0x065f46);
+        playTone(523.25 + countedFacesSet.size * 35, 'triangle', 0.15);
+      }
+
+      updateFaceCountUI();
+    }
+
+    function updateFaceCountUI() {
+      const key = `${currentShape}_${currentFacesAtVertex}`;
+      const data = POLYHEDRON_DATA[key];
+      const total = data.totalFaces;
+      const count = countedFacesSet.size;
+      const pct = Math.min(100, Math.round((count / total) * 100));
+
+      document.getElementById('panelFaceCountVal').innerText = `${count} / ${total}개`;
+      document.getElementById('panelFaceProgress').style.width = `${pct}%`;
+
+      if (count === total) {
+        document.getElementById('faceCountTipText').innerText = "🌟 모든 면을 다 세었습니다!";
+        playChord([659.25, 880, 1046.5]);
+      } else {
+        document.getElementById('faceCountTipText').innerText = `3D 도형의 면을 탭해 세어보세요. (${total - count}개 남음)`;
+      }
+    }
+
+    function resetFaceCount() {
+      countedFacesSet.clear();
+      faces.forEach(f => {
+        f.mesh.material.color.setHex(f.mesh.userData.baseColor);
+        f.mesh.material.emissive.setHex(0x000000);
+      });
+      updateFaceCountUI();
+      playTone(300, 'sine', 0.1);
+    }
+
+    // --- Vertex Counting (Auto Sequential Highlight) ---
+    function autoCountVertices() {
+      if (currentMode !== 'DONE' || isCountingVertices) return;
+      isCountingVertices = true;
+
+      // Extract unique world vertices
+      polyhedronGroup.updateMatrixWorld(true);
+      const uniqueVerts = [];
+      faces.forEach(f => {
+        const mesh = f.mesh;
+        const verts = mesh.userData.vertices;
+        verts.forEach(v => {
+          const wv = v.clone().applyMatrix4(mesh.matrixWorld);
+          // Check if already in uniqueVerts
+          const exists = uniqueVerts.some(uv => uv.distanceTo(wv) < 0.15);
+          if (!exists) {
+            uniqueVerts.push(wv);
+          }
+        });
+      });
+
+      // Clear existing markers
+      while (vertexMarkersGroup.children.length > 0) {
+        vertexMarkersGroup.remove(vertexMarkersGroup.children[0]);
+      }
+
+      let count = 0;
+      const total = uniqueVerts.length;
+      document.getElementById('panelVertexCountVal').innerText = `0 / ${total}개`;
+
+      const interval = setInterval(() => {
+        if (count >= total) {
+          clearInterval(interval);
+          isCountingVertices = false;
+          document.getElementById('panelVertexCountVal').innerText = `${total}개 (완료!)`;
+          playChord([587.33, 739.99, 880]);
+          return;
+        }
+
+        const pos = uniqueVerts[count];
+        // Create glowing vertex sphere
+        const sphereGeom = new THREE.SphereGeometry(0.16, 16, 16);
+        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x8b5cf6 });
+        const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+        sphere.position.copy(pos);
+
+        // Core white highlight
+        const coreGeom = new THREE.SphereGeometry(0.08, 12, 12);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const core = new THREE.Mesh(coreGeom, coreMat);
+        sphere.add(core);
+
+        vertexMarkersGroup.add(sphere);
+
+        // Pop animation
+        sphere.scale.set(0.1, 0.1, 0.1);
+        gsap.to(sphere.scale, { x: 1, y: 1, z: 1, duration: 0.3, ease: "back.out(2)" });
+
+        count++;
+        document.getElementById('panelVertexCountVal').innerText = `${count} / ${total}개`;
+        playTone(400 + count * 35, 'triangle', 0.12, 0.2);
+      }, 120);
+    }
+
+    // --- Edge Counting (Auto Sequential Highlight) ---
+    function autoCountEdges() {
+      if (currentMode !== 'DONE' || isCountingEdges) return;
+      isCountingEdges = true;
+
+      // Extract unique world edges
+      polyhedronGroup.updateMatrixWorld(true);
+      const uniqueEdges = [];
+      faces.forEach(f => {
+        const mesh = f.mesh;
+        const verts = mesh.userData.vertices;
+        const n = mesh.userData.n;
+        for (let e = 0; e < n; e++) {
+          const v1 = verts[e].clone().applyMatrix4(mesh.matrixWorld);
+          const v2 = verts[(e + 1) % n].clone().applyMatrix4(mesh.matrixWorld);
+
+          const exists = uniqueEdges.some(ue => {
+            const d1 = ue.v1.distanceTo(v1) + ue.v2.distanceTo(v2);
+            const d2 = ue.v1.distanceTo(v2) + ue.v2.distanceTo(v1);
+            return d1 < 0.15 || d2 < 0.15;
+          });
+
+          if (!exists) {
+            uniqueEdges.push({ v1, v2 });
+          }
+        }
+      });
+
+      // Clear existing edge markers
+      while (edgeMarkersGroup.children.length > 0) {
+        edgeMarkersGroup.remove(edgeMarkersGroup.children[0]);
+      }
+
+      let count = 0;
+      const total = uniqueEdges.length;
+      document.getElementById('panelEdgeCountVal').innerText = `0 / ${total}개`;
+
+      const interval = setInterval(() => {
+        if (count >= total) {
+          clearInterval(interval);
+          isCountingEdges = false;
+          document.getElementById('panelEdgeCountVal').innerText = `${total}개 (완료!)`;
+          playChord([523.25, 659.25, 783.99]);
+          return;
+        }
+
+        const ue = uniqueEdges[count];
+        const dist = ue.v1.distanceTo(ue.v2);
+
+        // Glowing neon cylinder along edge
+        const geom = new THREE.CylinderGeometry(0.065, 0.065, dist, 8);
+        geom.translate(0, dist / 2, 0);
+        geom.rotateX(Math.PI / 2);
+
+        const mat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.copy(ue.v1);
+        mesh.lookAt(ue.v2);
+
+        edgeMarkersGroup.add(mesh);
+
+        // Flash animation
+        gsap.fromTo(mat, { opacity: 0.2 }, { opacity: 1, duration: 0.25 });
+
+        count++;
+        document.getElementById('panelEdgeCountVal').innerText = `${count} / ${total}개`;
+        playTone(320 + count * 22, 'sine', 0.1, 0.2);
+      }, 90);
+    }
+
+    function clearMarkers() {
+      while (vertexMarkersGroup.children.length > 0) vertexMarkersGroup.remove(vertexMarkersGroup.children[0]);
+      while (edgeMarkersGroup.children.length > 0) edgeMarkersGroup.remove(edgeMarkersGroup.children[0]);
+    }
+
+    function updateDiscoveredChecklist() {
+      document.getElementById('totalDiscoveredCount').innerText = `${discoveredPolyhedra.size} / 5`;
+      discoveredPolyhedra.forEach(key => {
+        const item = document.getElementById(`check_${key}`);
+        if (item) {
+          item.className = "p-3 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between text-xs transition-all shadow-xs";
+          const icon = item.querySelector('.status-icon');
+          if (icon) {
+            icon.innerText = "✅";
+            icon.className = "status-icon text-sm font-bold text-emerald-600";
+          }
+        }
+      });
+    }
+
+    // --- Reset Action ---
+    function resetToStep1() {
+      gsap.killTweensOf(polyhedronGroup.rotation);
+      polyhedronGroup.rotation.set(0, 0, 0);
+      resetCamera3D();
+      initStep1();
+      playTone(400, 'sine', 0.15);
+      showToast("처음으로 돌아왔습니다. 정다면체를 새로 만들어보세요!", "🔄");
+    }
+
+    // Camera Views
+    function resetCamera3D() {
+      gsap.to(camera.position, { x: 6, y: -6, z: 6, duration: 0.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: 42, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 0.8, ease: "power2.inOut" });
+    }
+
+    function setCamera2D() {
+      gsap.to(camera.position, { x: 0, y: 0, z: 45, duration: 0.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: 11, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 0.8, ease: "power2.inOut" });
+    }
+
+    // --- Pointer Events & Raycasting ---
+    function updateMouse(e) {
+      const rect = viewport.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      mouse.x = (cx / rect.width) * 2 - 1;
+      mouse.y = -(cy / rect.height) * 2 + 1;
+    }
+
+    window.addEventListener('pointerdown', (e) => {
+      // Ignore if clicking on UI overlay
+      if (e.target.closest('#leftControlPanel') || e.target.closest('#rightSlidePanel') || e.target.closest('header') || e.target.closest('.z-20')) {
+        return;
+      }
+      updateMouse(e);
+      raycaster.setFromCamera(mouse, camera);
+
+      if (currentMode === 'BUILD') {
+        const intersects = raycaster.intersectObjects(openEdgeMeshes);
+        if (intersects.length > 0) {
+          onEdgeClick(intersects[0]);
+        }
+      } else if (currentMode === 'DONE') {
+        const faceMeshes = faces.map(f => f.mesh);
+        const intersects = raycaster.intersectObjects(faceMeshes);
+        if (intersects.length > 0) {
+          onFaceClick(intersects[0]);
+        }
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (e.target.closest('#leftControlPanel') || e.target.closest('#rightSlidePanel') || e.target.closest('header')) {
+        viewport.style.cursor = 'default';
+        return;
+      }
+      updateMouse(e);
+      raycaster.setFromCamera(mouse, camera);
+
+      if (currentMode === 'BUILD') {
+        const intersects = raycaster.intersectObjects(openEdgeMeshes);
+        if (intersects.length > 0) {
+          viewport.style.cursor = 'pointer';
+          intersects[0].object.children[0].material.color.setHex(0xffffff);
+        } else {
+          viewport.style.cursor = 'default';
+          openEdgeMeshes.forEach(m => {
+            if (m.children[0]) m.children[0].material.color.setHex(0xf97316);
+          });
+        }
+      } else if (currentMode === 'DONE') {
+        const faceMeshes = faces.map(f => f.mesh);
+        const intersects = raycaster.intersectObjects(faceMeshes);
+        viewport.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+      } else {
+        viewport.style.cursor = 'default';
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = viewport.clientWidth / viewport.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Initialize on page load
+    renderSubtabs();
+    initStep1();
+    animate();
+
+  </script>
+</body>
+</html>
