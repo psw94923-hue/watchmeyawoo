@@ -17,9 +17,7 @@
 
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --secondary: #ec4899;
+      --primary: #4f46e5;
     }
     * {
       box-sizing: border-box;
@@ -37,29 +35,28 @@
       height: 100vh;
     }
     .glass-card {
-      background: rgba(255, 255, 255, 0.82);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.9);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
     }
     .btn-tab {
       background: rgba(255, 255, 255, 0.9);
       color: #334155;
       border: 2px solid #e2e8f0;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.15s ease-out;
     }
     .btn-tab:hover {
       border-color: #cbd5e1;
       background: #ffffff;
-      transform: translateY(-1px);
     }
     .btn-tab.active {
       background: #eef2ff;
-      border-color: #6366f1;
+      border-color: #4f46e5;
       color: #4f46e5;
-      font-weight: 800;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+      font-weight: 900;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
     }
     .bg-grid-dots {
       position: absolute;
@@ -70,10 +67,10 @@
       z-index: 0;
     }
     input[type="range"] {
-      accent-color: #6366f1;
+      accent-color: #4f46e5;
       cursor: pointer;
     }
-    /* Smooth slide animations for side panel */
+    /* Side panel transitions */
     .slide-panel-open {
       transform: translateX(0%);
     }
@@ -94,18 +91,17 @@
   <div class="bg-grid-dots"></div>
 
   <!-- TOP HEADER NAV -->
-  <header class="relative z-30 h-14 md:h-16 px-4 md:px-6 bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between shadow-xs shrink-0">
+  <header class="relative z-30 h-13 md:h-16 px-3.5 md:px-6 bg-white/85 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between shadow-xs shrink-0">
     <!-- Back to Hub -->
-    <a href="/" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all active:scale-95 text-xs md:text-sm font-bold shadow-xs">
+    <a href="/" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all active:scale-95 text-xs md:text-sm font-bold shadow-xs">
       <span>⬅</span>
       <span class="hidden sm:inline">실험실로</span>
       <span>돌아가기</span>
     </a>
 
     <!-- Center Title & Polyhedron Name Badge -->
-    <div class="flex items-center gap-2 md:gap-3">
-      <span class="text-xl md:text-2xl">🎲</span>
-      <h1 class="text-base md:text-xl font-black text-slate-800 tracking-tight">정다면체 메이커</h1>
+    <div class="flex items-center gap-2">
+      <h1 class="text-sm md:text-lg font-black text-slate-800 tracking-tight">정다면체 메이커</h1>
       <span id="currentPolyNameBadge" class="px-2.5 py-0.5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-700 font-extrabold text-xs">
         정사면체
       </span>
@@ -113,187 +109,167 @@
 
     <!-- Right Controls: Sound & Open Side Panel Button -->
     <div class="flex items-center gap-2">
-      <button id="btnSoundToggle" onclick="toggleSound()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors shadow-xs" title="소리 켜기/끄기">
+      <button id="btnSoundToggle" onclick="toggleSound()" class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors shadow-xs text-xs md:text-sm" title="소리 켜기/끄기">
         <span id="soundIcon">🔊</span>
       </button>
 
       <button id="btnToggleSidePanel" onclick="toggleSidePanel()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs md:text-sm shadow-md shadow-indigo-500/25 active:scale-95 transition-all">
         <span>📊</span>
         <span>탐구 현황</span>
-        <span id="panelBadge" class="hidden w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
       </button>
     </div>
   </header>
 
-  <!-- MAIN INTERFACE BODY: 3D CANVAS + FLOATING CONTROLS -->
-  <div class="relative flex-1 w-full h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] overflow-hidden flex">
+  <!-- MAIN INTERFACE BODY -->
+  <div class="relative flex-1 w-full h-[calc(100vh-3.25rem)] md:h-[calc(100vh-4rem)] overflow-hidden flex">
 
-    <!-- LEFT STEP CONTROLS (Floating Glass Card) -->
-    <aside id="leftControlPanel" class="absolute top-3 left-3 z-20 w-[calc(100%-1.5rem)] sm:w-80 md:w-96 glass-card rounded-2xl p-4 md:p-5 flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto transition-all duration-300">
+    <!-- 3D VIEWPORT CONTAINER (FULL SCREEN ON ALL DEVICES) -->
+    <div id="viewportContainer" class="relative flex-1 w-full h-full">
+      <div id="threeContainer" class="absolute inset-0"></div>
+
+      <!-- CAMERA VIEW CONTROLS (BOTTOM RIGHT) -->
+      <div class="absolute bottom-4 right-4 z-20 flex flex-col gap-2">
+        <button onclick="resetCamera3D()" class="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white/90 backdrop-blur border border-slate-200 shadow-md text-slate-700 hover:text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-all" title="3D 입체 시점">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        </button>
+        <button onclick="setCamera2D()" class="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white/90 backdrop-blur border border-slate-200 shadow-md text-slate-700 hover:text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-all" title="2D 평면 시점">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        </button>
+      </div>
+
+      <!-- CENTER HUD TOAST -->
+      <div id="hudToast" class="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-2 px-4 py-2 rounded-2xl bg-slate-900/90 backdrop-blur text-white font-bold text-xs md:text-sm shadow-2xl flex items-center gap-2 border border-slate-700">
+        <span id="hudToastIcon">⚠️</span>
+        <span id="hudToastText">안내</span>
+      </div>
+    </div>
+
+    <!-- CONTROL PANEL (RESPONSIVE: DOCKED BOTTOM ON MOBILE, FLOATING LEFT CARD ON TABLET/PC) -->
+    <!-- On mobile screens (<768px): fixed at bottom so 3D shape is huge and visible in top 70%! -->
+    <aside id="mainControlPanel" class="absolute z-20 transition-all duration-300 
+      bottom-3 left-3 right-3 md:bottom-auto md:top-4 md:left-4 md:right-auto md:w-88 lg:w-96 glass-card rounded-2xl p-4 md:p-5 flex flex-col gap-3 shadow-xl max-h-[50vh] md:max-h-[85vh] overflow-y-auto">
       
       <!-- STEP 1: SHAPE SELECTION -->
-      <div id="step1Controls" class="flex flex-col gap-3">
-        <!-- 1. Regular Polygon Selection -->
+      <div id="step1Controls" class="flex flex-col gap-2.5">
+        <!-- 1. Regular Polygon Selection (CLEAN TEXT ONLY, NO EMOJIS!) -->
         <div>
           <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span>1. 정다각형 선택</span>
             <span class="text-indigo-600 font-extrabold text-xs" id="shapeAngleLabel">한 내각: 60°</span>
           </div>
           <div class="grid grid-cols-4 gap-1.5" id="shapeTabs">
-            <button class="btn-tab active py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(3)">
-              <span>🔺</span>
-              <span>정삼각형</span>
+            <button class="btn-tab active py-2 rounded-xl text-xs sm:text-sm font-extrabold text-center" onclick="selectShape(3)">
+              정삼각형
             </button>
-            <button class="btn-tab py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(4)">
-              <span>🟦</span>
-              <span>정사각형</span>
+            <button class="btn-tab py-2 rounded-xl text-xs sm:text-sm font-extrabold text-center" onclick="selectShape(4)">
+              정사각형
             </button>
-            <button class="btn-tab py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(5)">
-              <span>⬡</span>
-              <span>정오각형</span>
+            <button class="btn-tab py-2 rounded-xl text-xs sm:text-sm font-extrabold text-center" onclick="selectShape(5)">
+              정오각형
             </button>
-            <button class="btn-tab py-2 rounded-xl text-xs md:text-sm font-bold flex flex-col items-center gap-0.5" onclick="selectShape(6)">
-              <span>🛑</span>
-              <span>정육각형</span>
+            <button class="btn-tab py-2 rounded-xl text-xs sm:text-sm font-extrabold text-center" onclick="selectShape(6)">
+              정육각형
             </button>
           </div>
         </div>
 
         <!-- 2. Number of Faces at a Vertex -->
         <div>
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
             <span>2. 한 꼭짓점에 모일 면의 개수</span>
-            <span class="text-slate-400 text-[10px]">최소 3개 필요</span>
+            <span class="text-slate-400 text-[10px]">최소 3개</span>
           </div>
           <div class="flex flex-wrap gap-1.5" id="vertexTabs">
             <!-- Rendered by JS -->
           </div>
         </div>
 
-        <!-- 3. Angle Sum & Foldability Status Badge -->
-        <div id="angleInfoCard" class="p-3 rounded-xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col gap-1 transition-all">
-          <div class="flex items-center justify-between text-xs font-bold">
-            <span class="text-slate-600">한 꼭짓점 내각의 합:</span>
-            <span id="angleSumValue" class="text-indigo-700 font-extrabold text-sm">60° × 3 = 180°</span>
+        <!-- 3. Angle Sum & Status Card -->
+        <div id="angleInfoCard" class="p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col gap-0.5 transition-all text-xs">
+          <div class="flex items-center justify-between font-bold">
+            <span class="text-slate-600">내각의 합:</span>
+            <span id="angleSumValue" class="text-indigo-700 font-extrabold">60° × 3 = 180°</span>
           </div>
           <div id="angleDefectBadge" class="text-[11px] text-indigo-600 font-semibold flex items-center gap-1">
-            <span>✨</span>
             <span id="angleDefectMsg">360°보다 작아 입체로 접을 수 있습니다! (빈틈 180°)</span>
           </div>
         </div>
 
         <!-- Fold Action Button -->
-        <button id="btnFold" onclick="foldStep2()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white font-black text-sm md:text-base shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 active:scale-98 transition-all flex items-center justify-center gap-2">
+        <button id="btnFold" onclick="foldStep2()" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white font-black text-sm md:text-base shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 active:scale-98 transition-all flex items-center justify-center gap-2">
           <span>입체로 접기 (시작)</span>
           <span>➔</span>
         </button>
       </div>
 
-      <!-- STEP 2 / 3: BUILD & COMPLETED CONTROLS -->
-      <div id="stepBuildControls" class="hidden flex-col gap-3">
-        <!-- Building status -->
-        <div id="buildingStatusBox" class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
-          <span class="animate-bounce">👉</span>
-          <span id="buildInstructionText">노란색 모서리를 터치해 면을 붙이세요!</span>
+      <!-- STEP 2 & 3: BUILD & COMPLETED CONTROLS (COMPACT ON MOBILE) -->
+      <div id="stepBuildControls" class="hidden flex-col gap-2.5">
+        
+        <!-- Building State (Shows during touch assembly) -->
+        <div id="buildingStatusBox" class="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold">
+          <span class="flex items-center gap-1.5">
+            <span class="animate-bounce">👉</span>
+            <span>노란색 모서리를 터치해 면을 붙이세요</span>
+          </span>
+          <span id="buildFaceCountText" class="px-2 py-0.5 rounded-lg bg-white border border-amber-300 text-amber-800 font-black">3 / 4 면</span>
         </div>
 
-        <!-- Progress Counter -->
-        <div class="flex items-center justify-between px-1 text-xs font-bold text-slate-600">
-          <span>조립 진행도:</span>
-          <span id="buildFaceCountText" class="text-indigo-600 font-black text-sm">3 / 4 면</span>
-        </div>
-        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-          <div id="buildProgressBar" class="bg-indigo-600 h-full w-[75%] transition-all duration-300"></div>
-        </div>
-
-        <!-- COMPLETED SECTION (Shows when fully closed) -->
-        <div id="completedActions" class="hidden flex-col gap-3 pt-2 border-t border-slate-200/80">
-          <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2">
-            <span class="text-lg">🎉</span>
-            <div>
-              <div class="text-xs font-extrabold" id="completedShapeTitle">정사면체 완성!</div>
-              <div class="text-[11px] text-emerald-700">이제 면, 꼭짓점, 모서리를 탐구해보세요.</div>
-            </div>
+        <!-- Completed State (Shows when shape is fully closed) -->
+        <div id="completedActions" class="hidden flex-col gap-2.5">
+          <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between">
+            <div class="text-xs font-black" id="completedShapeTitle">🎉 정사면체 완성!</div>
+            <div class="text-[11px] text-emerald-700 font-bold">면 터치로 개수를 세어보세요</div>
           </div>
 
-          <!-- Unfold/Fold Slider -->
-          <div>
-            <div class="flex items-center justify-between text-xs font-bold text-slate-600 mb-1">
-              <span>전개도로 펼쳐보기</span>
-              <span id="unfoldPercent" class="text-indigo-600 font-extrabold">100% (입체)</span>
+          <!-- Unfold Slider -->
+          <div class="px-1">
+            <div class="flex items-center justify-between text-xs font-bold text-slate-600 mb-0.5">
+              <span>전개도로 펼치기</span>
+              <span id="unfoldPercent" class="text-indigo-600 font-extrabold text-[11px]">100% (입체)</span>
             </div>
-            <input type="range" id="unfoldSlider" min="0" max="100" value="100" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
-            <div class="flex justify-between text-[10px] text-slate-400 font-bold px-0.5 mt-0.5">
-              <span>펼침 (전개도)</span>
-              <span>접힘 (입체)</span>
-            </div>
+            <input type="range" id="unfoldSlider" min="0" max="100" value="100" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
           </div>
 
           <!-- Counting Tools Grid -->
-          <div class="grid grid-cols-2 gap-2 mt-1">
-            <button onclick="autoCountVertices()" class="py-2.5 px-2 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-800 font-black text-xs active:scale-95 transition-all flex flex-col items-center gap-1 shadow-xs">
-              <span class="text-base">🔴</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="autoCountVertices()" class="py-2 px-2 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-800 font-black text-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-xs">
+              <span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
               <span>꼭짓점 세기 (자동)</span>
             </button>
-            <button onclick="autoCountEdges()" class="py-2.5 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-black text-xs active:scale-95 transition-all flex flex-col items-center gap-1 shadow-xs">
-              <span class="text-base">🟡</span>
+            <button onclick="autoCountEdges()" class="py-2 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-black text-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-xs">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
               <span>모서리 세기 (자동)</span>
             </button>
           </div>
-
-          <div class="text-[11px] text-slate-500 font-bold text-center bg-slate-50 py-1.5 px-2 rounded-lg border border-slate-200/60">
-            👆 3D 도형의 <b>면을 직접 터치</b>하면 색상이 바뀌고 개수가 세어집니다!
-          </div>
         </div>
 
-        <!-- PROMINENT RESET BUTTON (Crucial User Requirement!) -->
-        <button onclick="resetToStep1()" class="w-full mt-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-sm shadow-lg shadow-rose-500/25 active:scale-98 transition-all flex items-center justify-center gap-2">
-          <span class="text-base">🔄</span>
+        <!-- HIGH-VISIBILITY PROMINENT RESET BUTTON -->
+        <button onclick="resetToStep1()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 via-rose-600 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-sm shadow-md shadow-rose-500/25 active:scale-98 transition-all flex items-center justify-center gap-2">
+          <span>🔄</span>
           <span>처음부터 다시 만들기</span>
         </button>
       </div>
 
     </aside>
 
-    <!-- 3D VIEWPORT CONTAINER -->
-    <div id="viewportContainer" class="relative flex-1 w-full h-full">
-      <div id="threeContainer" class="absolute inset-0"></div>
-
-      <!-- CAMERA VIEW CONTROLS (BOTTOM RIGHT) -->
-      <div class="absolute bottom-4 right-4 z-20 flex flex-col gap-2">
-        <button onclick="resetCamera3D()" class="w-11 h-11 rounded-xl bg-white/90 backdrop-blur border border-slate-200 shadow-md text-slate-700 hover:text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-all" title="3D 입체 시점">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-        </button>
-        <button onclick="setCamera2D()" class="w-11 h-11 rounded-xl bg-white/90 backdrop-blur border border-slate-200 shadow-md text-slate-700 hover:text-indigo-600 flex items-center justify-center hover:scale-105 active:scale-95 transition-all" title="2D 평면 시점">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-        </button>
-      </div>
-
-      <!-- CENTER HUD TOAST (FOR ALERTS) -->
-      <div id="hudToast" class="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none opacity-0 transition-all duration-300 transform -translate-y-2 px-5 py-2.5 rounded-2xl bg-slate-900/90 backdrop-blur text-white font-bold text-xs md:text-sm shadow-2xl flex items-center gap-2 border border-slate-700">
-        <span id="hudToastIcon">⚠️</span>
-        <span id="hudToastText">안내 메시지</span>
-      </div>
-    </div>
-
-    <!-- RIGHT SLIDE PANEL (EXPLORATION COUNTERS & CHECKLIST) -->
-    <aside id="rightSlidePanel" class="fixed sm:absolute top-14 sm:top-0 right-0 z-30 w-full sm:w-80 md:w-96 h-[calc(100vh-3.5rem)] sm:h-full bg-white/95 backdrop-blur-xl border-l border-slate-200/80 shadow-2xl p-5 flex flex-col gap-4 overflow-y-auto slide-panel-closed transition-transform duration-300">
+    <!-- RIGHT SLIDE PANEL (EXPLORATION COUNTERS ONLY - NO COMPLEX CHECKLIST!) -->
+    <aside id="rightSlidePanel" class="fixed sm:absolute top-13 sm:top-0 right-0 z-30 w-full sm:w-80 md:w-92 h-[calc(100vh-3.25rem)] sm:h-full bg-white/95 backdrop-blur-xl border-l border-slate-200/80 shadow-2xl p-5 flex flex-col gap-4 overflow-y-auto slide-panel-closed transition-transform duration-300">
       
       <!-- Panel Header -->
       <div class="flex items-center justify-between pb-3 border-b border-slate-200">
         <div class="flex items-center gap-2">
-          <span class="text-xl">📊</span>
+          <span class="text-lg">📊</span>
           <h2 class="text-base font-black text-slate-800">정다면체 탐구 현황</h2>
         </div>
-        <button onclick="toggleSidePanel(false)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold text-base transition-colors">
+        <button onclick="toggleSidePanel(false)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold text-sm transition-colors">
           ✕
         </button>
       </div>
 
       <!-- CURRENT POLYHEDRON COUNT CARD -->
-      <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-50/80 border border-indigo-100 flex flex-col gap-3 shadow-xs">
+      <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-50/80 border border-indigo-100 flex flex-col gap-3.5 shadow-xs">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-indigo-700 uppercase tracking-wide">현재 탐구 도형</span>
+          <span class="text-xs font-bold text-indigo-700 uppercase tracking-wide">탐구 도형</span>
           <span id="panelCurrentName" class="px-3 py-1 rounded-full bg-indigo-600 text-white font-black text-xs shadow-xs">
             정사면체
           </span>
@@ -304,17 +280,17 @@
           <div>한 꼭짓점의 면: <b id="panelFacesAtVertexText" class="text-slate-900">3개</b></div>
         </div>
 
-        <!-- 1. FACE COUNT (Interactive Touch Count) -->
-        <div class="p-3 rounded-xl bg-white/90 border border-indigo-100 flex flex-col gap-1.5 shadow-xs">
+        <!-- 1. FACE COUNT (Interactive Touch Count with High-Contrast Feedback) -->
+        <div class="p-3.5 rounded-xl bg-white border border-indigo-100 flex flex-col gap-2 shadow-xs">
           <div class="flex items-center justify-between text-xs font-extrabold text-slate-700">
             <span class="flex items-center gap-1.5">
-              <span>🟩</span>
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
               <span>면의 개수 (직접 클릭)</span>
             </span>
-            <span id="panelFaceCountVal" class="text-indigo-600 font-black text-sm">0 / 4개</span>
+            <span id="panelFaceCountVal" class="text-amber-600 font-black text-sm">0 / 4개</span>
           </div>
           <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div id="panelFaceProgress" class="bg-indigo-600 h-full w-[0%] transition-all duration-300"></div>
+            <div id="panelFaceProgress" class="bg-amber-500 h-full w-[0%] transition-all duration-300"></div>
           </div>
           <div class="flex items-center justify-between text-[11px] text-slate-400">
             <span id="faceCountTipText">3D 도형의 면을 탭해 세어보세요.</span>
@@ -323,16 +299,16 @@
         </div>
 
         <!-- 2. VERTEX COUNT (Auto sequential count) -->
-        <div class="p-3 rounded-xl bg-white/90 border border-indigo-100 flex items-center justify-between shadow-xs">
+        <div class="p-3.5 rounded-xl bg-white border border-indigo-100 flex items-center justify-between shadow-xs">
           <div class="flex items-center gap-2">
-            <span class="text-base">🔴</span>
+            <span class="w-3 h-3 rounded-full bg-violet-600"></span>
             <div>
               <div class="text-xs font-extrabold text-slate-700">꼭짓점의 개수</div>
               <div class="text-[10px] text-slate-400 font-medium">자동 카운팅 도구</div>
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <span id="panelVertexCountVal" class="text-violet-700 font-black text-sm md:text-base">- 개</span>
+            <span id="panelVertexCountVal" class="text-violet-700 font-black text-sm">- 개</span>
             <button onclick="autoCountVertices()" class="px-2.5 py-1 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-800 font-bold text-xs transition-colors shadow-xs active:scale-95">
               세기
             </button>
@@ -340,16 +316,16 @@
         </div>
 
         <!-- 3. EDGE COUNT (Auto sequential count) -->
-        <div class="p-3 rounded-xl bg-white/90 border border-indigo-100 flex items-center justify-between shadow-xs">
+        <div class="p-3.5 rounded-xl bg-white border border-indigo-100 flex items-center justify-between shadow-xs">
           <div class="flex items-center gap-2">
-            <span class="text-base">🟡</span>
+            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
             <div>
               <div class="text-xs font-extrabold text-slate-700">모서리의 개수</div>
               <div class="text-[10px] text-slate-400 font-medium">자동 카운팅 도구</div>
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <span id="panelEdgeCountVal" class="text-amber-700 font-black text-sm md:text-base">- 개</span>
+            <span id="panelEdgeCountVal" class="text-amber-700 font-black text-sm">- 개</span>
             <button onclick="autoCountEdges()" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold text-xs transition-colors shadow-xs active:scale-95">
               세기
             </button>
@@ -357,75 +333,10 @@
         </div>
       </div>
 
-      <!-- ALL 5 POLYHEDRA PROGRESS CHECKLIST -->
-      <div class="flex flex-col gap-2">
-        <div class="text-xs font-extrabold text-slate-700 flex items-center justify-between">
-          <span>5가지 정다면체 탐구 달성도</span>
-          <span id="totalDiscoveredCount" class="text-indigo-600 font-black">0 / 5</span>
-        </div>
-
-        <div class="flex flex-col gap-2" id="polyhedraChecklist">
-          <!-- Item 1: 정사면체 -->
-          <div id="check_3_3" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
-            <div class="flex items-center gap-2.5">
-              <span class="text-lg">🔺</span>
-              <div>
-                <div class="font-extrabold text-slate-800">정사면체</div>
-                <div class="text-[11px] text-slate-500 font-medium">면 4 • 꼭짓점 4 • 모서리 6</div>
-              </div>
-            </div>
-            <span class="status-icon text-sm font-bold text-slate-300">○</span>
-          </div>
-
-          <!-- Item 2: 정육면체 -->
-          <div id="check_4_3" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
-            <div class="flex items-center gap-2.5">
-              <span class="text-lg">🧊</span>
-              <div>
-                <div class="font-extrabold text-slate-800">정육면체</div>
-                <div class="text-[11px] text-slate-500 font-medium">면 6 • 꼭짓점 8 • 모서리 12</div>
-              </div>
-            </div>
-            <span class="status-icon text-sm font-bold text-slate-300">○</span>
-          </div>
-
-          <!-- Item 3: 정팔면체 -->
-          <div id="check_3_4" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
-            <div class="flex items-center gap-2.5">
-              <span class="text-lg">💎</span>
-              <div>
-                <div class="font-extrabold text-slate-800">정팔면체</div>
-                <div class="text-[11px] text-slate-500 font-medium">면 8 • 꼭짓점 6 • 모서리 12</div>
-              </div>
-            </div>
-            <span class="status-icon text-sm font-bold text-slate-300">○</span>
-          </div>
-
-          <!-- Item 4: 정십이면체 -->
-          <div id="check_5_3" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
-            <div class="flex items-center gap-2.5">
-              <span class="text-lg">⬡</span>
-              <div>
-                <div class="font-extrabold text-slate-800">정십이면체</div>
-                <div class="text-[11px] text-slate-500 font-medium">면 12 • 꼭짓점 20 • 모서리 30</div>
-              </div>
-            </div>
-            <span class="status-icon text-sm font-bold text-slate-300">○</span>
-          </div>
-
-          <!-- Item 5: 정이십면체 -->
-          <div id="check_3_5" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs transition-all">
-            <div class="flex items-center gap-2.5">
-              <span class="text-lg">🌐</span>
-              <div>
-                <div class="font-extrabold text-slate-800">정이십면체</div>
-                <div class="text-[11px] text-slate-500 font-medium">면 20 • 꼭짓점 12 • 모서리 30</div>
-              </div>
-            </div>
-            <span class="status-icon text-sm font-bold text-slate-300">○</span>
-          </div>
-        </div>
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 font-medium leading-relaxed">
+        💡 탐구한 결과를 선생님이 나눠주신 학습지 표에 직접 기록해보세요.
       </div>
+
     </aside>
 
   </div>
@@ -433,6 +344,7 @@
   <!-- APPLICATION JAVASCRIPT LOGIC -->
   <script>
     // --- Polyhedron Mathematical Configuration ---
+    // Calm, distinct pastel base colors for uncounted state
     const POLYHEDRON_DATA = {
       '3_3': {
         shape: 3,
@@ -444,7 +356,7 @@
         totalEdges: 6,
         dihedral: Math.acos(1 / 3),
         name: "정사면체",
-        color: 0xef4444 // Vivid Red
+        baseColor: 0x93c5fd // Soft Sky Blue
       },
       '3_4': {
         shape: 3,
@@ -456,7 +368,7 @@
         totalEdges: 12,
         dihedral: Math.acos(-1 / 3),
         name: "정팔면체",
-        color: 0x3b82f6 // Vivid Blue
+        baseColor: 0xa5b4fc // Soft Indigo
       },
       '3_5': {
         shape: 3,
@@ -468,7 +380,7 @@
         totalEdges: 30,
         dihedral: Math.acos(-Math.sqrt(5) / 3),
         name: "정이십면체",
-        color: 0x10b981 // Vivid Emerald
+        baseColor: 0x99f6e4 // Soft Mint/Teal
       },
       '3_6': {
         shape: 3,
@@ -488,7 +400,7 @@
         totalEdges: 12,
         dihedral: Math.PI / 2,
         name: "정육면체",
-        color: 0xf59e0b // Vivid Amber
+        baseColor: 0xfde047 // Soft Yellow
       },
       '4_4': {
         shape: 4,
@@ -508,7 +420,7 @@
         totalEdges: 30,
         dihedral: Math.acos(-1 / Math.sqrt(5)),
         name: "정십이면체",
-        color: 0x8b5cf6 // Vivid Violet
+        baseColor: 0xfbcfe8 // Soft Pink
       },
       '5_4': {
         shape: 5,
@@ -547,19 +459,19 @@
     let isFailed = false;
     let openEdgeMeshes = [];
 
-    // Exploration Counting State
-    let countedFacesSet = new Set();
+    // Counting State
+    // Map of faceId -> { countOrder: number, sprite: THREE.Sprite }
+    let countedFacesMap = new Map();
     let vertexMarkersGroup = new THREE.Group();
     let edgeMarkersGroup = new THREE.Group();
     let isCountingVertices = false;
     let isCountingEdges = false;
-    let discoveredPolyhedra = new Set();
 
     // Raycasting & Interaction
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // Web Audio Synthesizer (Zero External Audio File Dependency!)
+    // Web Audio Synthesizer
     let audioCtx = null;
     function getAudioContext() {
       if (!audioCtx) {
@@ -593,7 +505,7 @@
 
     function playChord(freqs) {
       freqs.forEach((f, i) => {
-        setTimeout(() => playTone(f, 'triangle', 0.3, 0.2), i * 70);
+        setTimeout(() => playTone(f, 'triangle', 0.28, 0.2), i * 70);
       });
     }
 
@@ -628,21 +540,19 @@
     controls.dampingFactor = 0.05;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe2e8f0, 0.65);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe2e8f0, 0.7);
     hemiLight.position.set(0, 10, 0);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
-    dirLight.position.set(12, 18, 12);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.15);
+    dirLight.position.set(12, 18, 14);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
     scene.add(dirLight);
 
-    const backLight = new THREE.DirectionalLight(0xc7d2fe, 0.5);
+    const backLight = new THREE.DirectionalLight(0xc7d2fe, 0.55);
     backLight.position.set(-12, 6, -12);
     scene.add(backLight);
 
@@ -651,7 +561,7 @@
     polyhedronGroup.add(vertexMarkersGroup);
     polyhedronGroup.add(edgeMarkersGroup);
 
-    // --- UI Helper Functions ---
+    // --- UI Helpers ---
     function showToast(msg, icon = 'ℹ️') {
       const toast = document.getElementById('hudToast');
       document.getElementById('hudToastIcon').innerText = icon;
@@ -662,7 +572,7 @@
       toast._timer = setTimeout(() => {
         toast.classList.remove('opacity-100', 'translate-y-0');
         toast.classList.add('opacity-0', '-translate-y-2');
-      }, 3500);
+      }, 3000);
     }
 
     function toggleSidePanel(forceState) {
@@ -679,7 +589,7 @@
       }
     }
 
-    // --- Polygon & Shape Logic ---
+    // --- Selection Tabs ---
     function selectShape(n) {
       currentShape = n;
       const btns = document.getElementById('shapeTabs').children;
@@ -717,7 +627,7 @@
       });
     }
 
-    // --- 3D Geometry Generation ---
+    // --- Geometry Generation ---
     function createPolygonVertices(n, edgeLength) {
       const vertices = [];
       vertices.push(new THREE.Vector3(-edgeLength / 2, 0, 0));
@@ -745,9 +655,9 @@
       const mat = new THREE.MeshPhysicalMaterial({
         color: colorHex,
         transparent: true,
-        opacity: 0.94,
+        opacity: 0.75, // Soft pastel translucent
         roughness: 0.25,
-        metalness: 0.1,
+        metalness: 0.05,
         side: THREE.DoubleSide,
         clearcoat: 0.4,
         clearcoatRoughness: 0.1
@@ -756,16 +666,22 @@
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
-      // Dark subtle edge outline
+      // Dark sharp edge line
       const edgesGeom = new THREE.EdgesGeometry(geom);
-      const edgesMat = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.35, linewidth: 2 });
+      const edgesMat = new THREE.LineBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.5, linewidth: 2 });
       const edgesLine = new THREE.LineSegments(edgesGeom, edgesMat);
       mesh.add(edgesLine);
+
+      // Compute centroid in local space
+      const centroid = new THREE.Vector3();
+      verts.forEach(v => centroid.add(v));
+      centroid.divideScalar(n);
 
       mesh.userData = {
         n,
         edgeLength,
         vertices: verts,
+        centroid: centroid,
         isFace: true,
         baseColor: colorHex,
         faceId: faces.length
@@ -795,10 +711,40 @@
       return hinge;
     }
 
+    // Number Badge Sprite Generator for Counted Faces
+    function createFaceNumberSprite(orderNum) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      // Outer gold glowing circle
+      ctx.beginPath();
+      ctx.arc(64, 64, 56, 0, Math.PI * 2);
+      ctx.fillStyle = '#b45309'; // Deep Amber
+      ctx.fill();
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      // Number text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 58px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(orderNum), 64, 67);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.65, 0.65, 1);
+      return sprite;
+    }
+
     // --- Core Lifecycle ---
     function initStep1() {
       currentMode = 'FLAT';
-      countedFacesSet.clear();
+      countedFacesMap.clear();
       isCountingVertices = false;
       isCountingEdges = false;
       clearMarkers();
@@ -807,6 +753,7 @@
       document.getElementById('step1Controls').classList.remove('hidden');
       document.getElementById('stepBuildControls').classList.add('hidden');
       document.getElementById('completedActions').classList.add('hidden');
+      document.getElementById('buildingStatusBox').classList.remove('hidden');
 
       scene.remove(polyhedronGroup);
       polyhedronGroup = new THREE.Group();
@@ -823,7 +770,6 @@
       targetDihedral = data.dihedral || 0;
       isFailed = data.fail || false;
 
-      // Update Panel & HUD info
       const interiorAngle = data.interiorAngle || (currentShape === 3 ? 60 : (currentShape === 4 ? 90 : (currentShape === 5 ? 108 : 120)));
       const angleSum = interiorAngle * currentFacesAtVertex;
       const defect = 360 - angleSum;
@@ -836,14 +782,14 @@
       const btnFold = document.getElementById('btnFold');
 
       if (isFailed) {
-        angleCard.className = "p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex flex-col gap-1";
+        angleCard.className = "p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex flex-col gap-0.5 text-xs";
         defectMsg.innerText = data.failMsg;
         btnFold.classList.add('opacity-50', 'pointer-events-none');
         btnFold.innerHTML = `<span>접기 불가 (입체 형성 불가)</span>`;
         document.getElementById('currentPolyNameBadge').innerText = "입체 불가";
         document.getElementById('currentPolyNameBadge').className = "px-2.5 py-0.5 rounded-full bg-rose-100 border border-rose-200 text-rose-700 font-extrabold text-xs";
       } else {
-        angleCard.className = "p-3 rounded-xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col gap-1";
+        angleCard.className = "p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200/80 flex flex-col gap-0.5 text-xs";
         defectMsg.innerText = `360°보다 작아 입체로 접을 수 있습니다! (빈틈 ${defect}°)`;
         btnFold.classList.remove('opacity-50', 'pointer-events-none');
         btnFold.innerHTML = `<span>입체로 접기 (시작)</span><span>➔</span>`;
@@ -860,8 +806,8 @@
       document.getElementById('panelVertexCountVal').innerText = `- 개`;
       document.getElementById('panelEdgeCountVal').innerText = `- 개`;
 
-      // 2D Flat Layout around central vertex
-      const color = data.color || 0x6366f1;
+      // 2D Flat Layout
+      const color = data.baseColor || 0x93c5fd;
       let f0 = createFaceMesh(data.shape, 2, color);
       polyhedronGroup.add(f0);
       faces.push({ mesh: f0, hinge: null });
@@ -879,10 +825,14 @@
         currentFace = nextFace;
       }
 
-      // Flat Top-down camera
-      gsap.to(camera.position, { x: 0, y: 0, z: 45, duration: 0.8, ease: "power2.inOut" });
-      gsap.to(camera, { fov: 11, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
-      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 0.8, ease: "power2.inOut" });
+      // Flat Top-down camera (responsive framing)
+      const isMobile = window.innerWidth < 768;
+      const targetZ = isMobile ? 55 : 45;
+      const targetY = isMobile ? -2 : 0; // Slightly shifted up on mobile so bottom controls don't overlap
+
+      gsap.to(camera.position, { x: 0, y: targetY, z: targetZ, duration: 0.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: isMobile ? 13 : 11, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: targetY, z: 0, duration: 0.8, ease: "power2.inOut" });
     }
 
     // Step 2: 3D Dihedral Folding
@@ -897,7 +847,7 @@
         return;
       }
 
-      playTone(587.33, 'triangle', 0.25); // D5
+      playTone(587.33, 'triangle', 0.25);
 
       document.getElementById('step1Controls').classList.add('hidden');
       document.getElementById('stepBuildControls').classList.remove('hidden');
@@ -919,10 +869,15 @@
         });
       });
 
-      // Smooth camera transition into 3D
-      gsap.to(camera.position, { x: 6, y: -6, z: 6, duration: 1.8, ease: "power2.inOut" });
-      gsap.to(camera, { fov: 42, duration: 1.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
-      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1.8, ease: "power2.inOut" });
+      // Camera transition to 3D with mobile height compensation
+      const isMobile = window.innerWidth < 768;
+      const camY = isMobile ? -7 : -6;
+      const camZ = isMobile ? 8 : 6;
+      const targetY = isMobile ? 0.6 : 0; // Shift shape upwards on mobile so bottom pill bar never obscures it!
+
+      gsap.to(camera.position, { x: 6, y: camY, z: camZ, duration: 1.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: isMobile ? 46 : 42, duration: 1.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: targetY, z: 0, duration: 1.8, ease: "power2.inOut" });
     }
 
     // Step 3: Build Mode (Touch Glowing Edges)
@@ -946,7 +901,6 @@
       const key = `${currentShape}_${currentFacesAtVertex}`;
       const data = POLYHEDRON_DATA[key];
 
-      // If we already have reached total faces, complete!
       if (faces.length >= data.totalFaces) {
         onCompleted();
         return;
@@ -965,7 +919,6 @@
         }
       });
 
-      // Match edges in 3D world space
       for (let i = 0; i < edges.length; i++) {
         if (edges[i].matched) continue;
         for (let j = i + 1; j < edges.length; j++) {
@@ -989,7 +942,7 @@
         geom.translate(0, dist / 2, 0);
         geom.rotateX(Math.PI / 2);
 
-        const mat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.6 });
+        const mat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.65 });
         const mesh = new THREE.Mesh(geom, mat);
         mesh.position.copy(oe.v1);
         mesh.lookAt(oe.v2);
@@ -1035,7 +988,7 @@
       faces.push({ mesh: newFace, hinge: hinge });
       hinges.push(hinge);
 
-      playTone(440 + faces.length * 30, 'sine', 0.15); // Ascending click pitch
+      playTone(440 + faces.length * 30, 'sine', 0.15);
 
       const foldAngle = Math.PI - targetDihedral;
       clearOpenEdges();
@@ -1056,10 +1009,8 @@
       const data = POLYHEDRON_DATA[key];
       const count = faces.length;
       const total = data.totalFaces || count;
-      const pct = Math.min(100, Math.round((count / total) * 100));
 
       document.getElementById('buildFaceCountText').innerText = `${count} / ${total} 면`;
-      document.getElementById('buildProgressBar').style.width = `${pct}%`;
     }
 
     // Step 4: Completion & Exploration Mode
@@ -1070,15 +1021,11 @@
       const key = `${currentShape}_${currentFacesAtVertex}`;
       const data = POLYHEDRON_DATA[key];
 
-      playChord([523.25, 659.25, 783.99, 1046.5]); // C major celebration chord!
+      playChord([523.25, 659.25, 783.99, 1046.5]);
 
       document.getElementById('buildingStatusBox').classList.add('hidden');
       document.getElementById('completedActions').classList.remove('hidden');
       document.getElementById('completedShapeTitle').innerText = `🎉 ${data.name} 완성!`;
-
-      // Mark this polyhedron as discovered in checklist
-      discoveredPolyhedra.add(key);
-      updateDiscoveredChecklist();
 
       // Unfold Slider configuration
       const slider = document.getElementById('unfoldSlider');
@@ -1093,34 +1040,54 @@
         });
       };
 
-      // Gentle celebratory bounce
-      gsap.to(polyhedronGroup.position, { y: 0.4, duration: 0.35, yoyo: true, repeat: 1, ease: "power2.out" });
+      gsap.to(polyhedronGroup.position, { y: 0.35, duration: 0.35, yoyo: true, repeat: 1, ease: "power2.out" });
       showToast(`🎉 ${data.name} 완성! 면/꼭짓점/모서리를 탐구해보세요.`, "🏆");
 
-      // Auto-open side panel slightly delayed so student notices it
+      // Auto-open side panel slightly delayed
       setTimeout(() => {
         toggleSidePanel(true);
       }, 700);
     }
 
-    // --- Face Counting (Direct Touch) ---
+    // --- High-Contrast Face Counting with Number Badges ---
     function onFaceClick(intersect) {
       if (currentMode !== 'DONE') return;
       const mesh = intersect.object;
       const id = mesh.userData.faceId;
 
-      if (countedFacesSet.has(id)) {
-        // Toggle OFF
-        countedFacesSet.delete(id);
+      if (countedFacesMap.has(id)) {
+        // Toggle OFF: Remove badge & restore soft pastel translucent
+        const info = countedFacesMap.get(id);
+        if (info.sprite) {
+          mesh.remove(info.sprite);
+          if (info.sprite.material.map) info.sprite.material.map.dispose();
+          info.sprite.material.dispose();
+        }
+        countedFacesMap.delete(id);
+
         mesh.material.color.setHex(mesh.userData.baseColor);
+        mesh.material.opacity = 0.75;
         mesh.material.emissive.setHex(0x000000);
         playTone(350, 'sine', 0.1);
       } else {
-        // Toggle ON
-        countedFacesSet.add(id);
-        mesh.material.color.setHex(0x10b981); // Radiant Emerald Green
-        mesh.material.emissive.setHex(0x065f46);
-        playTone(523.25 + countedFacesSet.size * 35, 'triangle', 0.15);
+        // Toggle ON: Solid Vivid Glowing Gold + Number Badge!
+        const nextOrder = countedFacesMap.size + 1;
+        const sprite = createFaceNumberSprite(nextOrder);
+
+        // Position sprite at face centroid with slight outward offset along +Z (face normal)
+        const centroid = mesh.userData.centroid || new THREE.Vector3(0, 0, 0);
+        sprite.position.set(centroid.x, centroid.y, 0.08);
+        mesh.add(sprite);
+
+        countedFacesMap.set(id, { countOrder: nextOrder, sprite });
+
+        // High contrast solid amber/gold with emissive glow!
+        mesh.material.color.setHex(0xf59e0b); // Vivid Amber Gold
+        mesh.material.opacity = 1.0; // Completely Opaque
+        mesh.material.emissive.setHex(0xb45309); // Warm radiant inner glow
+        mesh.material.roughness = 0.1;
+
+        playTone(523.25 + countedFacesMap.size * 35, 'triangle', 0.15);
       }
 
       updateFaceCountUI();
@@ -1130,7 +1097,7 @@
       const key = `${currentShape}_${currentFacesAtVertex}`;
       const data = POLYHEDRON_DATA[key];
       const total = data.totalFaces;
-      const count = countedFacesSet.size;
+      const count = countedFacesMap.size;
       const pct = Math.min(100, Math.round((count / total) * 100));
 
       document.getElementById('panelFaceCountVal').innerText = `${count} / ${total}개`;
@@ -1145,11 +1112,20 @@
     }
 
     function resetFaceCount() {
-      countedFacesSet.clear();
-      faces.forEach(f => {
-        f.mesh.material.color.setHex(f.mesh.userData.baseColor);
-        f.mesh.material.emissive.setHex(0x000000);
+      countedFacesMap.forEach((info, id) => {
+        const faceObj = faces.find(f => f.mesh.userData.faceId === id);
+        if (faceObj) {
+          if (info.sprite) {
+            faceObj.mesh.remove(info.sprite);
+            if (info.sprite.material.map) info.sprite.material.map.dispose();
+            info.sprite.material.dispose();
+          }
+          faceObj.mesh.material.color.setHex(faceObj.mesh.userData.baseColor);
+          faceObj.mesh.material.opacity = 0.75;
+          faceObj.mesh.material.emissive.setHex(0x000000);
+        }
       });
+      countedFacesMap.clear();
       updateFaceCountUI();
       playTone(300, 'sine', 0.1);
     }
@@ -1159,7 +1135,6 @@
       if (currentMode !== 'DONE' || isCountingVertices) return;
       isCountingVertices = true;
 
-      // Extract unique world vertices
       polyhedronGroup.updateMatrixWorld(true);
       const uniqueVerts = [];
       faces.forEach(f => {
@@ -1167,7 +1142,6 @@
         const verts = mesh.userData.vertices;
         verts.forEach(v => {
           const wv = v.clone().applyMatrix4(mesh.matrixWorld);
-          // Check if already in uniqueVerts
           const exists = uniqueVerts.some(uv => uv.distanceTo(wv) < 0.15);
           if (!exists) {
             uniqueVerts.push(wv);
@@ -1175,7 +1149,6 @@
         });
       });
 
-      // Clear existing markers
       while (vertexMarkersGroup.children.length > 0) {
         vertexMarkersGroup.remove(vertexMarkersGroup.children[0]);
       }
@@ -1194,13 +1167,11 @@
         }
 
         const pos = uniqueVerts[count];
-        // Create glowing vertex sphere
         const sphereGeom = new THREE.SphereGeometry(0.16, 16, 16);
-        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x8b5cf6 });
+        const sphereMat = new THREE.MeshBasicMaterial({ color: 0x7c3aed });
         const sphere = new THREE.Mesh(sphereGeom, sphereMat);
         sphere.position.copy(pos);
 
-        // Core white highlight
         const coreGeom = new THREE.SphereGeometry(0.08, 12, 12);
         const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const core = new THREE.Mesh(coreGeom, coreMat);
@@ -1208,7 +1179,6 @@
 
         vertexMarkersGroup.add(sphere);
 
-        // Pop animation
         sphere.scale.set(0.1, 0.1, 0.1);
         gsap.to(sphere.scale, { x: 1, y: 1, z: 1, duration: 0.3, ease: "back.out(2)" });
 
@@ -1223,7 +1193,6 @@
       if (currentMode !== 'DONE' || isCountingEdges) return;
       isCountingEdges = true;
 
-      // Extract unique world edges
       polyhedronGroup.updateMatrixWorld(true);
       const uniqueEdges = [];
       faces.forEach(f => {
@@ -1246,7 +1215,6 @@
         }
       });
 
-      // Clear existing edge markers
       while (edgeMarkersGroup.children.length > 0) {
         edgeMarkersGroup.remove(edgeMarkersGroup.children[0]);
       }
@@ -1267,8 +1235,7 @@
         const ue = uniqueEdges[count];
         const dist = ue.v1.distanceTo(ue.v2);
 
-        // Glowing neon cylinder along edge
-        const geom = new THREE.CylinderGeometry(0.065, 0.065, dist, 8);
+        const geom = new THREE.CylinderGeometry(0.07, 0.07, dist, 8);
         geom.translate(0, dist / 2, 0);
         geom.rotateX(Math.PI / 2);
 
@@ -1279,7 +1246,6 @@
 
         edgeMarkersGroup.add(mesh);
 
-        // Flash animation
         gsap.fromTo(mat, { opacity: 0.2 }, { opacity: 1, duration: 0.25 });
 
         count++;
@@ -1291,21 +1257,6 @@
     function clearMarkers() {
       while (vertexMarkersGroup.children.length > 0) vertexMarkersGroup.remove(vertexMarkersGroup.children[0]);
       while (edgeMarkersGroup.children.length > 0) edgeMarkersGroup.remove(edgeMarkersGroup.children[0]);
-    }
-
-    function updateDiscoveredChecklist() {
-      document.getElementById('totalDiscoveredCount').innerText = `${discoveredPolyhedra.size} / 5`;
-      discoveredPolyhedra.forEach(key => {
-        const item = document.getElementById(`check_${key}`);
-        if (item) {
-          item.className = "p-3 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between text-xs transition-all shadow-xs";
-          const icon = item.querySelector('.status-icon');
-          if (icon) {
-            icon.innerText = "✅";
-            icon.className = "status-icon text-sm font-bold text-emerald-600";
-          }
-        }
-      });
     }
 
     // --- Reset Action ---
@@ -1320,15 +1271,24 @@
 
     // Camera Views
     function resetCamera3D() {
-      gsap.to(camera.position, { x: 6, y: -6, z: 6, duration: 0.8, ease: "power2.inOut" });
-      gsap.to(camera, { fov: 42, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
-      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 0.8, ease: "power2.inOut" });
+      const isMobile = window.innerWidth < 768;
+      const camY = isMobile ? -7 : -6;
+      const camZ = isMobile ? 8 : 6;
+      const targetY = isMobile ? 0.6 : 0;
+
+      gsap.to(camera.position, { x: 6, y: camY, z: camZ, duration: 0.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: isMobile ? 46 : 42, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: targetY, z: 0, duration: 0.8, ease: "power2.inOut" });
     }
 
     function setCamera2D() {
-      gsap.to(camera.position, { x: 0, y: 0, z: 45, duration: 0.8, ease: "power2.inOut" });
-      gsap.to(camera, { fov: 11, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
-      gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 0.8, ease: "power2.inOut" });
+      const isMobile = window.innerWidth < 768;
+      const targetZ = isMobile ? 55 : 45;
+      const targetY = isMobile ? -2 : 0;
+
+      gsap.to(camera.position, { x: 0, y: targetY, z: targetZ, duration: 0.8, ease: "power2.inOut" });
+      gsap.to(camera, { fov: isMobile ? 13 : 11, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
+      gsap.to(controls.target, { x: 0, y: targetY, z: 0, duration: 0.8, ease: "power2.inOut" });
     }
 
     // --- Pointer Events & Raycasting ---
@@ -1341,8 +1301,7 @@
     }
 
     window.addEventListener('pointerdown', (e) => {
-      // Ignore if clicking on UI overlay
-      if (e.target.closest('#leftControlPanel') || e.target.closest('#rightSlidePanel') || e.target.closest('header') || e.target.closest('.z-20')) {
+      if (e.target.closest('#mainControlPanel') || e.target.closest('#rightSlidePanel') || e.target.closest('header') || e.target.closest('.z-20')) {
         return;
       }
       updateMouse(e);
@@ -1363,7 +1322,7 @@
     });
 
     window.addEventListener('pointermove', (e) => {
-      if (e.target.closest('#leftControlPanel') || e.target.closest('#rightSlidePanel') || e.target.closest('header')) {
+      if (e.target.closest('#mainControlPanel') || e.target.closest('#rightSlidePanel') || e.target.closest('header')) {
         viewport.style.cursor = 'default';
         return;
       }
@@ -1402,7 +1361,7 @@
       renderer.render(scene, camera);
     }
 
-    // Initialize on page load
+    // Initialize
     renderSubtabs();
     initStep1();
     animate();
