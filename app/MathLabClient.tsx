@@ -262,101 +262,116 @@ export default function MathLabClient() {
             </h1>
           </div>
 
-          {/* SPORTS DAY TYPING APP BANNER */}
-          <div className="w-full max-w-7xl mb-6 animate-fade-in">
-            <a
-              href="/typing"
-              className="block group bg-black text-white p-5 sm:p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
-            >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-white text-black text-xs font-black tracking-wide">
-                      ⚡ 체육대회 특별 종목
-                    </span>
-                    <span className="text-xs text-neutral-400 font-medium">모바일 최적화</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-                    🏆 모바일 타자 속도전
-                  </h2>
-                  <p className="text-xs sm:text-sm text-neutral-300">
-                    5단계 문장을 가장 빠르게 오타 없이 입력하고 실시간 랭킹에 등록해보세요!
-                  </p>
-                </div>
-                <div className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-white text-black font-bold text-sm rounded-xl group-hover:bg-neutral-200 transition-colors">
-                  <span>경기 시작하기</span>
-                  <span>→</span>
-                </div>
-              </div>
-            </a>
-          </div>
-
-          {/* NEW FEATURED APP ROW */}
+          {/* NEW FEATURED APP ROW: 3D REGULAR POLYHEDRON EXPLORER */}
           <div className="w-full max-w-7xl mb-8 animate-fade-in">
             <div
-              onClick={() => { window.location.href = '/similarity.html'; }}
-              className="group cursor-pointer bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[3px] rounded-3xl shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 transform hover:-translate-y-1.5"
+              onClick={() => { window.location.href = '/polyhedron.html'; }}
+              className="group cursor-pointer bg-gradient-to-r from-violet-600 via-indigo-600 to-rose-500 p-[3px] rounded-3xl shadow-2xl hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-1.5"
             >
               <div className="bg-white rounded-[22px] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
                 {/* Background glowing aura */}
-                <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-100/60 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-100/80 transition-all" />
+                <div className="absolute top-0 right-0 w-80 h-80 bg-violet-100/60 rounded-full blur-3xl pointer-events-none group-hover:bg-rose-100/70 transition-all" />
 
                 {/* Left Info Column */}
                 <div className="flex-1 z-10">
                   <div className="flex flex-wrap items-center gap-2.5 mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500 text-white font-black text-xs tracking-wider animate-pulse shadow-md shadow-red-500/30">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500 text-white font-black text-xs tracking-wider animate-pulse shadow-md shadow-rose-500/30">
                       <span>✨</span>
                       <span>NEW!</span>
                     </span>
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
-                      중2 수학 • 도형의 닮음
+                      중1 수학 • 입체도형의 성질
                     </span>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-                      히든포크스 스타일 탐색 게임
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+                      3D 입체도형 제작 & 탐구 표 채우기
                     </span>
                   </div>
 
                   <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors flex items-center gap-2">
-                    <span>🔍 닮은 그림 찾기!</span>
+                    <span>🎲 정다면체 탐구 (3D 메이커)</span>
                   </h2>
 
                   <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mb-6">
-                    워밍업 4단계를 통과하고, 아기자기한 손그림 마을에서 실생활 속 <b>5가지 닮음</b>을 찾아보세요! 
-                    색연필로 직접 체크하고 학습지를 채워보는 즐거운 수학 탐험.
+                    한 꼭짓점에 정다각형을 모아 3D로 접어올리고, 직접 <b>면을 터치해 세어보며</b> 정사면체부터 정이십면체까지 5가지 정다면체 탐구 표를 완성해보세요!
                   </p>
 
                   <div className="flex flex-wrap items-center gap-4">
-                    <button className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-black text-sm sm:text-base shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 active:scale-95 transition-all flex items-center gap-2">
-                      <span>지금 탐험 시작하기</span>
+                    <button className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-rose-600 text-white font-black text-sm sm:text-base shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 active:scale-95 transition-all flex items-center gap-2">
+                      <span>정다면체 탐구 시작하기</span>
                       <span className="text-lg">➔</span>
                     </button>
                     <span className="text-xs font-bold text-slate-400">
-                      💡 모바일 터치 & PC 마우스 완벽 지원
+                      💡 모바일 & 태블릿 터치 / PC 마우스 완벽 호환
                     </span>
                   </div>
                 </div>
 
-                {/* Right Visual Preview */}
-                <div className="w-full md:w-80 h-44 sm:h-48 rounded-2xl overflow-hidden border-2 border-slate-200 shadow-md relative group-hover:border-indigo-300 transition-colors flex-shrink-0 bg-slate-50">
-                  <img
-                    src="/images/similarity/hidden_folks_map.jpg"
-                    alt="닮은 그림 찾기 맵 미리보기"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-3.5">
-                    <div className="flex items-center gap-2 text-white">
-                      <span className="text-2xl">✏️</span>
-                      <span className="text-xs font-extrabold tracking-tight">지도를 확대하고 색연필로 콕!</span>
+                {/* Right Visual Polyhedron Preview Badges */}
+                <div className="w-full md:w-80 h-44 sm:h-48 rounded-2xl overflow-hidden border-2 border-indigo-100 shadow-md relative group-hover:border-indigo-300 transition-colors flex-shrink-0 bg-gradient-to-br from-indigo-50/80 via-white to-rose-50/60 p-4 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-indigo-800 bg-indigo-100/70 px-2.5 py-1 rounded-lg">5가지 플라톤 입체</span>
+                    <span className="text-xs font-black text-rose-500">3D 전개도 접기</span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5 py-2 text-center">
+                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
+                      <span className="text-lg">🔺</span>
+                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">사면체</span>
                     </div>
+                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
+                      <span className="text-lg">🧊</span>
+                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">육면체</span>
+                    </div>
+                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
+                      <span className="text-lg">💎</span>
+                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">팔면체</span>
+                    </div>
+                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
+                      <span className="text-lg">⬡</span>
+                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">십이면체</span>
+                    </div>
+                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
+                      <span className="text-lg">🌐</span>
+                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">이십면체</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 text-slate-500 text-xs font-bold bg-white/80 py-1.5 rounded-xl border border-slate-200/50">
+                    <span>👆 면 터치 카운팅 & 자동 꼭짓점/모서리 세기</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* MAIN APP SELECTION CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full max-w-7xl">
-            {/* CARD 1: PIZZA CUTTING APP */}
+          {/* MAIN APP SELECTION CARDS (6 CARDS GRID) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
+            {/* CARD 1: SIMILARITY FINDING APP (MOVED DOWN) */}
+            <div
+              onClick={() => { window.location.href = '/similarity.html'; }}
+              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-indigo-200 hover:border-indigo-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/50 rounded-full blur-2xl group-hover:bg-indigo-200/60 transition-all pointer-events-none" />
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  🔍
+                </div>
+                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-[11px] font-bold mb-2">
+                  중2 수학 • 도형의 닮음
+                </div>
+                <h2 className="text-xl font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                  닮은 그림 찾기!
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                  워밍업 4단계를 통과하고, 손그림 마을에서 실생활 속 5가지 닮음을 찾아 학습지를 채워보세요!
+                </p>
+              </div>
+
+              <button className="w-full py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold text-sm shadow-md group-hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>닮은 그림 찾기 시작</span>
+                <span>➔</span>
+              </button>
+            </div>
+
+            {/* CARD 2: PIZZA CUTTING APP */}
             <div
               onClick={() => { window.location.href = '/pizza.html'; }}
               className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-orange-200 hover:border-orange-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
@@ -373,7 +388,7 @@ export default function MathLabClient() {
                   피자를 잘라보자!
                 </h2>
                 <p className="text-xs sm:text-sm text-orange-900/80 leading-relaxed mb-6">
-                  피자를 반죽하고 구운 뒤 원하는 조각으로 잘라 요리사에게 먹여보며 부채꼴의 중심각, 호, 넓이의 관계를 탐구해보세요!
+                  피자를 반죽하고 구운 뒤 원하는 조각으로 잘라 요리사에게 먹여보며 부채꼴의 성질을 탐구해보세요!
                 </p>
               </div>
 
@@ -383,7 +398,7 @@ export default function MathLabClient() {
               </button>
             </div>
 
-            {/* CARD 2: CHEESE CUTTING APP */}
+            {/* CARD 3: CHEESE CUTTING APP */}
             <div
               onClick={() => setActiveApp('cheese')}
               className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-amber-200 hover:border-amber-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
@@ -410,7 +425,7 @@ export default function MathLabClient() {
               </button>
             </div>
 
-            {/* CARD 2: CIRCUMCENTER MINI GAME APP */}
+            {/* CARD 4: CIRCUMCENTER MINI GAME APP */}
             <div
               onClick={() => setActiveApp('circumcenter')}
               className="group cursor-pointer bg-slate-900 rounded-3xl p-6 sm:p-7 border-2 border-indigo-500/40 hover:border-yellow-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden text-slate-100"
@@ -437,7 +452,7 @@ export default function MathLabClient() {
               </button>
             </div>
 
-            {/* CARD 3: POLYGON EXTERIOR ANGLE EXPLORATION APP */}
+            {/* CARD 5: POLYGON EXTERIOR ANGLE EXPLORATION APP */}
             <div
               onClick={() => setActiveApp('exterior')}
               className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-purple-200 hover:border-purple-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
@@ -464,7 +479,7 @@ export default function MathLabClient() {
               </button>
             </div>
 
-            {/* CARD 4: PYTHAGORAS AR MEASUREMENT APP */}
+            {/* CARD 6: PYTHAGORAS AR MEASUREMENT APP */}
             <div
               onClick={() => setActiveApp('pythagoras')}
               className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200 hover:border-teal-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
@@ -490,6 +505,18 @@ export default function MathLabClient() {
                 <span>➔</span>
               </button>
             </div>
+          </div>
+
+          {/* SPORTS DAY TYPING APP BANNER (MOVED TO BOTTOM, SUBTLE/DISCREET) */}
+          <div className="w-full max-w-7xl mt-14 pt-6 border-t border-amber-200/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-400 text-xs">
+            <span className="font-medium text-slate-400">교내 이벤트 전용 활동</span>
+            <a
+              href="/typing"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-100/50 hover:bg-neutral-800 text-slate-500 hover:text-white font-semibold transition-all duration-200"
+            >
+              <span>🏆 체육대회 타자 속도전 바로가기</span>
+              <span>→</span>
+            </a>
           </div>
         </main>
       </div>
