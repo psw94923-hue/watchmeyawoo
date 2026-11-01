@@ -34,6 +34,41 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* 파스텔 오로라 테마 유틸리티 */
+.aurora-bg {
+  background: radial-gradient(circle at 10% 20%, rgba(254, 205, 211, 0.28) 0%, transparent 40%),
+              radial-gradient(circle at 90% 15%, rgba(199, 210, 254, 0.3) 0%, transparent 45%),
+              radial-gradient(circle at 50% 80%, rgba(186, 230, 253, 0.25) 0%, transparent 50%),
+              radial-gradient(circle at 80% 85%, rgba(167, 243, 208, 0.2) 0%, transparent 40%),
+              #ffffff;
+}
+
+.aurora-glow-pink {
+  background: radial-gradient(circle, rgba(254, 205, 211, 0.45) 0%, transparent 70%);
+}
+
+.aurora-glow-lavender {
+  background: radial-gradient(circle, rgba(221, 214, 254, 0.45) 0%, transparent 70%);
+}
+
+.aurora-glow-sky {
+  background: radial-gradient(circle, rgba(186, 230, 253, 0.45) 0%, transparent 70%);
+}
+
+.aurora-glow-mint {
+  background: radial-gradient(circle, rgba(167, 243, 208, 0.45) 0%, transparent 70%);
+}
+
+.aurora-gradient-text {
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 50%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.aurora-gradient-pill {
+  background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0f2fe 100%);
+}
+
 /* 커스텀 애니메이션 */
 @keyframes fadeIn {
   from {

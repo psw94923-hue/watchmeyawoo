@@ -1,0 +1,154 @@
+export interface MathApp {
+  id: string;
+  title: string;
+  category: 'grade1' | 'grade2' | 'challenge';
+  gradeText: string;
+  unitText: string;
+  description: string;
+  emoji: string;
+  href?: string;
+  internalAppId?: 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras';
+  tags: string[];
+  isNew?: boolean;
+  isFeatured?: boolean;
+  isComingSoon?: boolean;
+  auroraTheme: 'pink' | 'lavender' | 'sky' | 'mint' | 'peach' | 'violet';
+}
+
+export const MATH_APPS: MathApp[] = [
+  // --------------------------------------------------------------------------
+  // 중학교 1학년 (Grade 1)
+  // --------------------------------------------------------------------------
+  {
+    id: 'polyhedron',
+    title: '3D 정다면체 탐구 (3D 메이커)',
+    category: 'grade1',
+    gradeText: '중1 수학',
+    unitText: '입체도형의 성질',
+    description: '한 꼭짓점에 정다각형을 모아 3D로 접어올리고, 직접 면을 터치해 세어보며 정사면체부터 정이십면체까지 5가지 정다면체 탐구 표를 완성해보세요!',
+    emoji: '🎲',
+    href: '/polyhedron.html',
+    tags: ['3D 입체도형', '전개도 접기', '면 터치 카운팅'],
+    isNew: true,
+    isFeatured: true,
+    auroraTheme: 'violet',
+  },
+  {
+    id: 'pizza',
+    title: '피자를 잘라보자!',
+    category: 'grade1',
+    gradeText: '중1 수학',
+    unitText: '부채꼴의 성질',
+    description: '피자 도우를 반죽하고 구운 뒤 원하는 조각으로 잘라 요리사에게 먹여보며 부채꼴의 중심각과 호의 관계를 탐구해보세요!',
+    emoji: '🍕',
+    href: '/pizza.html',
+    tags: ['부채꼴의 호와 넓이', '중심각', '체험형 시뮬레이션'],
+    auroraTheme: 'peach',
+  },
+  {
+    id: 'cheese',
+    title: '치즈 커팅 (다각형 자르기)',
+    category: 'grade1',
+    gradeText: '중1 수학',
+    unitText: '다각형의 내각의 합',
+    description: '귀여운 치즈 칼로 다각형을 대각선으로 분할해보며 (n-2)×180° 내각의 총합 공식을 스스로 발견해보세요!',
+    emoji: '🧀',
+    internalAppId: 'cheese',
+    tags: ['다각형의 대각선', '내각의 총합 공식', '인터랙티브'],
+    auroraTheme: 'pink',
+  },
+  {
+    id: 'exterior',
+    title: '다각형 외각 탐구',
+    category: 'grade1',
+    gradeText: '중1 수학',
+    unitText: '다각형의 외각의 합',
+    description: '다각형의 모든 외각을 떼어내 한 점으로 모아 외각의 총합이 항상 360°가 되는 원리를 직관적으로 확인해보세요!',
+    emoji: '📐',
+    internalAppId: 'exterior',
+    href: '/exterior.html',
+    tags: ['외각의 총합 360°', '모아보기 증명', '직관적 시각화'],
+    auroraTheme: 'lavender',
+  },
+
+  // --------------------------------------------------------------------------
+  // 중학교 2학년 (Grade 2)
+  // --------------------------------------------------------------------------
+  {
+    id: 'similarity',
+    title: '닮은 그림 찾기!',
+    category: 'grade2',
+    gradeText: '중2 수학',
+    unitText: '도형의 닮음',
+    description: '워밍업 4단계를 통과하고, 정겨운 손그림 마을에서 실생활 속 5가지 닮음 도형을 찾아 학습지를 완성해보세요!',
+    emoji: '🔍',
+    href: '/similarity.html',
+    tags: ['도형의 닮음', '실생활 연계', '손그림 마을 탐색'],
+    auroraTheme: 'sky',
+  },
+  {
+    id: 'circumcenter',
+    title: '외심 탐사선 (항성 찾기)',
+    category: 'grade2',
+    gradeText: '중2 수학',
+    unitText: '삼각형의 외심',
+    description: '밤하늘의 세 별로부터 정확히 같은 거리에 있는 항성(외심)의 위치를 감각으로 맞추고 실시간 랭킹에 도전하세요!',
+    emoji: '🌌',
+    internalAppId: 'circumcenter',
+    tags: ['삼각형의 외심', '동일 거리 원리', '실시간 랭킹전'],
+    auroraTheme: 'violet',
+  },
+  {
+    id: 'pythagoras',
+    title: '피타고라스 측정하기 (AR)',
+    category: 'grade2',
+    gradeText: '중2 수학',
+    unitText: '피타고라스 정리',
+    description: '스마트폰 카메라와 각도 센서로 바닥과 꼭대기를 조준하고 삼각비와 피타고라스 정리로 건물의 실제 높이를 측정해보세요!',
+    emoji: '📏',
+    internalAppId: 'pythagoras',
+    tags: ['모바일 AR 실측', '자이로 각도 센서', '피타고라스 정리'],
+    auroraTheme: 'mint',
+  },
+
+  // --------------------------------------------------------------------------
+  // 챌린지 게임 모음 (Challenge & Sports Day)
+  // --------------------------------------------------------------------------
+  {
+    id: 'typing',
+    title: '체육대회 타자 속도전',
+    category: 'challenge',
+    gradeText: '챌린지 게임',
+    unitText: '교내 체육대회 공식 종목',
+    description: '애국가 & 교가 가사 타이핑 배틀! 반 대항전 및 개인전 실시간 타자 속도와 정확도 랭킹 1위에 도전해보세요!',
+    emoji: '🏆',
+    href: '/typing',
+    tags: ['체육대회 공식', '반 대항전', '실시간 랭킹', '타자 속도전'],
+    isFeatured: true,
+    auroraTheme: 'pink',
+  },
+  {
+    id: 'circumcenter-challenge',
+    title: '외심 탐사선 랭킹전',
+    category: 'challenge',
+    gradeText: '챌린지 게임',
+    unitText: '수학 아케이드 챌린지',
+    description: '밤하늘 세 별의 정중앙 외심을 가장 정밀하게 찍어 높은 점수를 획득하는 랭킹 아케이드 챌린지 게임입니다!',
+    emoji: '🛸',
+    internalAppId: 'circumcenter',
+    tags: ['정밀 조준 챌린지', '실시간 랭킹', '수학 아케이드'],
+    auroraTheme: 'violet',
+  },
+  {
+    id: 'new-challenge-soon',
+    title: '새로운 챌린지 게임',
+    category: 'challenge',
+    gradeText: '챌린지 게임',
+    unitText: '신규 제작 준비 중',
+    description: '홈페이지 리뉴얼에 이어 재미있는 신규 챌린지 게임이 곧 공개됩니다! 체육대회 및 수업 시즌 업데이트를 기대해주세요.',
+    emoji: '✨',
+    isComingSoon: true,
+    tags: ['NEW 게임 개발 중', '시즌 업데이트', 'Coming Soon'],
+    auroraTheme: 'mint',
+  },
+];

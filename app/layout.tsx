@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "세원쌤의 작은 마을",
-  description: "준비 중",
+  title: "세원쌤의 수학 실험실",
+  description: "중학교 1학년, 2학년 수학 연계 인터랙티브 탐구 및 챌린지 게임 웹 플랫폼",
 };
 
 export default function RootLayout({

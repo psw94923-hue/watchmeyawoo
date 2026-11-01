@@ -4,13 +4,24 @@ import React, { useState, useEffect, useRef } from "react";
 import CheeseCuttingApp from "./components/CheeseCuttingApp";
 import CircumcenterApp from "./components/CircumcenterApp";
 import ExteriorAngleApp from "./components/ExteriorAngleApp";
+import Navbar from "./components/Navbar";
+import AppCard from "./components/AppCard";
+import { MATH_APPS } from "./data/apps";
+import Link from "next/link";
 
 type Step = 'setup' | 'step1' | 'step2' | 'analysis';
 type ActiveApp = 'hub' | 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras';
 
-export default function MathLabClient() {
+interface MathLabClientProps {
+  initialCategory?: 'all' | 'grade1' | 'grade2' | 'challenge';
+}
+
+export default function MathLabClient({
+  initialCategory = 'all',
+}: MathLabClientProps) {
   // Navigation & Sub-App State
   const [activeApp, setActiveApp] = useState<ActiveApp>('hub');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'grade1' | 'grade2' | 'challenge'>(initialCategory);
 
   // App States for Pythagoras AR App
   const [step, setStep] = useState<Step>('setup');
@@ -236,289 +247,372 @@ export default function MathLabClient() {
   }
 
   // -------------------------------------------------------------
-  // RENDER HUB: APP SELECTION HUB
+  // RENDER HUB: MODERN PASTEL AURORA SELECTION HUB
   // -------------------------------------------------------------
   if (activeApp === 'hub') {
+    // Filter apps based on category tab
+    const filteredApps = selectedCategory === 'all'
+      ? MATH_APPS
+      : MATH_APPS.filter(app => app.category === selectedCategory);
+
+    const grade1Count = MATH_APPS.filter(a => a.category === 'grade1').length;
+    const grade2Count = MATH_APPS.filter(a => a.category === 'grade2').length;
+    const challengeCount = MATH_APPS.filter(a => a.category === 'challenge').length;
+
     return (
-      <div className="min-h-screen w-full bg-amber-50/50 flex flex-col font-sans select-none relative overflow-x-hidden">
-        {/* TOP HEADER */}
-        <header className="bg-amber-100/90 backdrop-blur-md border-b border-amber-200 px-6 py-4 flex items-center justify-between shadow-sm z-30">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🧪</span>
-            <span className="text-lg font-black text-amber-950 tracking-tight">
-              세원쌤의 <span className="text-amber-600">수학 실험실</span>
-            </span>
-          </div>
-          <span className="text-xs font-bold text-amber-800 bg-amber-200/60 px-3 py-1 rounded-full border border-amber-300">
-            중학교 수학 탐구 웹앱
-          </span>
-        </header>
+      <div className="min-h-screen w-full aurora-bg flex flex-col font-sans select-none relative overflow-x-hidden text-slate-800">
+        {/* TOP NAVBAR */}
+        <Navbar
+          currentCategory={selectedCategory}
+          onSelectCategory={(cat) => setSelectedCategory(cat)}
+          onResetApp={() => setActiveApp('hub')}
+        />
 
-        {/* HERO CONTENT */}
-        <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-7xl mx-auto w-full">
-          <div className="text-center mb-8 sm:mb-10 animate-fade-in">
-            <h1 className="text-3xl sm:text-4xl font-black text-amber-950 tracking-tight">
-              세원쌤의 <span className="text-amber-600">수학 실험실</span>
+        {/* HERO HEADER */}
+        <main className="flex-1 flex flex-col items-center p-4 sm:p-8 max-w-7xl mx-auto w-full">
+          {/* DYNAMIC HERO HEADER */}
+          <section className="text-center my-6 sm:my-10 max-w-3xl animate-fade-in relative">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full aurora-gradient-pill border border-purple-200/50 shadow-xs mb-4">
+              <span className="text-sm">
+                {selectedCategory === 'grade1' ? '🌸' : selectedCategory === 'grade2' ? '🔮' : selectedCategory === 'challenge' ? '🏆' : '✨'}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-purple-900 tracking-tight">
+                {selectedCategory === 'grade1' && '중학교 1학년 수학 교육과정 연계 탐구관'}
+                {selectedCategory === 'grade2' && '중학교 2학년 수학 교육과정 연계 탐구관'}
+                {selectedCategory === 'challenge' && '교내 체육대회 공식 종목 & 랭킹 배틀'}
+                {selectedCategory === 'all' && '아이들의 눈높이에 맞춘 인터랙티브 수학 놀이터'}
+              </span>
+            </div>
+            
+            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
+              {selectedCategory === 'grade1' && <>1학년 <span className="text-rose-500">수학 실험실</span></>}
+              {selectedCategory === 'grade2' && <>2학년 <span className="text-indigo-600">수학 실험실</span></>}
+              {selectedCategory === 'challenge' && <>🏆 <span className="aurora-gradient-text">&lt;챌린지 게임 모음&gt;</span></>}
+              {selectedCategory === 'all' && <>세원쌤의 <span className="aurora-gradient-text">수학 실험실</span></>}
             </h1>
-          </div>
+            
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl mx-auto font-normal">
+              {selectedCategory === 'grade1' && '입체도형 접기, 피자 자르기, 치즈 다각형 분할, 외각 모으기로 도형의 원리를 발견해보세요.'}
+              {selectedCategory === 'grade2' && '손그림 마을 닮음 찾기, 밤하늘 외심 항성 탐사, 카메라 AR 피타고라스 실측을 체험해보세요.'}
+              {selectedCategory === 'challenge' && '체육대회 애국가·교가 타자 속도전과 외심 정밀 타겟전에서 실시간 최고 기록을 세워보세요!'}
+              {selectedCategory === 'all' && '직접 도형을 만지고, 자르고, 측정하며 수학의 원리를 직관적으로 발견해보세요.'}
+            </p>
+          </section>
 
-          {/* NEW FEATURED APP ROW: 3D REGULAR POLYHEDRON EXPLORER */}
-          <div className="w-full max-w-7xl mb-8 animate-fade-in">
-            <div
-              onClick={() => { window.location.href = '/polyhedron.html'; }}
-              className="group cursor-pointer bg-gradient-to-r from-violet-600 via-indigo-600 to-rose-500 p-[3px] rounded-3xl shadow-2xl hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-1.5"
-            >
-              <div className="bg-white rounded-[22px] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-                {/* Background glowing aura */}
-                <div className="absolute top-0 right-0 w-80 h-80 bg-violet-100/60 rounded-full blur-3xl pointer-events-none group-hover:bg-rose-100/70 transition-all" />
+          {/* CONDITIONAL BANNER / GATEWAYS */}
+          {selectedCategory === 'all' ? (
+            /* 3 LARGE MAIN GATEWAY CARDS (GRADE 1 / GRADE 2 / CHALLENGE GAMES) */
+            <section className="w-full mb-10">
+              <div className="text-center sm:text-left mb-4">
+                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">
+                  EXPLORE CATEGORIES • 바로가기
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                  어디로 가볼까요?
+                </h2>
+              </div>
 
-                {/* Left Info Column */}
-                <div className="flex-1 z-10">
-                  <div className="flex flex-wrap items-center gap-2.5 mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500 text-white font-black text-xs tracking-wider animate-pulse shadow-md shadow-rose-500/30">
-                      <span>✨</span>
-                      <span>NEW!</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* GATEWAY 1: GRADE 1 */}
+                <div
+                  onClick={() => setSelectedCategory('grade1')}
+                  className="group cursor-pointer rounded-3xl p-6 sm:p-7 border transition-all duration-300 relative overflow-hidden flex flex-col justify-between bg-white/90 hover:bg-white border-slate-100 hover:border-rose-200 shadow-xs hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-100/60 rounded-full blur-2xl group-hover:scale-125 transition-transform" />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200/60 flex items-center justify-center text-2xl shadow-xs group-hover:scale-110 transition-transform">
+                        🌸
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">
+                        4개 활동 수록
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-rose-600 transition-colors mb-1.5">
+                      중학교 1학년 수학
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
+                      3D 정다면체 메이커, 피자 자르기, 치즈 다각형 분할, 다각형 외각 모으기
+                    </p>
+                  </div>
+                  <div className="relative z-10 pt-2 flex items-center justify-between">
+                    <span className="text-xs font-bold text-rose-600 group-hover:underline">
+                      1학년 활동 바로보기
                     </span>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
-                      중1 수학 • 입체도형의 성질
+                    <Link
+                      href="/grade1"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs px-3 py-1.5 rounded-xl bg-rose-100/70 hover:bg-rose-600 text-rose-800 hover:text-white font-bold transition-colors"
+                    >
+                      전용 페이지 ➔
+                    </Link>
+                  </div>
+                </div>
+
+                {/* GATEWAY 2: GRADE 2 */}
+                <div
+                  onClick={() => setSelectedCategory('grade2')}
+                  className="group cursor-pointer rounded-3xl p-6 sm:p-7 border transition-all duration-300 relative overflow-hidden flex flex-col justify-between bg-white/90 hover:bg-white border-slate-100 hover:border-indigo-200 shadow-xs hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-100/60 rounded-full blur-2xl group-hover:scale-125 transition-transform" />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200/60 flex items-center justify-center text-2xl shadow-xs group-hover:scale-110 transition-transform">
+                        🔮
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                        3개 활동 수록
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors mb-1.5">
+                      중학교 2학년 수학
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
+                      손그림 마을 닮음 찾기, 밤하늘 외심 탐사선 랭킹, 카메라 AR 피타고라스 실측
+                    </p>
+                  </div>
+                  <div className="relative z-10 pt-2 flex items-center justify-between">
+                    <span className="text-xs font-bold text-indigo-600 group-hover:underline">
+                      2학년 활동 바로보기
                     </span>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
-                      3D 입체도형 제작 & 탐구 표 채우기
+                    <Link
+                      href="/grade2"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs px-3 py-1.5 rounded-xl bg-indigo-100/70 hover:bg-indigo-600 text-indigo-800 hover:text-white font-bold transition-colors"
+                    >
+                      전용 페이지 ➔
+                    </Link>
+                  </div>
+                </div>
+
+                {/* GATEWAY 3: CHALLENGE GAMES */}
+                <div
+                  onClick={() => setSelectedCategory('challenge')}
+                  className="group cursor-pointer rounded-3xl p-6 sm:p-7 border transition-all duration-300 relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-white via-pink-50/20 to-purple-50/30 hover:bg-white border-purple-200/70 hover:border-purple-300 shadow-sm hover:shadow-lg hover:-translate-y-1"
+                >
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-pink-200/60 to-purple-200/60 rounded-full blur-2xl group-hover:scale-125 transition-transform" />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-100 via-purple-100 to-sky-100 border border-purple-200 flex items-center justify-center text-2xl shadow-xs group-hover:scale-110 transition-transform">
+                        🏆
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-xs">
+                        체육대회 & 랭킹전
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors mb-1.5 flex items-center gap-1.5">
+                      <span>&lt;챌린지 게임 모음&gt;</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
+                      반 대항전 체육대회 타자 속도전, 외심 정밀 조준전, 신규 챌린지 게임
+                    </p>
+                  </div>
+                  <div className="relative z-10 pt-2 flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-600 group-hover:underline">
+                      챌린지 게임 바로보기
                     </span>
-                  </div>
-
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors flex items-center gap-2">
-                    <span>🎲 정다면체 탐구 (3D 메이커)</span>
-                  </h2>
-
-                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mb-6">
-                    한 꼭짓점에 정다각형을 모아 3D로 접어올리고, 직접 <b>면을 터치해 세어보며</b> 정사면체부터 정이십면체까지 5가지 정다면체 탐구 표를 완성해보세요!
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4">
-                    <button className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-rose-600 text-white font-black text-sm sm:text-base shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 active:scale-95 transition-all flex items-center gap-2">
-                      <span>정다면체 탐구 시작하기</span>
-                      <span className="text-lg">➔</span>
-                    </button>
-                    <span className="text-xs font-bold text-slate-400">
-                      💡 모바일 & 태블릿 터치 / PC 마우스 완벽 호환
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right Visual Polyhedron Preview Badges */}
-                <div className="w-full md:w-80 h-44 sm:h-48 rounded-2xl overflow-hidden border-2 border-indigo-100 shadow-md relative group-hover:border-indigo-300 transition-colors flex-shrink-0 bg-gradient-to-br from-indigo-50/80 via-white to-rose-50/60 p-4 flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-800 bg-indigo-100/70 px-2.5 py-1 rounded-lg">5가지 플라톤 입체</span>
-                    <span className="text-xs font-black text-rose-500">3D 전개도 접기</span>
-                  </div>
-                  <div className="grid grid-cols-5 gap-1.5 py-2 text-center">
-                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
-                      <span className="text-lg">🔺</span>
-                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">사면체</span>
-                    </div>
-                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
-                      <span className="text-lg">🧊</span>
-                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">육면체</span>
-                    </div>
-                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
-                      <span className="text-lg">💎</span>
-                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">팔면체</span>
-                    </div>
-                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
-                      <span className="text-lg">⬡</span>
-                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">십이면체</span>
-                    </div>
-                    <div className="p-1 rounded-xl bg-white shadow-xs border border-slate-100 flex flex-col items-center">
-                      <span className="text-lg">🌐</span>
-                      <span className="text-[10px] font-bold text-slate-600 mt-0.5">이십면체</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 text-slate-500 text-xs font-bold bg-white/80 py-1.5 rounded-xl border border-slate-200/50">
-                    <span>👆 면 터치 카운팅 & 자동 꼭짓점/모서리 세기</span>
+                    <Link
+                      href="/challenge"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white font-bold hover:opacity-90 transition-opacity shadow-xs"
+                    >
+                      전용 페이지 ➔
+                    </Link>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </section>
+          ) : (
+            /* DEDICATED CATEGORY BANNER */
+            <section className="w-full mb-8 animate-fade-in">
+              {selectedCategory === 'grade1' && (
+                <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-orange-50 border border-rose-200/60 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-rose-200/30 rounded-full blur-3xl pointer-events-none" />
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-white border border-rose-200 flex items-center justify-center text-3xl shadow-xs shrink-0">
+                      🌸
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500 text-white">
+                          중1 전용관
+                        </span>
+                        <span className="text-xs font-bold text-rose-700">
+                          기하 & 다각형 단원
+                        </span>
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        중학교 1학년 수학 탐구실
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                        3D 정다면체 메이커, 피자 자르기, 치즈 다각형 분할, 외각 모으기로 수학의 원리를 발견해보세요!
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className="relative z-10 px-4 py-2.5 rounded-2xl bg-white hover:bg-rose-100/60 text-slate-700 font-bold text-xs border border-rose-200 transition-colors shrink-0 cursor-pointer"
+                  >
+                    전체 목록 보기 ➔
+                  </button>
+                </div>
+              )}
 
-          {/* MAIN APP SELECTION CARDS (6 CARDS GRID) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
-            {/* CARD 1: SIMILARITY FINDING APP (MOVED DOWN) */}
-            <div
-              onClick={() => { window.location.href = '/similarity.html'; }}
-              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-indigo-200 hover:border-indigo-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/50 rounded-full blur-2xl group-hover:bg-indigo-200/60 transition-all pointer-events-none" />
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                  🔍
+              {selectedCategory === 'grade2' && (
+                <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-sky-50 border border-indigo-200/60 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-200/30 rounded-full blur-3xl pointer-events-none" />
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-white border border-indigo-200 flex items-center justify-center text-3xl shadow-xs shrink-0">
+                      🔮
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-600 text-white">
+                          중2 전용관
+                        </span>
+                        <span className="text-xs font-bold text-indigo-700">
+                          도형의 닮음 & 성질 단원
+                        </span>
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        중학교 2학년 수학 탐구실
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                        손그림 마을 닮음 찾기, 밤하늘 외심 탐사선 랭킹, 카메라 AR 피타고라스 실측을 체험해보세요!
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className="relative z-10 px-4 py-2.5 rounded-2xl bg-white hover:bg-indigo-100/60 text-slate-700 font-bold text-xs border border-indigo-200 transition-colors shrink-0 cursor-pointer"
+                  >
+                    전체 목록 보기 ➔
+                  </button>
                 </div>
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-[11px] font-bold mb-2">
-                  중2 수학 • 도형의 닮음
+              )}
+
+              {selectedCategory === 'challenge' && (
+                <div className="bg-gradient-to-r from-pink-50 via-purple-50 to-sky-50 border border-purple-200/80 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-tr from-pink-300/30 to-purple-300/30 rounded-full blur-3xl pointer-events-none" />
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-pink-100 via-purple-100 to-sky-100 border border-purple-200 flex items-center justify-center text-3xl shadow-xs shrink-0">
+                      🏆
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-rose-500 to-purple-600 text-white">
+                          체육대회 & 이벤트
+                        </span>
+                        <span className="text-xs font-bold text-purple-700">
+                          실시간 랭킹 시스템 연동
+                        </span>
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <span>&lt;챌린지 게임 모음&gt;</span>
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                        체육대회 애국가·교가 타자 속도전과 외심 정밀 타겟전에서 반 대항전 및 개인전 최고 기록을 세워보세요!
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className="relative z-10 px-4 py-2.5 rounded-2xl bg-white hover:bg-purple-100/60 text-purple-900 font-bold text-xs border border-purple-200 transition-colors shrink-0 cursor-pointer"
+                  >
+                    전체 목록 보기 ➔
+                  </button>
                 </div>
-                <h2 className="text-xl font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                  닮은 그림 찾기!
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
-                  워밍업 4단계를 통과하고, 손그림 마을에서 실생활 속 5가지 닮음을 찾아 학습지를 채워보세요!
-                </p>
+              )}
+            </section>
+          )}
+
+          {/* QUICK CATEGORY TABS */}
+          <section className="w-full mb-6">
+            <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    selectedCategory === 'all'
+                      ? "bg-slate-900 text-white shadow-xs"
+                      : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-slate-200/60"
+                  }`}
+                >
+                  전체보기 ({MATH_APPS.length})
+                </button>
+                <button
+                  onClick={() => setSelectedCategory('grade1')}
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    selectedCategory === 'grade1'
+                      ? "bg-rose-500 text-white shadow-xs shadow-rose-500/20"
+                      : "bg-white text-rose-700 hover:bg-rose-50 border border-rose-200/60"
+                  }`}
+                >
+                  <span>🌸</span>
+                  <span>중1 수학 ({grade1Count})</span>
+                </button>
+                <button
+                  onClick={() => setSelectedCategory('grade2')}
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    selectedCategory === 'grade2'
+                      ? "bg-indigo-600 text-white shadow-xs shadow-indigo-600/20"
+                      : "bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200/60"
+                  }`}
+                >
+                  <span>🔮</span>
+                  <span>중2 수학 ({grade2Count})</span>
+                </button>
+                <button
+                  onClick={() => setSelectedCategory('challenge')}
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    selectedCategory === 'challenge'
+                      ? "bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white shadow-xs"
+                      : "bg-gradient-to-r from-pink-50 to-purple-50 text-purple-800 hover:from-pink-100 hover:to-purple-100 border border-purple-200/60"
+                  }`}
+                >
+                  <span>🏆</span>
+                  <span>&lt;챌린지 게임 모음&gt; ({challengeCount})</span>
+                </button>
               </div>
 
-              <button className="w-full py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold text-sm shadow-md group-hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2">
-                <span>닮은 그림 찾기 시작</span>
-                <span>➔</span>
-              </button>
+              <span className="text-xs font-semibold text-slate-400">
+                {selectedCategory === 'all' && `전체 ${MATH_APPS.length}개 프로그램`}
+                {selectedCategory === 'grade1' && "중학교 1학년 교육과정 연계"}
+                {selectedCategory === 'grade2' && "중학교 2학년 교육과정 연계"}
+                {selectedCategory === 'challenge' && "체육대회 & 실시간 랭킹 게임"}
+              </span>
             </div>
+          </section>
 
-            {/* CARD 2: PIZZA CUTTING APP */}
-            <div
-              onClick={() => { window.location.href = '/pizza.html'; }}
-              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-orange-200 hover:border-orange-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100/50 rounded-full blur-2xl group-hover:bg-orange-200/60 transition-all pointer-events-none" />
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-orange-100 border border-orange-300 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                  🍕
-                </div>
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-[11px] font-bold mb-2">
-                  중1 수학 • 부채꼴의 성질
-                </div>
-                <h2 className="text-xl font-black text-orange-950 mb-2 group-hover:text-orange-600 transition-colors">
-                  피자를 잘라보자!
-                </h2>
-                <p className="text-xs sm:text-sm text-orange-900/80 leading-relaxed mb-6">
-                  피자를 반죽하고 구운 뒤 원하는 조각으로 잘라 요리사에게 먹여보며 부채꼴의 성질을 탐구해보세요!
-                </p>
-              </div>
-
-              <button className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-extrabold text-sm shadow-md group-hover:from-orange-600 group-hover:to-red-600 active:scale-95 transition-all flex items-center justify-center gap-2">
-                <span>피자 잘라보기</span>
-                <span>➔</span>
-              </button>
-            </div>
-
-            {/* CARD 3: CHEESE CUTTING APP */}
-            <div
-              onClick={() => setActiveApp('cheese')}
-              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-amber-200 hover:border-amber-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100/50 rounded-full blur-2xl group-hover:bg-amber-200/60 transition-all pointer-events-none" />
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                  🧀
-                </div>
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold mb-2">
-                  중1 수학 • 다각형의 내각의 합
-                </div>
-                <h2 className="text-xl font-black text-amber-950 mb-2 group-hover:text-amber-600 transition-colors">
-                  치즈 커팅 (다각형 자르기)
-                </h2>
-                <p className="text-xs sm:text-sm text-amber-800/80 leading-relaxed mb-6">
-                  귀여운 칼로 치즈 다각형을 직접 분할해보며 (N-2)×180° 내각의 합 공식을 스스로 발견해보세요!
-                </p>
-              </div>
-
-              <button className="w-full py-3.5 rounded-2xl bg-amber-500 text-white font-extrabold text-sm shadow-md group-hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center gap-2">
-                <span>치즈 커팅 시작하기</span>
-                <span>➔</span>
-              </button>
-            </div>
-
-            {/* CARD 4: CIRCUMCENTER MINI GAME APP */}
-            <div
-              onClick={() => setActiveApp('circumcenter')}
-              className="group cursor-pointer bg-slate-900 rounded-3xl p-6 sm:p-7 border-2 border-indigo-500/40 hover:border-yellow-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden text-slate-100"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/30 rounded-full blur-2xl group-hover:bg-indigo-500/50 transition-all pointer-events-none" />
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-indigo-950 border border-indigo-500/40 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                  🌌
-                </div>
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-950 border border-indigo-500/40 text-yellow-300 text-[11px] font-bold mb-2">
-                  중2 수학 • 삼각형의 외심
-                </div>
-                <h2 className="text-xl font-black text-white mb-2 group-hover:text-yellow-400 transition-colors">
-                  외심 탐사선 (항성 찾기)
-                </h2>
-                <p className="text-xs sm:text-sm text-indigo-200/80 leading-relaxed mb-6">
-                  밤하늘의 세 별로부터 같은 거리에 있는 항성(외심)을 감으로 맞춰보고 실시간 랭킹에 도전하세요!
-                </p>
-              </div>
-
-              <button className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-sm shadow-md hover:from-yellow-300 hover:to-amber-400 active:scale-95 transition-all flex items-center justify-center gap-2">
-                <span>외심 탐사선 시작하기</span>
-                <span>➔</span>
-              </button>
-            </div>
-
-            {/* CARD 5: POLYGON EXTERIOR ANGLE EXPLORATION APP */}
-            <div
-              onClick={() => setActiveApp('exterior')}
-              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-purple-200 hover:border-purple-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100/50 rounded-full blur-2xl group-hover:bg-purple-200/60 transition-all pointer-events-none" />
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                  📐
-                </div>
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-800 text-[11px] font-bold mb-2">
-                  중1 수학 • 다각형의 외각의 합
-                </div>
-                <h2 className="text-xl font-black text-slate-900 mb-2 group-hover:text-purple-600 transition-colors">
-                  다각형 외각 탐구
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
-                  다각형의 외각을 잘라 한 점으로 모아 외각의 총합이 항상 360도임을 직관적으로 확인해보세요!
-                </p>
-              </div>
-
-              <button className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-sm shadow-md group-hover:from-purple-500 group-hover:to-indigo-500 active:scale-95 transition-all flex items-center justify-center gap-2">
-                <span>외각 탐구 시작하기</span>
-                <span>➔</span>
-              </button>
-            </div>
-
-            {/* CARD 6: PYTHAGORAS AR MEASUREMENT APP */}
-            <div
-              onClick={() => setActiveApp('pythagoras')}
-              className="group cursor-pointer bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200 hover:border-teal-400 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-teal-100/50 rounded-full blur-2xl group-hover:bg-teal-200/60 transition-all pointer-events-none" />
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                  📏
-                </div>
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-bold mb-2">
-                  중2 수학 • 피타고라스 정리
-                </div>
-                <h2 className="text-xl font-black text-slate-900 mb-2 group-hover:text-teal-600 transition-colors">
-                  피타고라스 측정하기
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
-                  카메라와 자이로 센서로 건물 바닥과 꼭대기를 조준하고 삼각비와 피타고라스 정리로 높이를 구하세요!
-                </p>
-              </div>
-
-              <button className="w-full py-3.5 rounded-2xl bg-slate-900 text-teal-300 font-extrabold text-sm shadow-md group-hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-2">
-                <span>피타고라스 측정하기</span>
-                <span>➔</span>
-              </button>
-            </div>
-          </div>
-
-          {/* SPORTS DAY TYPING APP BANNER (MOVED TO BOTTOM, SUBTLE/DISCREET) */}
-          <div className="w-full max-w-7xl mt-14 pt-6 border-t border-amber-200/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-400 text-xs">
-            <span className="font-medium text-slate-400">교내 이벤트 전용 활동</span>
-            <a
-              href="/typing"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-100/50 hover:bg-neutral-800 text-slate-500 hover:text-white font-semibold transition-all duration-200"
-            >
-              <span>🏆 체육대회 타자 속도전 바로가기</span>
-              <span>→</span>
-            </a>
-          </div>
+          {/* APPLICATION CARDS GRID */}
+          <section className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16 animate-fade-in">
+            {filteredApps.map((app) => (
+              <AppCard
+                key={app.id}
+                app={app}
+                onOpenApp={(id) => setActiveApp(id)}
+              />
+            ))}
+          </section>
         </main>
+
+        {/* CLEAN MINIMAL FOOTER */}
+        <footer className="w-full bg-white/70 border-t border-slate-100 py-8 px-4 sm:px-6 text-center text-xs text-slate-400">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🧪</span>
+              <span className="font-bold text-slate-700">세원쌤의 수학 실험실</span>
+              <span className="text-slate-300">|</span>
+              <span>중학교 수학 탐구 & 챌린지 웹 플랫폼</span>
+            </div>
+            <div className="flex items-center gap-4 text-slate-400">
+              <Link href="/grade1" className="hover:text-slate-700 transition-colors">중1 수학</Link>
+              <Link href="/grade2" className="hover:text-slate-700 transition-colors">중2 수학</Link>
+              <Link href="/challenge" className="hover:text-purple-600 font-semibold transition-colors">챌린지 게임 모음</Link>
+              <Link href="/typing" className="hover:text-rose-600 transition-colors">체육대회 타자 속도전</Link>
+            </div>
+          </div>
+        </footer>
       </div>
     );
   }
