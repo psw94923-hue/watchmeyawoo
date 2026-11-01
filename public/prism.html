@@ -65,7 +65,7 @@ nav{display:flex;gap:.5rem}
 .face{position:absolute;inset:0;border:1.5px solid var(--face-edge);backface-visibility:visible;display:grid;place-items:center;opacity:.93}
 .face-base{background:var(--face-base)}.face-side{background:var(--face-side)}
 .face-edgeless{border-left:0;border-right:0}
-.face-label{font-size:.75rem;font-weight:700;white-space:nowrap;color:var(--face-edge)}
+.face-label{font-size:.82rem;font-weight:800;white-space:nowrap;color:var(--face-edge);user-select:none;-webkit-user-select:none;pointer-events:none;text-shadow:0 1px 2px rgba(255,255,255,0.85)}
 .viewer-tag{position:absolute;top:.6rem;left:50%;transform:translateX(-50%);background:var(--card);border:2px solid var(--face-edge);border-radius:999px;padding:.2rem .8rem;font-weight:700;font-size:.85rem;margin:0}
 .viewer-ctrls{position:absolute;top:.6rem;right:.6rem;display:flex;gap:.35rem;z-index:10}
 .ctrl-btn{width:2.1rem;height:2.1rem;border-radius:.55rem;border:1.5px solid var(--border);background:var(--card);color:var(--foreground);font-size:1.1rem;font-weight:700;display:inline-grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.06);transition:all .15s}
@@ -111,7 +111,7 @@ ul.parts .sub{font-size:.875rem;color:var(--muted-foreground)}
             <button type="button" class="ctrl-btn" id="btnZoomOut" title="축소" aria-label="축소">－</button>
             <button type="button" class="ctrl-btn" id="btnResetView" title="원래대로" aria-label="원래대로">↺</button>
           </div>
-          <p class="viewer-hint">한 손가락: 회전 · 두 손가락: 확대/축소</p>
+          <p class="viewer-hint">한 손가락: 회전 · 두 손가락: 확대/축소 및 이동</p>
         </div>
         <div class="fold-row">
           <span>접기</span>
@@ -183,6 +183,7 @@ const state={
   t:0,
   rot:{x:-22,y:-28},
   scale:1,
+  pan:{x:0,y:0},
   picked:{},
   inputs:{base:"",lateral:"",total:""},
   checked:false
@@ -196,7 +197,9 @@ function currentUnit(){
   const k=state.kind;
   const netW=k==="box"?2*(state.box.w+state.box.d):k==="tri"?TRI[state.tri.idx][0]+TRI[state.tri.idx][1]+Math.hypot(...TRI[state.tri.idx]):2*Math.PI*state.cyl.r;
   const netH=k==="box"?state.box.h+2*state.box.d:k==="tri"?state.tri.h+2*TRI[state.tri.idx][1]:state.cyl.h+4*state.cyl.r;
-  return Math.min(560/netW,380/netH,34);
+  const vw=Math.max(240,(viewer&&viewer.clientWidth)?viewer.clientWidth-40:500);
+  const vh=Math.max(240,(viewer&&viewer.clientHeight)?viewer.clientHeight-60:360);
+  return Math.min(vw/netW,vh/netH,34);
 }
 
 // ---------- 3D 면 생성 ----------
@@ -265,7 +268,7 @@ const scene=$("scene"),viewer=$("viewer"),cylTag=$("cylTag");
 
 function updateSceneTransform(){
   const k=1-state.t;
-  scene.style.transform=`scale3d(${state.scale},${state.scale},${state.scale}) rotateX(${state.rot.x*k}deg) rotateY(${state.rot.y*k}deg)`;
+  scene.style.transform=`translate(${state.pan.x}px, ${state.pan.y}px) scale3d(${state.scale},${state.scale},${state.scale}) rotateX(${state.rot.x*k}deg) rotateY(${state.rot.y*k}deg)`;
 }
 
 function renderViewer(){
@@ -287,7 +290,7 @@ function renderNav(){
   [["box","사각기둥"],["tri","삼각기둥"],["cyl","원기둥"]].forEach(([k,l])=>{
     const b=document.createElement("button");
     b.className="chip"+(state.kind===k?" chip-on":"");b.textContent=l;
-    b.onclick=()=>{state.kind=k;state.t=0;state.scale=1;state.rot={x:-22,y:-28};$("foldSlider").value=0;resetAnswers();renderAll();};
+    b.onclick=()=>{state.kind=k;state.t=0;state.scale=1;state.pan={x:0,y:0};state.rot={x:-22,y:-28};$("foldSlider").value=0;resetAnswers();renderAll();};
     nav.appendChild(b);
   });
 }
@@ -422,27 +425,30 @@ $("foldSlider").addEventListener("input",e=>{state.t=+e.target.value;renderViewe
 $("btnFold").onclick=()=>{state.t=0;$("foldSlider").value=0;renderViewer();renderStep2();};
 $("btnNet").onclick=()=>{state.t=1;$("foldSlider").value=1;renderViewer();renderStep2();};
 
-// 줌 컨트롤 버튼
-$("btnZoomIn").onclick=e=>{e.stopPropagation();state.scale=Math.min(3.0,state.scale*1.2);updateSceneTransform();};
-$("btnZoomOut").onclick=e=>{e.stopPropagation();state.scale=Math.max(0.4,state.scale/1.2);updateSceneTransform();};
-$("btnResetView").onclick=e=>{e.stopPropagation();state.scale=1;state.rot={x:-22,y:-28};updateSceneTransform();};
+// 줌 & 리셋 컨트롤 버튼
+$("btnZoomIn").onclick=e=>{e.stopPropagation();state.scale=Math.min(3.5,state.scale*1.2);updateSceneTransform();};
+$("btnZoomOut").onclick=e=>{e.stopPropagation();state.scale=Math.max(0.3,state.scale/1.2);updateSceneTransform();};
+$("btnResetView").onclick=e=>{e.stopPropagation();state.scale=1;state.pan={x:0,y:0};state.rot={x:-22,y:-28};updateSceneTransform();};
 
-// 터치 제스처: 한 손가락 드래그(회전), 두 손가락 핀치/스와이프(확대/축소)
+// 터치 제스처: 한 손가락 드래그(3D 회전), 두 손가락 드래그(이동/PAN) & 핀치(확대/축소)
 let touchMode=null;
 let lastTouchPos=null;
 let lastTouchDist=null;
-let lastTouchCenterY=null;
+let lastTouchCenter=null;
 
 viewer.addEventListener("touchstart",e=>{
   if(e.target.closest(".ctrl-btn"))return;
   if(e.touches.length===1){
     touchMode="rotate";
     lastTouchPos={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    lastTouchDist=null;
+    lastTouchCenter=null;
   }else if(e.touches.length>=2){
-    touchMode="zoom";
+    touchMode="multi";
     const t1=e.touches[0],t2=e.touches[1];
     lastTouchDist=Math.hypot(t1.clientX-t2.clientX,t1.clientY-t2.clientY);
-    lastTouchCenterY=(t1.clientY+t2.clientY)/2;
+    lastTouchCenter={x:(t1.clientX+t2.clientX)/2,y:(t1.clientY+t2.clientY)/2};
+    lastTouchPos=null;
   }
 },{passive:false});
 
@@ -458,26 +464,29 @@ viewer.addEventListener("touchmove",e=>{
     state.rot.x=Math.max(-89,Math.min(89,state.rot.x-dy*0.5));
     state.rot.y+=dx*0.5;
     updateSceneTransform();
-  }else if(e.touches.length>=2){
+  }else if(e.touches.length>=2&&lastTouchCenter){
     const t1=e.touches[0],t2=e.touches[1];
     const currDist=Math.hypot(t1.clientX-t2.clientX,t1.clientY-t2.clientY);
-    const currCenterY=(t1.clientY+t2.clientY)/2;
+    const currCenter={x:(t1.clientX+t2.clientX)/2,y:(t1.clientY+t2.clientY)/2};
 
-    if(lastTouchDist!==null&&lastTouchDist>0){
+    // 1) 두 손가락 드래그 시 이동 (Pan)
+    const dx=currCenter.x-lastTouchCenter.x;
+    const dy=currCenter.y-lastTouchCenter.y;
+    state.pan.x+=dx;
+    state.pan.y+=dy;
+
+    // 2) 두 손가락 핀치 시 확대/축소 (Zoom)
+    if(lastTouchDist!==null&&lastTouchDist>0&&currDist>0){
       const distDelta=currDist-lastTouchDist;
-      const centerDeltaY=lastTouchCenterY!==null?(currCenterY-lastTouchCenterY):0;
-
-      if(Math.abs(distDelta)>1.5){
+      if(Math.abs(distDelta)>1.2){
         const factor=currDist/lastTouchDist;
-        state.scale=Math.max(0.4,Math.min(3.0,state.scale*factor));
-      }else if(Math.abs(centerDeltaY)>2){
-        const factor=1-centerDeltaY*0.006;
-        state.scale=Math.max(0.4,Math.min(3.0,state.scale*factor));
+        state.scale=Math.max(0.3,Math.min(3.5,state.scale*factor));
       }
-      updateSceneTransform();
     }
+
     lastTouchDist=currDist;
-    lastTouchCenterY=currCenterY;
+    lastTouchCenter=currCenter;
+    updateSceneTransform();
   }
 },{passive:false});
 
@@ -486,30 +495,39 @@ const endTouch=e=>{
     touchMode=null;
     lastTouchPos=null;
     lastTouchDist=null;
-    lastTouchCenterY=null;
+    lastTouchCenter=null;
   }else if(e.touches.length===1){
     touchMode="rotate";
     lastTouchPos={x:e.touches[0].clientX,y:e.touches[0].clientY};
     lastTouchDist=null;
-    lastTouchCenterY=null;
+    lastTouchCenter=null;
   }
 };
 viewer.addEventListener("touchend",endTouch);
 viewer.addEventListener("touchcancel",endTouch);
 
-// 마우스 드래그 (PC 지원)
+// 마우스 드래그 (좌클릭: 회전, 우클릭/Shift드래그/휠클릭: 이동)
 let mouseDrag=null;
 viewer.addEventListener("mousedown",e=>{
   if(e.target.closest(".ctrl-btn"))return;
-  mouseDrag={x:e.clientX,y:e.clientY};
+  const isPan=e.button===2||e.shiftKey||e.button===1;
+  mouseDrag={mode:isPan?"pan":"rotate",x:e.clientX,y:e.clientY};
 });
+viewer.addEventListener("contextmenu",e=>{e.preventDefault();});
+
 window.addEventListener("mousemove",e=>{
   if(!mouseDrag)return;
   const dx=e.clientX-mouseDrag.x;
   const dy=e.clientY-mouseDrag.y;
-  mouseDrag={x:e.clientX,y:e.clientY};
-  state.rot.x=Math.max(-89,Math.min(89,state.rot.x-dy*0.5));
-  state.rot.y+=dx*0.5;
+  mouseDrag.x=e.clientX;
+  mouseDrag.y=e.clientY;
+  if(mouseDrag.mode==="pan"){
+    state.pan.x+=dx;
+    state.pan.y+=dy;
+  }else{
+    state.rot.x=Math.max(-89,Math.min(89,state.rot.x-dy*0.5));
+    state.rot.y+=dx*0.5;
+  }
   updateSceneTransform();
 });
 window.addEventListener("mouseup",()=>{mouseDrag=null;});
@@ -519,17 +537,21 @@ viewer.addEventListener("wheel",e=>{
   e.preventDefault();
   const delta=e.deltaY;
   const factor=delta>0?0.93:1.07;
-  state.scale=Math.max(0.4,Math.min(3.0,state.scale*factor));
+  state.scale=Math.max(0.3,Math.min(3.5,state.scale*factor));
   updateSceneTransform();
 },{passive:false});
 
-// 더블클릭 시 원래대로
+// 더블클릭 시 원래대로 복원
 viewer.addEventListener("dblclick",e=>{
   if(e.target.closest(".ctrl-btn"))return;
   state.rot={x:-22,y:-28};
   state.scale=1;
+  state.pan={x:0,y:0};
   updateSceneTransform();
 });
+
+// 화면 크기 변경 시 전개도 최적 크기 자동 재계산
+window.addEventListener("resize",()=>{renderViewer();});
 
 renderAll();
 </script>
