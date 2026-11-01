@@ -279,7 +279,7 @@ export default function MathLabClient({
               <span className="text-xs sm:text-sm font-bold text-purple-900 tracking-tight">
                 {selectedCategory === 'grade1' && '중학교 1학년 수학 교육과정 연계 탐구관'}
                 {selectedCategory === 'grade2' && '중학교 2학년 수학 교육과정 연계 탐구관'}
-                {selectedCategory === 'challenge' && '교내 체육대회 공식 종목 & 랭킹 배틀'}
+                {selectedCategory === 'challenge' && '다양한 미니게임 모음'}
                 {selectedCategory === 'all' && '아이들의 눈높이에 맞춘 인터랙티브 수학 놀이터'}
               </span>
             </div>
@@ -287,14 +287,14 @@ export default function MathLabClient({
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
               {selectedCategory === 'grade1' && <>1학년 <span className="text-rose-500">수학 실험실</span></>}
               {selectedCategory === 'grade2' && <>2학년 <span className="text-indigo-600">수학 실험실</span></>}
-              {selectedCategory === 'challenge' && <>🏆 <span className="aurora-gradient-text">&lt;챌린지 게임 모음&gt;</span></>}
+              {selectedCategory === 'challenge' && <>챌린지 <span className="aurora-gradient-text">게임 모음</span></>}
               {selectedCategory === 'all' && <>세원쌤의 <span className="aurora-gradient-text">수학 실험실</span></>}
             </h1>
             
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl mx-auto font-normal">
               {selectedCategory === 'grade1' && '입체도형 접기, 피자 자르기, 치즈 다각형 분할, 외각 모으기로 도형의 원리를 발견해보세요.'}
               {selectedCategory === 'grade2' && '손그림 마을 닮음 찾기, 밤하늘 외심 항성 탐사, 카메라 AR 피타고라스 실측을 체험해보세요.'}
-              {selectedCategory === 'challenge' && '체육대회 애국가·교가 타자 속도전과 외심 정밀 타겟전에서 실시간 최고 기록을 세워보세요!'}
+              {selectedCategory === 'challenge' && '타자 속도전과 외심 맞추기 등 다양한 미니게임에 도전해보세요.'}
               {selectedCategory === 'all' && '직접 도형을 만지고, 자르고, 측정하며 수학의 원리를 직관적으로 발견해보세요.'}
             </p>
           </section>
@@ -388,33 +388,33 @@ export default function MathLabClient({
                 {/* GATEWAY 3: CHALLENGE GAMES */}
                 <div
                   onClick={() => setSelectedCategory('challenge')}
-                  className="group cursor-pointer rounded-3xl p-6 sm:p-7 border transition-all duration-300 relative overflow-hidden flex flex-col justify-between bg-gradient-to-br from-white via-pink-50/20 to-purple-50/30 hover:bg-white border-purple-200/70 hover:border-purple-300 shadow-sm hover:shadow-lg hover:-translate-y-1"
+                  className="group cursor-pointer rounded-3xl p-6 sm:p-7 border transition-all duration-300 relative overflow-hidden flex flex-col justify-between bg-white/90 hover:bg-white border-slate-100 hover:border-purple-200 shadow-xs hover:shadow-lg hover:-translate-y-1"
                 >
-                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-pink-200/60 to-purple-200/60 rounded-full blur-2xl group-hover:scale-125 transition-transform" />
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-100/50 rounded-full blur-2xl group-hover:scale-125 transition-transform" />
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-100 via-purple-100 to-sky-100 border border-purple-200 flex items-center justify-center text-2xl shadow-xs group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-2xl shadow-xs group-hover:scale-110 transition-transform">
                         🏆
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-xs">
-                        체육대회 & 랭킹전
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200/60">
+                        {challengeCount}개 활동 수록
                       </span>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors mb-1.5 flex items-center gap-1.5">
-                      <span>&lt;챌린지 게임 모음&gt;</span>
+                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors mb-1.5">
+                      챌린지 게임
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
-                      반 대항전 체육대회 타자 속도전, 외심 정밀 조준전, 신규 챌린지 게임
+                      타자 속도전, 외심 정밀 탐사 등 가볍게 즐기는 미니게임
                     </p>
                   </div>
                   <div className="relative z-10 pt-2 flex items-center justify-between">
                     <span className="text-xs font-bold text-purple-600 group-hover:underline">
-                      챌린지 게임 바로보기
+                      게임 바로보기
                     </span>
                     <Link
                       href="/challenge"
                       onClick={(e) => e.stopPropagation()}
-                      className="text-xs px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white font-bold hover:opacity-90 transition-opacity shadow-xs"
+                      className="text-xs px-3 py-1.5 rounded-xl bg-purple-100/70 hover:bg-purple-600 text-purple-800 hover:text-white font-bold transition-colors"
                     >
                       전용 페이지 ➔
                     </Link>
@@ -492,26 +492,26 @@ export default function MathLabClient({
               )}
 
               {selectedCategory === 'challenge' && (
-                <div className="bg-gradient-to-r from-pink-50 via-purple-50 to-sky-50 border border-purple-200/80 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-tr from-pink-300/30 to-purple-300/30 rounded-full blur-3xl pointer-events-none" />
+                <div className="bg-gradient-to-r from-purple-50 via-sky-50 to-indigo-50 border border-purple-200/60 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-purple-200/30 rounded-full blur-3xl pointer-events-none" />
                   <div className="relative z-10 flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-pink-100 via-purple-100 to-sky-100 border border-purple-200 flex items-center justify-center text-3xl shadow-xs shrink-0">
+                    <div className="w-16 h-16 rounded-2xl bg-white border border-purple-200 flex items-center justify-center text-3xl shadow-xs shrink-0">
                       🏆
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-rose-500 to-purple-600 text-white">
-                          체육대회 & 이벤트
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-600 text-white">
+                          미니게임
                         </span>
                         <span className="text-xs font-bold text-purple-700">
-                          실시간 랭킹 시스템 연동
+                          수학 & 챌린지
                         </span>
                       </div>
-                      <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>&lt;챌린지 게임 모음&gt;</span>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        챌린지 게임 모음
                       </h2>
                       <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                        체육대회 애국가·교가 타자 속도전과 외심 정밀 타겟전에서 반 대항전 및 개인전 최고 기록을 세워보세요!
+                        타자 속도전과 외심 정밀 타겟전 등 가볍게 도전해보는 미니게임입니다.
                       </p>
                     </div>
                   </div>
@@ -566,12 +566,12 @@ export default function MathLabClient({
                   onClick={() => setSelectedCategory('challenge')}
                   className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                     selectedCategory === 'challenge'
-                      ? "bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white shadow-xs"
-                      : "bg-gradient-to-r from-pink-50 to-purple-50 text-purple-800 hover:from-pink-100 hover:to-purple-100 border border-purple-200/60"
+                      ? "bg-purple-600 text-white shadow-xs shadow-purple-600/20"
+                      : "bg-white text-purple-700 hover:bg-purple-50 border border-purple-200/60"
                   }`}
                 >
                   <span>🏆</span>
-                  <span>&lt;챌린지 게임 모음&gt; ({challengeCount})</span>
+                  <span>챌린지 게임 ({challengeCount})</span>
                 </button>
               </div>
 
@@ -579,7 +579,7 @@ export default function MathLabClient({
                 {selectedCategory === 'all' && `전체 ${MATH_APPS.length}개 프로그램`}
                 {selectedCategory === 'grade1' && "중학교 1학년 교육과정 연계"}
                 {selectedCategory === 'grade2' && "중학교 2학년 교육과정 연계"}
-                {selectedCategory === 'challenge' && "체육대회 & 실시간 랭킹 게임"}
+                {selectedCategory === 'challenge' && "미니게임 모음"}
               </span>
             </div>
           </section>
@@ -608,8 +608,8 @@ export default function MathLabClient({
             <div className="flex items-center gap-4 text-slate-400">
               <Link href="/grade1" className="hover:text-slate-700 transition-colors">중1 수학</Link>
               <Link href="/grade2" className="hover:text-slate-700 transition-colors">중2 수학</Link>
-              <Link href="/challenge" className="hover:text-purple-600 font-semibold transition-colors">챌린지 게임 모음</Link>
-              <Link href="/typing" className="hover:text-rose-600 transition-colors">체육대회 타자 속도전</Link>
+              <Link href="/challenge" className="hover:text-purple-600 font-semibold transition-colors">챌린지 게임</Link>
+              <Link href="/typing" className="hover:text-slate-700 transition-colors">타자 속도전</Link>
             </div>
           </div>
         </footer>

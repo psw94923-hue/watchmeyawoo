@@ -840,6 +840,13 @@ export default function TypingClient() {
             >
               실시간 랭킹 확인하기 🏆
             </button>
+
+            <a
+              href="/"
+              className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 text-xs text-neutral-400 hover:text-black font-semibold transition-colors pt-2"
+            >
+              <span>← 수학 실험실 홈으로 돌아가기</span>
+            </a>
           </div>
         </div>
       )}

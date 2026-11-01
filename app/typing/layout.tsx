@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "체육대회 모바일 타자 속도전",
-  description: "5단계 모바일 타자 빨리치기 경기 웹앱입니다.",
+  title: "타자 속도전",
+  description: "5단계 타자 빨리치기 챌린지 웹앱입니다.",
 };
 
 export const viewport: Viewport = {

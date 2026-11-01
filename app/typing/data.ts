@@ -1,4 +1,4 @@
-// 체육대회 모바일 타자 속도전 문장 데이터
+// 타자 속도전 문장 데이터
 
 export interface StageData {
   stage: number;
@@ -11,7 +11,7 @@ export const TUTORIAL_WORDS = [
   "고양이",
   "점심",
   "학교",
-  "체육대회",
+  "타자연습",
   "달리기",
   "선생님",
   "화이팅",

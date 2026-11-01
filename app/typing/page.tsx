@@ -1,8 +1,8 @@
 import TypingClient from "./TypingClient";
 
 export const metadata = {
-  title: "체육대회 모바일 타자 속도전",
-  description: "체육대회 타자 빨리치기 경기 5단계 챌린지 웹앱",
+  title: "타자 속도전",
+  description: "타자 속도와 정확도를 측정하는 5단계 챌린지 웹앱",
 };
 
 export default function TypingPage() {

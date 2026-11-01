@@ -36,14 +36,7 @@ export default function Navbar({
     { id: 'all', label: '전체 홈', href: '/', emoji: '🏠' },
     { id: 'grade1', label: '중1 수학', href: '/grade1', emoji: '🌸' },
     { id: 'grade2', label: '중2 수학', href: '/grade2', emoji: '🔮' },
-    { 
-      id: 'challenge', 
-      label: '챌린지 게임 모음', 
-      href: '/challenge', 
-      emoji: '🏆',
-      isSpecial: true,
-      badge: 'HOT'
-    },
+    { id: 'challenge', label: '챌린지 게임', href: '/challenge', emoji: '🏆' },
   ];
 
   return (
@@ -76,35 +69,12 @@ export default function Navbar({
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
 
-            if (item.isSpecial) {
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => handleNavClick('challenge', item.href)}
-                  className={`relative flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 shrink-0 whitespace-nowrap ${
-                    isActive
-                      ? "bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 text-white shadow-md shadow-purple-500/20"
-                      : "bg-gradient-to-r from-pink-50 via-purple-50 to-sky-50 text-purple-900 hover:from-pink-100 hover:via-purple-100 hover:to-sky-100 border border-purple-200/60"
-                  }`}
-                >
-                  <span className="text-sm shrink-0">{item.emoji}</span>
-                  <span className="whitespace-nowrap">{item.label}</span>
-                  {item.badge && !isActive && (
-                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white shrink-0">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            }
-
             return (
               <Link
                 key={item.id}
                 href={item.href}
                 onClick={() => handleNavClick(item.id as any, item.href)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shrink-0 whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shrink-0 whitespace-nowrap ${
                   isActive
                     ? "bg-slate-900 text-white shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-950 hover:bg-slate-100/70"
