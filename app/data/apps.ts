@@ -20,6 +20,20 @@ export const MATH_APPS: MathApp[] = [
   // 중학교 1학년 (Grade 1)
   // --------------------------------------------------------------------------
   {
+    id: 'prism',
+    title: '기둥의 겉넓이 탐구 (전개도 메이커)',
+    category: 'grade1',
+    gradeText: '중1·중2 수학',
+    unitText: '입체도형의 겉넓이',
+    description: '기둥을 3D로 직접 펼치고 분해해보며 밑넓이와 옆넓이의 원리를 깨닫고 학습지 실전 겉넓이 문제를 정복해보세요!',
+    emoji: '📦',
+    href: '/prism.html',
+    tags: ['전개도 펼치기', '기둥의 겉넓이', '클릭&확인', '3D 입체'],
+    isNew: true,
+    isFeatured: true,
+    auroraTheme: 'sky',
+  },
+  {
     id: 'polyhedron',
     title: '3D 정다면체 탐구 (3D 메이커)',
     category: 'grade1',
