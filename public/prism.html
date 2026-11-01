@@ -67,7 +67,11 @@ nav{display:flex;gap:.5rem}
 .face-edgeless{border-left:0;border-right:0}
 .face-label{font-size:.75rem;font-weight:700;white-space:nowrap;color:var(--face-edge)}
 .viewer-tag{position:absolute;top:.6rem;left:50%;transform:translateX(-50%);background:var(--card);border:2px solid var(--face-edge);border-radius:999px;padding:.2rem .8rem;font-weight:700;font-size:.85rem;margin:0}
-.viewer-hint{position:absolute;bottom:.5rem;right:.75rem;font-size:.75rem;color:var(--muted-foreground);margin:0}
+.viewer-ctrls{position:absolute;top:.6rem;right:.6rem;display:flex;gap:.35rem;z-index:10}
+.ctrl-btn{width:2.1rem;height:2.1rem;border-radius:.55rem;border:1.5px solid var(--border);background:var(--card);color:var(--foreground);font-size:1.1rem;font-weight:700;display:inline-grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 2px 4px rgba(0,0,0,0.06);transition:all .15s}
+.ctrl-btn:hover{border-color:var(--primary);background:var(--muted)}
+.ctrl-btn:active{transform:scale(0.92)}
+.viewer-hint{position:absolute;bottom:.5rem;right:.75rem;font-size:.75rem;color:var(--muted-foreground);margin:0;pointer-events:none}
 .fold-row{margin-top:.75rem;display:flex;align-items:center;gap:.75rem;font-size:.875rem;font-weight:700}
 .btn-row{margin-top:.5rem;display:flex;justify-content:center;gap:.5rem}
 .dims{margin-top:1rem;display:grid;gap:.75rem}
@@ -102,7 +106,12 @@ ul.parts .sub{font-size:.875rem;color:var(--muted-foreground)}
         <div class="viewer" id="viewer">
           <div class="scene" id="scene"></div>
           <p class="viewer-tag" id="cylTag" hidden></p>
-          <p class="viewer-hint">끌어서 돌려보기 · 더블클릭: 정면</p>
+          <div class="viewer-ctrls">
+            <button type="button" class="ctrl-btn" id="btnZoomIn" title="확대" aria-label="확대">＋</button>
+            <button type="button" class="ctrl-btn" id="btnZoomOut" title="축소" aria-label="축소">－</button>
+            <button type="button" class="ctrl-btn" id="btnResetView" title="원래대로" aria-label="원래대로">↺</button>
+          </div>
+          <p class="viewer-hint">한 손가락: 회전 · 두 손가락: 확대/축소</p>
         </div>
         <div class="fold-row">
           <span>접기</span>
@@ -173,6 +182,7 @@ const state={
   cyl:{r:2,h:5},
   t:0,
   rot:{x:-22,y:-28},
+  scale:1,
   picked:{},
   inputs:{base:"",lateral:"",total:""},
   checked:false
@@ -253,10 +263,15 @@ function buildSolid(solid,t,unit){
 const $=id=>document.getElementById(id);
 const scene=$("scene"),viewer=$("viewer"),cylTag=$("cylTag");
 
+function updateSceneTransform(){
+  const k=1-state.t;
+  scene.style.transform=`scale3d(${state.scale},${state.scale},${state.scale}) rotateX(${state.rot.x*k}deg) rotateY(${state.rot.y*k}deg)`;
+}
+
 function renderViewer(){
-  const solid=currentSolid(),t=state.t,unit=currentUnit(),k=1-t;
+  const solid=currentSolid(),t=state.t,unit=currentUnit();
   const{root,rootW,rootH,shiftX}=buildSolid(solid,t,unit);
-  scene.style.transform=`rotateX(${state.rot.x*k}deg) rotateY(${state.rot.y*k}deg)`;
+  updateSceneTransform();
   scene.innerHTML="";
   const pos=document.createElement("div");
   Object.assign(pos.style,{position:"absolute",left:"0",top:"0",transformStyle:"preserve-3d",transform:`translate(${shiftX}px, ${-rootH/2}px)`});
@@ -272,7 +287,7 @@ function renderNav(){
   [["box","사각기둥"],["tri","삼각기둥"],["cyl","원기둥"]].forEach(([k,l])=>{
     const b=document.createElement("button");
     b.className="chip"+(state.kind===k?" chip-on":"");b.textContent=l;
-    b.onclick=()=>{state.kind=k;state.t=0;$("foldSlider").value=0;resetAnswers();renderAll();};
+    b.onclick=()=>{state.kind=k;state.t=0;state.scale=1;state.rot={x:-22,y:-28};$("foldSlider").value=0;resetAnswers();renderAll();};
     nav.appendChild(b);
   });
 }
@@ -407,18 +422,114 @@ $("foldSlider").addEventListener("input",e=>{state.t=+e.target.value;renderViewe
 $("btnFold").onclick=()=>{state.t=0;$("foldSlider").value=0;renderViewer();renderStep2();};
 $("btnNet").onclick=()=>{state.t=1;$("foldSlider").value=1;renderViewer();renderStep2();};
 
-let drag=null;
-viewer.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};if(e.target.setPointerCapture)try{e.target.setPointerCapture(e.pointerId);}catch(_){}});
-viewer.addEventListener("pointermove",e=>{
-  if(!drag)return;
-  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
-  drag={x:e.clientX,y:e.clientY};
+// 줌 컨트롤 버튼
+$("btnZoomIn").onclick=e=>{e.stopPropagation();state.scale=Math.min(3.0,state.scale*1.2);updateSceneTransform();};
+$("btnZoomOut").onclick=e=>{e.stopPropagation();state.scale=Math.max(0.4,state.scale/1.2);updateSceneTransform();};
+$("btnResetView").onclick=e=>{e.stopPropagation();state.scale=1;state.rot={x:-22,y:-28};updateSceneTransform();};
+
+// 터치 제스처: 한 손가락 드래그(회전), 두 손가락 핀치/스와이프(확대/축소)
+let touchMode=null;
+let lastTouchPos=null;
+let lastTouchDist=null;
+let lastTouchCenterY=null;
+
+viewer.addEventListener("touchstart",e=>{
+  if(e.target.closest(".ctrl-btn"))return;
+  if(e.touches.length===1){
+    touchMode="rotate";
+    lastTouchPos={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  }else if(e.touches.length>=2){
+    touchMode="zoom";
+    const t1=e.touches[0],t2=e.touches[1];
+    lastTouchDist=Math.hypot(t1.clientX-t2.clientX,t1.clientY-t2.clientY);
+    lastTouchCenterY=(t1.clientY+t2.clientY)/2;
+  }
+},{passive:false});
+
+viewer.addEventListener("touchmove",e=>{
+  if(!touchMode)return;
+  if(e.cancelable)e.preventDefault();
+
+  if(touchMode==="rotate"&&e.touches.length===1&&lastTouchPos){
+    const t=e.touches[0];
+    const dx=t.clientX-lastTouchPos.x;
+    const dy=t.clientY-lastTouchPos.y;
+    lastTouchPos={x:t.clientX,y:t.clientY};
+    state.rot.x=Math.max(-89,Math.min(89,state.rot.x-dy*0.5));
+    state.rot.y+=dx*0.5;
+    updateSceneTransform();
+  }else if(e.touches.length>=2){
+    const t1=e.touches[0],t2=e.touches[1];
+    const currDist=Math.hypot(t1.clientX-t2.clientX,t1.clientY-t2.clientY);
+    const currCenterY=(t1.clientY+t2.clientY)/2;
+
+    if(lastTouchDist!==null&&lastTouchDist>0){
+      const distDelta=currDist-lastTouchDist;
+      const centerDeltaY=lastTouchCenterY!==null?(currCenterY-lastTouchCenterY):0;
+
+      if(Math.abs(distDelta)>1.5){
+        const factor=currDist/lastTouchDist;
+        state.scale=Math.max(0.4,Math.min(3.0,state.scale*factor));
+      }else if(Math.abs(centerDeltaY)>2){
+        const factor=1-centerDeltaY*0.006;
+        state.scale=Math.max(0.4,Math.min(3.0,state.scale*factor));
+      }
+      updateSceneTransform();
+    }
+    lastTouchDist=currDist;
+    lastTouchCenterY=currCenterY;
+  }
+},{passive:false});
+
+const endTouch=e=>{
+  if(e.touches.length===0){
+    touchMode=null;
+    lastTouchPos=null;
+    lastTouchDist=null;
+    lastTouchCenterY=null;
+  }else if(e.touches.length===1){
+    touchMode="rotate";
+    lastTouchPos={x:e.touches[0].clientX,y:e.touches[0].clientY};
+    lastTouchDist=null;
+    lastTouchCenterY=null;
+  }
+};
+viewer.addEventListener("touchend",endTouch);
+viewer.addEventListener("touchcancel",endTouch);
+
+// 마우스 드래그 (PC 지원)
+let mouseDrag=null;
+viewer.addEventListener("mousedown",e=>{
+  if(e.target.closest(".ctrl-btn"))return;
+  mouseDrag={x:e.clientX,y:e.clientY};
+});
+window.addEventListener("mousemove",e=>{
+  if(!mouseDrag)return;
+  const dx=e.clientX-mouseDrag.x;
+  const dy=e.clientY-mouseDrag.y;
+  mouseDrag={x:e.clientX,y:e.clientY};
   state.rot.x=Math.max(-89,Math.min(89,state.rot.x-dy*0.5));
   state.rot.y+=dx*0.5;
-  renderViewer();
+  updateSceneTransform();
 });
-viewer.addEventListener("pointerup",()=>drag=null);
-viewer.addEventListener("dblclick",()=>{state.rot={x:0,y:0};renderViewer();});
+window.addEventListener("mouseup",()=>{mouseDrag=null;});
+
+// 마우스 휠 줌 (PC / 트랙패드 지원)
+viewer.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const delta=e.deltaY;
+  const factor=delta>0?0.93:1.07;
+  state.scale=Math.max(0.4,Math.min(3.0,state.scale*factor));
+  updateSceneTransform();
+},{passive:false});
+
+// 더블클릭 시 원래대로
+viewer.addEventListener("dblclick",e=>{
+  if(e.target.closest(".ctrl-btn"))return;
+  state.rot={x:-22,y:-28};
+  state.scale=1;
+  updateSceneTransform();
+});
 
 renderAll();
 </script>
