@@ -1,1172 +1,426 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>기둥의 겉넓이 탐구실 | 세원쌤의 수학 실험실</title>
-
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Three.js (r128) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- OrbitControls -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <!-- GSAP -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Pretendard Font -->
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
-
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      margin: 0;
-      background: #ffffff;
-      color: #0f172a;
-      overflow-x: hidden;
-      min-height: 100vh;
-    }
-    .aurora-bg {
-      background: radial-gradient(circle at 10% 20%, rgba(254, 205, 211, 0.25) 0%, transparent 40%),
-                  radial-gradient(circle at 90% 15%, rgba(199, 210, 254, 0.28) 0%, transparent 45%),
-                  radial-gradient(circle at 50% 85%, rgba(186, 230, 253, 0.22) 0%, transparent 50%),
-                  #ffffff;
-    }
-    .aurora-gradient-text {
-      background: linear-gradient(135deg, #7c3aed 0%, #db2777 50%, #2563eb 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .aurora-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
-    }
-    .option-btn {
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .option-btn:hover {
-      transform: translateY(-1px);
-    }
-    .option-btn.selected-correct {
-      background: #ecfdf5 !important;
-      border-color: #10b981 !important;
-      color: #047857 !important;
-      font-weight: 700;
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
-    }
-    .option-btn.selected-wrong {
-      background: #fef2f2 !important;
-      border-color: #f87171 !important;
-      color: #b91c1c !important;
-      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
-    }
-    /* Custom Range Slider */
-    input[type=range] {
-      accent-color: #7c3aed;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기둥 펼치기 탐구실 · 겉넓이</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --radius:.9rem;
+  --background:oklch(0.975 0.015 85);
+  --foreground:oklch(0.26 0.05 255);
+  --card:oklch(0.995 0.005 85);
+  --primary:oklch(0.55 0.13 235);
+  --primary-foreground:oklch(0.99 0 0);
+  --muted:oklch(0.95 0.02 85);
+  --muted-foreground:oklch(0.5 0.03 255);
+  --accent:oklch(0.9 0.08 85);
+  --destructive:oklch(0.58 0.2 25);
+  --success:oklch(0.55 0.14 150);
+  --face-base:oklch(0.76 0.14 35);
+  --face-side:oklch(0.78 0.1 200);
+  --face-edge:oklch(0.3 0.05 255);
+  --border:oklch(0.88 0.03 85);
+  --input:oklch(0.88 0.03 85);
+  --shadow-card:0 4px 0 oklch(0.88 0.03 85);
+}
+*{box-sizing:border-box;border-color:var(--border)}
+body{margin:0;font-family:"Jua","Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--background);color:var(--foreground)}
+main{min-height:100vh;padding:1.5rem 1rem}
+@media(min-width:768px){main{padding:1.5rem 2rem}}
+.wrap{max-width:72rem;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.75rem;margin-bottom:1.25rem}
+h1{font-size:1.9rem;margin:.15rem 0 0}
+@media(min-width:768px){h1{font-size:2.25rem}}
+.eyebrow{font-size:.875rem;font-weight:700;color:var(--primary);margin:0}
+nav{display:flex;gap:.5rem}
+.grid{display:grid;gap:1.25rem}
+@media(min-width:1024px){.grid{grid-template-columns:1.35fr 1fr}}
+.card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-card);padding:1rem}
+.locked{opacity:.6}
+.chip{border:2px solid var(--border);background:var(--card);border-radius:999px;padding:.35rem .9rem;font-weight:600;font-family:inherit;font-size:.95rem;cursor:pointer;transition:all .15s;color:inherit}
+.chip:hover{border-color:var(--primary)}
+.chip-on{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.chip-good{background:color-mix(in oklab,var(--success) 18%,var(--card));border-color:var(--success)}
+.chip-bad{background:color-mix(in oklab,var(--destructive) 14%,var(--card));border-color:var(--destructive)}
+.step-title{font-size:1.25rem;display:flex;gap:.5rem;align-items:center;margin:0}
+.step-title b{display:inline-grid;place-items:center;width:1.8rem;height:1.8rem;border-radius:999px;background:var(--accent);font-weight:400}
+.field{display:flex;flex-direction:column;gap:.25rem;font-size:.9rem}
+.slider{accent-color:var(--primary);width:100%}
+.dot{display:inline-block;width:.8rem;height:.8rem;border-radius:3px;vertical-align:middle;border:1.5px solid var(--face-edge)}
+.dot-base{background:var(--face-base)}.dot-side{background:var(--face-side)}
+.answer-row{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.answer-row>span:first-child{width:7rem;font-weight:700}
+.answer-input{width:6rem;border:2px solid var(--input);border-radius:.5rem;padding:.3rem .5rem;background:var(--card);text-align:right;font-weight:700;font-family:inherit;font-size:1rem;color:inherit}
+.answer-input.is-good{border-color:var(--success)}
+.answer-input.is-bad{border-color:var(--destructive)}
+.btn-primary{background:var(--primary);color:var(--primary-foreground);border:none;border-radius:.6rem;padding:.55rem;font-weight:700;margin-top:.6rem;width:100%;font-family:inherit;font-size:1rem;cursor:pointer}
+.note{background:var(--accent);border-radius:.7rem;padding:.9rem;border:2px dashed var(--face-edge);margin-top:.75rem}
+.note p{margin:.25rem 0}
+.viewer{position:relative;height:440px;perspective:1400px;overflow:hidden;touch-action:none;cursor:grab;border-radius:.7rem;background-color:var(--muted);background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:20px 20px}
+.scene{position:absolute;left:50%;top:50%;transform-style:preserve-3d}
+.face{position:absolute;inset:0;border:1.5px solid var(--face-edge);backface-visibility:visible;display:grid;place-items:center;opacity:.93}
+.face-base{background:var(--face-base)}.face-side{background:var(--face-side)}
+.face-edgeless{border-left:0;border-right:0}
+.face-label{font-size:.75rem;font-weight:700;white-space:nowrap;color:var(--face-edge)}
+.viewer-tag{position:absolute;top:.6rem;left:50%;transform:translateX(-50%);background:var(--card);border:2px solid var(--face-edge);border-radius:999px;padding:.2rem .8rem;font-weight:700;font-size:.85rem;margin:0}
+.viewer-hint{position:absolute;bottom:.5rem;right:.75rem;font-size:.75rem;color:var(--muted-foreground);margin:0}
+.fold-row{margin-top:.75rem;display:flex;align-items:center;gap:.75rem;font-size:.875rem;font-weight:700}
+.btn-row{margin-top:.5rem;display:flex;justify-content:center;gap:.5rem}
+.dims{margin-top:1rem;display:grid;gap:.75rem}
+@media(min-width:640px){.dims{grid-template-columns:repeat(3,1fr)}.dims .span2{grid-column:span 2}}
+select.rounded{border:2px solid var(--input);border-radius:.5rem;background:var(--card);padding:.35rem .5rem;font-family:inherit;font-size:.95rem;color:inherit}
+.legend{margin-top:.5rem;font-size:.75rem;color:var(--muted-foreground)}
+.stack{display:flex;flex-direction:column;gap:1rem}
+.q{margin-top:.75rem}
+.q p{font-weight:700;margin:0}
+.q .opts{margin-top:.375rem;display:flex;flex-wrap:wrap;gap:.5rem}
+.fb{margin:.25rem 0 0;font-size:.875rem}
+.fb.good{color:var(--success)}.fb.bad{color:var(--destructive)}
+.hint-sm{font-size:.875rem;color:var(--muted-foreground)}
+ul.parts{margin:.75rem 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.5rem}
+ul.parts li{display:flex;align-items:center;gap:.75rem;border-radius:.7rem;background:var(--muted);padding:.625rem}
+ul.parts p{margin:0}
+ul.parts .sub{font-size:.875rem;color:var(--muted-foreground)}
+</style>
 </head>
-<body class="aurora-bg flex flex-col min-h-screen">
-
-  <!-- TOP NAVIGATION BAR -->
-  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <a href="/" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
-          <span>←</span>
-          <span class="hidden sm:inline">실험실</span><span>홈</span>
-        </a>
-        <div class="h-4 w-px bg-slate-200"></div>
-        <div class="flex items-center gap-2">
-          <span class="text-xl">📦</span>
-          <div>
-            <h1 class="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
-              기둥의 <span class="aurora-gradient-text">겉넓이 탐구실</span>
-            </h1>
-            <p class="text-[10px] text-slate-400 font-medium -mt-0.5 hidden xs:block">
-              전개도를 펼치고 분해하여 겉넓이의 원리 깨우치기
-            </p>
-          </div>
-        </div>
+<body>
+<main>
+  <div class="wrap">
+    <header>
+      <div>
+        <p class="eyebrow">입체도형의 겉넓이 · 기둥</p>
+        <h1>기둥 펼치기 탐구실</h1>
       </div>
-
-      <!-- SHAPE SWITCHER TABS -->
-      <div class="flex items-center p-1 bg-slate-100/80 rounded-2xl border border-slate-200/60" id="shapeTabs">
-        <button onclick="switchShape('triangular')" id="tab-triangular" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-900 shadow-xs">
-          📐 삼각기둥
-        </button>
-        <button onclick="switchShape('cylinder')" id="tab-cylinder" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-600 hover:text-slate-900">
-          🥫 원기둥
-        </button>
-        <button onclick="switchShape('rectangular')" id="tab-rectangular" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-600 hover:text-slate-900">
-          📦 사각기둥
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN CONTAINER (2 COLUMNS ON DESKTOP, STACK ON MOBILE) -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-    <!-- LEFT COLUMN: 3D VIEWER & UNFOLD CONTROLS (7 COLS) -->
-    <div class="lg:col-span-7 flex flex-col gap-4 sticky top-20">
-      
-      <!-- 3D CANVAS CARD -->
-      <div class="aurora-card rounded-3xl p-3 sm:p-4 relative overflow-hidden flex flex-col">
-        <!-- Canvas Header Overlay -->
-        <div class="flex items-center justify-between z-10 mb-2 px-2">
-          <div class="flex items-center gap-2">
-            <span id="shapeBadge" class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200/60">
-              학습지 문제 1 · 직각삼각기둥
-            </span>
-            <span class="text-xs text-slate-400 font-medium hidden sm:inline">마우스/터치로 360° 회전</span>
-          </div>
-
-          <div class="flex items-center gap-1.5">
-            <button onclick="resetCamera()" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-semibold shadow-2xs transition-colors" title="정면 보기 복귀">
-              정면 ⟲
-            </button>
-          </div>
+      <nav aria-label="입체도형 선택" id="kindNav"></nav>
+    </header>
+    <div class="grid">
+      <section class="card">
+        <div class="viewer" id="viewer">
+          <div class="scene" id="scene"></div>
+          <p class="viewer-tag" id="cylTag" hidden></p>
+          <p class="viewer-hint">끌어서 돌려보기 · 더블클릭: 정면</p>
         </div>
-
-        <!-- THREE.JS CANVAS CONTAINER -->
-        <div id="canvas-container" class="w-full h-[360px] sm:h-[430px] rounded-2xl bg-gradient-to-b from-slate-50/60 via-white to-purple-50/30 relative overflow-hidden border border-slate-100 flex items-center justify-center">
-          <canvas id="three-canvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
-          
-          <!-- Dimensions & Color Legend Overlay -->
-          <div class="absolute bottom-3 left-3 flex items-center gap-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/70 text-[11px] font-bold text-slate-600 shadow-2xs pointer-events-none">
-            <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-md bg-[#FF8A9E] border border-rose-300"></span>
-              <span>밑면 (2개)</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-md bg-[#4FD1C5] border border-teal-300"></span>
-              <span>옆면</span>
-            </div>
-          </div>
-
-          <!-- Real-time Unfold State Indicator -->
-          <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-extrabold text-slate-700 shadow-2xs">
-            전개 상태: <span id="unfoldPercentText" class="text-purple-600">0% (입체)</span>
-          </div>
+        <div class="fold-row">
+          <span>접기</span>
+          <input aria-label="펼치기" type="range" min="0" max="1" step="0.01" value="0" id="foldSlider" class="slider" style="flex:1">
+          <span>펼치기</span>
         </div>
-
-        <!-- UNFOLD INTERACTION CONTROLS -->
-        <div class="mt-4 px-2 flex flex-col gap-3">
-          <!-- Slider Control -->
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-bold text-slate-500 whitespace-nowrap">접기 📦</span>
-            <input 
-              type="range" 
-              id="unfoldSlider" 
-              min="0" 
-              max="100" 
-              value="0" 
-              class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-              oninput="handleSliderChange(this.value)"
-            />
-            <span class="text-xs font-bold text-purple-700 whitespace-nowrap">📖 펼치기</span>
-          </div>
-
-          <!-- Quick Action Buttons -->
-          <div class="grid grid-cols-3 gap-2">
-            <button onclick="animateFold(0)" class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
-              <span>📦</span>
-              <span>착 접기 (입체)</span>
-            </button>
-            <button onclick="animateFold(100)" class="py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/60 text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
-              <span>📖</span>
-              <span>스르륵 펼치기</span>
-            </button>
-            <button onclick="toggleExplode()" id="explodeBtn" class="py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
-              <span>🧩</span>
-              <span id="explodeBtnText">면 분해하기</span>
-            </button>
-          </div>
+        <div class="btn-row">
+          <button class="chip" id="btnFold">입체로</button>
+          <button class="chip" id="btnNet">전개도로</button>
         </div>
-
-        <!-- SHAPE DIMENSIONS BOX -->
-        <div id="dimensionsBox" class="mt-3 p-3 bg-purple-50/50 rounded-2xl border border-purple-100 flex items-center justify-between text-xs text-slate-700 font-semibold">
-          <span id="dimensionSpecs">📐 밑면 직각삼각형: 6cm, 8cm, 10cm | 기둥 높이: 10cm</span>
-          <span class="text-[11px] font-bold text-purple-600 bg-white px-2 py-0.5 rounded-lg border border-purple-200">단위: cm</span>
+        <div class="dims" id="dims"></div>
+        <p class="legend">단위: cm · <span class="dot dot-base"></span> 밑면 <span class="dot dot-side"></span> 옆면</p>
+      </section>
+      <section class="stack">
+        <div class="card">
+          <h2 class="step-title"><b>1</b> 펼쳐 보고 관찰하기</h2>
+          <div id="quiz"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- RIGHT COLUMN: 3-STEP PEDAGOGICAL WORKBOOK (5 COLS) -->
-    <div class="lg:col-span-5 flex flex-col gap-4">
-
-      <!-- STEP 1: 펼쳐 보고 관찰하기 (클릭 & 확인 퀴즈) -->
-      <section class="aurora-card rounded-3xl p-5 transition-all" id="step1Card">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black text-sm">
-              1
-            </div>
-            <h2 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-              펼쳐 보고 관찰하기
-            </h2>
-          </div>
-          <span id="step1Badge" class="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
-            진행 중
-          </span>
+        <div class="card" id="step2card">
+          <h2 class="step-title"><b>2</b> 분해하기</h2>
+          <div id="step2"></div>
         </div>
-
-        <!-- Question 1 -->
-        <div class="mb-5 pb-5 border-b border-slate-100">
-          <p class="text-xs sm:text-sm font-bold text-slate-800 mb-2.5 flex items-center gap-1.5">
-            <span class="text-purple-600">Q1.</span>
-            <span>전개도에서 밑면은 몇 개인가요?</span>
-          </p>
-          <div class="grid grid-cols-3 gap-2" id="q1Options">
-            <button onclick="checkQ1(1)" class="option-btn py-2.5 px-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              1개
-            </button>
-            <button onclick="checkQ1(2)" class="option-btn py-2.5 px-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              2개
-            </button>
-            <button onclick="checkQ1(4)" class="option-btn py-2.5 px-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              4개
-            </button>
-          </div>
-          <div id="q1Feedback" class="hidden mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed"></div>
-        </div>
-
-        <!-- Question 2 -->
-        <div class="mb-5 pb-5 border-b border-slate-100">
-          <p class="text-xs sm:text-sm font-bold text-slate-800 mb-2.5 flex items-center gap-1.5">
-            <span class="text-purple-600">Q2.</span>
-            <span id="q2QuestionText">옆면들을 이어 붙인 큰 직사각형의 가로 길이는?</span>
-          </p>
-          <div class="grid grid-cols-3 gap-2" id="q2Options">
-            <button onclick="checkQ2('area')" class="option-btn py-2.5 px-2 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              밑면의 넓이
-            </button>
-            <button onclick="checkQ2('perimeter')" class="option-btn py-2.5 px-2 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              밑면의 둘레
-            </button>
-            <button onclick="checkQ2('height')" class="option-btn py-2.5 px-2 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              기둥의 높이
-            </button>
-          </div>
-          <div id="q2Feedback" class="hidden mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed"></div>
-        </div>
-
-        <!-- Question 3 (원기둥 전용 질문) -->
-        <div id="q3Block" class="hidden mb-2">
-          <p class="text-xs sm:text-sm font-bold text-slate-800 mb-2.5 flex items-center gap-1.5">
-            <span class="text-purple-600">Q3.</span>
-            <span>원기둥 옆면 직사각형의 가로 길이를 식으로 나타내면?</span>
-          </p>
-          <div class="grid grid-cols-3 gap-2" id="q3Options">
-            <button onclick="checkQ3('2pir')" class="option-btn py-2.5 px-2 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              2πr (원둘레)
-            </button>
-            <button onclick="checkQ3('pir2')" class="option-btn py-2.5 px-2 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              πr² (원넓이)
-            </button>
-            <button onclick="checkQ3('2r')" class="option-btn py-2.5 px-2 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">
-              2r (지름)
-            </button>
-          </div>
-          <div id="q3Feedback" class="hidden mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed"></div>
+        <div class="card" id="step3card">
+          <h2 class="step-title"><b>3</b> 겉넓이 구하기</h2>
+          <div id="step3"></div>
         </div>
       </section>
-
-      <!-- STEP 2: 분해하기 (수학노트 공식 완성) -->
-      <section class="aurora-card rounded-3xl p-5 transition-all" id="step2Card">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-black text-sm">
-              2
-            </div>
-            <h2 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-              분해하고 공식 완성하기
-            </h2>
-          </div>
-          <span id="step2Badge" class="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
-            1단계 통과 후 개방
-          </span>
-        </div>
-
-        <div id="step2Content" class="opacity-50 pointer-events-none transition-opacity">
-          <!-- Mathematical Formula Note (from PDF 2) -->
-          <div class="p-4 bg-gradient-to-r from-purple-50 via-pink-50 to-sky-50 rounded-2xl border border-purple-200/70 mb-4">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-sm">📝</span>
-              <span class="text-xs font-extrabold text-purple-900">수학노트 · 기둥의 겉넓이 원리</span>
-            </div>
-            <div class="bg-white p-3 rounded-xl border border-purple-100 text-center font-bold text-xs sm:text-sm text-slate-800 shadow-2xs">
-              <span class="text-slate-900 font-extrabold">(기둥의 겉넓이)</span> = 
-              <span class="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200">( 밑넓이 ) × 2</span>
-              + 
-              <span class="text-teal-700 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-200">( 옆넓이 )</span>
-            </div>
-            <p class="text-[11px] text-slate-500 mt-2 text-center">
-              💡 옆넓이 = <strong class="text-purple-700">(밑면의 둘레) × (기둥의 높이)</strong>
-            </p>
-          </div>
-
-          <button onclick="proceedToStep3()" class="w-full py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs sm:text-sm transition-all active:scale-95 shadow-md shadow-purple-500/20">
-            이해했어요! 3단계 겉넓이 구하러 가기 ➔
-          </button>
-        </div>
-      </section>
-
-      <!-- STEP 3: 겉넓이 구하기 (학습지 실전 계산 & 채점) -->
-      <section class="aurora-card rounded-3xl p-5 transition-all" id="step3Card">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-sm">
-              3
-            </div>
-            <h2 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-              겉넓이 직접 구해보기
-            </h2>
-          </div>
-          <span id="step3Badge" class="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
-            2단계 완료 후 개방
-          </span>
-        </div>
-
-        <div id="step3Content" class="opacity-50 pointer-events-none transition-opacity">
-          <!-- Problem Box Dynamic per Shape -->
-          <div id="calcProblemContainer" class="flex flex-col gap-3.5 mb-4">
-            <!-- Dynamically Rendered Calculation Inputs -->
-          </div>
-
-          <button onclick="checkStep3Answer()" id="step3CheckBtn" class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm transition-all active:scale-95 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2">
-            <span>정답 채점하기</span>
-            <span>✓</span>
-          </button>
-
-          <div id="step3ResultBanner" class="hidden mt-3 p-3.5 rounded-2xl text-center text-xs font-bold"></div>
-        </div>
-      </section>
-
     </div>
-  </main>
+  </div>
+</main>
+<script>
+"use strict";
+// ---------- 수학 로직 (앱과 동일) ----------
+function areas(s){
+  if(s.kind==="box"){const base=s.w*s.d,lateral=2*(s.w+s.d)*s.h;return{base,lateral,total:base*2+lateral,pi:false};}
+  if(s.kind==="tri"){const c=Math.hypot(s.p,s.q),base=s.p*s.q/2,lateral=(s.p+s.q+c)*s.h;return{base,lateral,total:base*2+lateral,pi:false};}
+  const base=s.r*s.r,lateral=2*s.r*s.h;return{base,lateral,total:base*2+lateral,pi:true};
+}
+function basePerimeter(s){
+  if(s.kind==="box")return ""+2*(s.w+s.d);
+  if(s.kind==="tri")return ""+(s.p+s.q+Math.hypot(s.p,s.q));
+  return (2*s.r)+"π";
+}
+function isCorrect(input,answer){const v=Number(String(input).trim());return String(input).trim()!==""&&Number.isFinite(v)&&Math.abs(v-answer)<1e-6;}
+const fmt=n=>Number.isInteger(n)?""+n:n.toFixed(2);
 
-  <!-- JAVASCRIPT LOGIC (THREE.JS UNFOLD ENGINE & PEDAGOGY) -->
-  <script>
-    // ------------------------------------------------------------------------
-    // 1. STATE MANAGEMENT
-    // ------------------------------------------------------------------------
-    let currentShape = 'triangular'; // 'triangular' | 'cylinder' | 'rectangular'
-    let unfoldProgress = 0; // 0 (folded 3D) to 1 (flat 2D net)
-    let isExploded = false; // whether pieces are detached
+const TRI=[[3,4],[6,8],[5,12]];
+const QUESTIONS={
+  box:[
+    {q:"전개도에서 밑면은 몇 개인가요?",options:["1개","2개","4개"],answer:1,why:"위아래 두 밑면은 서로 합동이에요."},
+    {q:"옆면 4개를 이어 붙인 큰 직사각형의 가로 길이는?",options:["밑면의 넓이","밑면의 둘레","기둥의 높이"],answer:1,why:"옆면이 밑면을 한 바퀴 감싸니까 밑면의 둘레와 같아요."}
+  ],
+  tri:[
+    {q:"삼각기둥의 옆면은 몇 개인가요?",options:["2개","3개","5개"],answer:1,why:"밑면 삼각형의 변 하나마다 옆면이 하나씩 있어요."},
+    {q:"옆면 전체 직사각형의 세로 길이는?",options:["기둥의 높이","밑변의 길이","빗변의 길이"],answer:0,why:"모든 옆면의 세로는 기둥의 높이예요."}
+  ],
+  cyl:[
+    {q:"원기둥의 옆면을 펼치면 어떤 도형인가요?",options:["원","부채꼴","직사각형"],answer:2,why:"곡면을 끝까지 펴면 직사각형이 돼요."},
+    {q:"그 직사각형의 가로 길이는?",options:["밑면 원의 반지름","밑면 원의 둘레 (2πr)","원기둥의 높이"],answer:1,why:"옆면이 원을 한 바퀴 감싸니까 원의 둘레와 같아요."}
+  ]
+};
 
-    // Step Mastery State
-    let step1_q1_done = false;
-    let step1_q2_done = false;
-    let step1_q3_done = false;
-    let step2_unlocked = false;
-    let step3_unlocked = false;
+// ---------- 상태 ----------
+const state={
+  kind:"box",
+  box:{w:4,d:3,h:5},
+  tri:{idx:0,h:6},
+  cyl:{r:2,h:5},
+  t:0,
+  rot:{x:-22,y:-28},
+  picked:{},
+  inputs:{base:"",lateral:"",total:""},
+  checked:false
+};
+function currentSolid(){
+  if(state.kind==="box")return{kind:"box",...state.box};
+  if(state.kind==="tri")return{kind:"tri",p:TRI[state.tri.idx][0],q:TRI[state.tri.idx][1],h:state.tri.h};
+  return{kind:"cyl",...state.cyl};
+}
+function currentUnit(){
+  const k=state.kind;
+  const netW=k==="box"?2*(state.box.w+state.box.d):k==="tri"?TRI[state.tri.idx][0]+TRI[state.tri.idx][1]+Math.hypot(...TRI[state.tri.idx]):2*Math.PI*state.cyl.r;
+  const netH=k==="box"?state.box.h+2*state.box.d:k==="tri"?state.tri.h+2*TRI[state.tri.idx][1]:state.cyl.h+4*state.cyl.r;
+  return Math.min(560/netW,380/netH,34);
+}
 
-    // ------------------------------------------------------------------------
-    // 2. THREE.JS SCENE SETUP
-    // ------------------------------------------------------------------------
-    const container = document.getElementById('canvas-container');
-    const canvas = document.getElementById('three-canvas');
+// ---------- 3D 면 생성 ----------
+function makeFace(o){
+  const el=document.createElement("div");
+  el.style.position="absolute";
+  el.style.width=o.w+"px";
+  el.style.height=o.h+"px";
+  el.style.transformStyle="preserve-3d";
+  if(o.attach==="right")Object.assign(el.style,{left:"100%",top:"0",transformOrigin:"left center",transform:`rotateY(${o.angle}deg)`});
+  if(o.attach==="top")Object.assign(el.style,{left:(o.offsetX||0)+"px",top:(-o.h)+"px",transformOrigin:"center bottom",transform:`rotateX(${o.angle}deg)`});
+  if(o.attach==="bottom")Object.assign(el.style,{left:(o.offsetX||0)+"px",top:"100%",transformOrigin:"center top",transform:`rotateX(${-o.angle}deg)`});
+  const inner=document.createElement("div");
+  inner.className=`face face-${o.tone}${o.edgeless?" face-edgeless":""}`;
+  if(o.clip)inner.style.clipPath=o.clip;
+  if(o.label){const s=document.createElement("span");s.className="face-label";s.textContent=o.label;inner.appendChild(s);}
+  el.appendChild(inner);
+  (o.children||[]).forEach(c=>el.appendChild(c));
+  return el;
+}
+function buildSolid(solid,t,unit){
+  const k=1-t;
+  let root,rootW,rootH;
+  if(solid.kind==="box"){
+    const W=solid.w*unit,D=solid.d*unit,H=solid.h*unit,a=90*k;
+    rootW=W;rootH=H;
+    root=makeFace({w:W,h:H,attach:"root",angle:0,tone:"side",label:`${solid.w}×${solid.h}`,children:[
+      makeFace({w:W,h:D,attach:"top",angle:a,tone:"base",label:"밑면"}),
+      makeFace({w:W,h:D,attach:"bottom",angle:a,tone:"base",label:"밑면"}),
+      makeFace({w:D,h:H,attach:"right",angle:a,tone:"side",label:`${solid.d}×${solid.h}`,children:[
+        makeFace({w:W,h:H,attach:"right",angle:a,tone:"side",label:`${solid.w}×${solid.h}`,children:[
+          makeFace({w:D,h:H,attach:"right",angle:a,tone:"side",label:`${solid.d}×${solid.h}`})
+        ]})
+      ]})
+    ]});
+  }else if(solid.kind==="tri"){
+    const P=solid.p*unit,Q=solid.q*unit,H=solid.h*unit,c=Math.hypot(solid.p,solid.q),C=c*unit;
+    rootW=P;rootH=H;
+    const innerQC=Math.atan(solid.p/solid.q)*180/Math.PI;
+    root=makeFace({w:P,h:H,attach:"root",angle:0,tone:"side",label:`${solid.p}×${solid.h}`,children:[
+      makeFace({w:P,h:Q,attach:"top",angle:90*k,tone:"base",clip:"polygon(0 100%, 100% 100%, 100% 0)"}),
+      makeFace({w:P,h:Q,attach:"bottom",angle:90*k,tone:"base",clip:"polygon(0 0, 100% 0, 100% 100%)"}),
+      makeFace({w:Q,h:H,attach:"right",angle:90*k,tone:"side",label:`${solid.q}×${solid.h}`,children:[
+        makeFace({w:C,h:H,attach:"right",angle:(180-innerQC)*k,tone:"side",label:`${c}×${solid.h}`})
+      ]})
+    ]});
+  }else{
+    const N=28,R=solid.r*unit,H=solid.h*unit,S=2*Math.PI*R/N,step=360/N*k;
+    rootW=S;rootH=H;
+    let chain=null;
+    for(let i=N-1;i>=1;i--)chain=makeFace({w:S+0.6,h:H,attach:"right",angle:step,tone:"side",edgeless:true,children:chain?[chain]:[]});
+    root=makeFace({w:S+0.6,h:H,attach:"root",angle:0,tone:"side",edgeless:true,children:[
+      makeFace({w:2*R,h:2*R,attach:"top",angle:90*k,offsetX:S/2-R,tone:"base",clip:"circle(50%)",label:`r=${solid.r}`}),
+      makeFace({w:2*R,h:2*R,attach:"bottom",angle:90*k,offsetX:S/2-R,tone:"base",clip:"circle(50%)",label:`r=${solid.r}`}),
+      ...(chain?[chain]:[])
+    ]});
+  }
+  const netShift=solid.kind==="cyl"?Math.PI*solid.r*unit:solid.kind==="box"?(solid.w+solid.d)*unit:((solid.p+solid.q+Math.hypot(solid.p,solid.q))/2)*unit;
+  const shiftX=-rootW/2-(netShift-rootW/2)*t;
+  return{root,rootW,rootH,shiftX};
+}
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xfcfdff);
+// ---------- 렌더링 ----------
+const $=id=>document.getElementById(id);
+const scene=$("scene"),viewer=$("viewer"),cylTag=$("cylTag");
 
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.set(22, 18, 26);
+function renderViewer(){
+  const solid=currentSolid(),t=state.t,unit=currentUnit(),k=1-t;
+  const{root,rootW,rootH,shiftX}=buildSolid(solid,t,unit);
+  scene.style.transform=`rotateX(${state.rot.x*k}deg) rotateY(${state.rot.y*k}deg)`;
+  scene.innerHTML="";
+  const pos=document.createElement("div");
+  Object.assign(pos.style,{position:"absolute",left:"0",top:"0",transformStyle:"preserve-3d",transform:`translate(${shiftX}px, ${-rootH/2}px)`});
+  const rel=document.createElement("div");
+  Object.assign(rel.style,{position:"relative",width:rootW+"px",height:rootH+"px",transformStyle:"preserve-3d"});
+  rel.appendChild(root);pos.appendChild(rel);scene.appendChild(pos);
+  if(solid.kind==="cyl"&&t>0.95){cylTag.hidden=false;cylTag.textContent=`옆면 가로 = 밑면 원의 둘레 = 2π × ${solid.r}`;}
+  else cylTag.hidden=true;
+}
 
-    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
+function renderNav(){
+  const nav=$("kindNav");nav.innerHTML="";
+  [["box","사각기둥"],["tri","삼각기둥"],["cyl","원기둥"]].forEach(([k,l])=>{
+    const b=document.createElement("button");
+    b.className="chip"+(state.kind===k?" chip-on":"");b.textContent=l;
+    b.onclick=()=>{state.kind=k;state.t=0;$("foldSlider").value=0;resetAnswers();renderAll();};
+    nav.appendChild(b);
+  });
+}
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.minDistance = 8;
-    controls.maxDistance = 65;
-    controls.target.set(0, 0, 0);
+function renderDims(){
+  const d=$("dims");d.innerHTML="";
+  const num=(label,value,max,onChange)=>{
+    const lab=document.createElement("label");lab.className="field";
+    const sp=document.createElement("span");sp.innerHTML=`${label} <b>${value}</b>`;
+    const inp=document.createElement("input");inp.type="range";inp.min=1;inp.max=max;inp.value=value;inp.className="slider";
+    inp.oninput=()=>{onChange(+inp.value);resetAnswers();renderAll();};
+    lab.append(sp,inp);d.appendChild(lab);
+  };
+  if(state.kind==="box"){
+    num("가로",state.box.w,10,v=>state.box.w=v);
+    num("세로",state.box.d,10,v=>state.box.d=v);
+    num("높이",state.box.h,10,v=>state.box.h=v);
+  }else if(state.kind==="tri"){
+    const lab=document.createElement("label");lab.className="field span2";
+    const sp=document.createElement("span");sp.textContent="밑면 (직각삼각형 세 변)";
+    const sel=document.createElement("select");sel.className="rounded";
+    TRI.forEach(([p,q],i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${p}, ${q}, ${Math.hypot(p,q)}`;sel.appendChild(o);});
+    sel.value=state.tri.idx;
+    sel.onchange=()=>{state.tri.idx=+sel.value;resetAnswers();renderAll();};
+    lab.append(sp,sel);d.appendChild(lab);
+    num("높이",state.tri.h,10,v=>state.tri.h=v);
+  }else{
+    num("반지름",state.cyl.r,6,v=>state.cyl.r=v);
+    num("높이",state.cyl.h,10,v=>state.cyl.h=v);
+  }
+}
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-    scene.add(ambientLight);
+function explored(){
+  return QUESTIONS[state.kind].every((item,i)=>state.picked[`${state.kind}${i}`]===item.answer);
+}
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    dirLight.position.set(20, 40, 25);
-    scene.add(dirLight);
-
-    const softFillLight = new THREE.DirectionalLight(0xe0e7ff, 0.35);
-    softFillLight.position.set(-20, 10, -20);
-    scene.add(softFillLight);
-
-    // Grid Floor
-    const gridHelper = new THREE.GridHelper(50, 25, 0xe2e8f0, 0xf1f5f9);
-    gridHelper.position.y = -6.0;
-    scene.add(gridHelper);
-
-    // Materials
-    const baseMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff8a9e,
-      roughness: 0.35,
-      metalness: 0.1,
-      side: THREE.DoubleSide
+function renderQuiz(){
+  const qz=$("quiz");qz.innerHTML="";
+  QUESTIONS[state.kind].forEach((item,i)=>{
+    const key=`${state.kind}${i}`,p=state.picked[key];
+    const box=document.createElement("div");box.className="q";
+    const q=document.createElement("p");q.textContent=item.q;box.appendChild(q);
+    const opts=document.createElement("div");opts.className="opts";
+    item.options.forEach((o,j)=>{
+      const b=document.createElement("button");
+      b.className="chip"+(p===j?(j===item.answer?" chip-good":" chip-bad"):"");
+      b.textContent=o;
+      b.onclick=()=>{state.picked[key]=j;renderAll();};
+      opts.appendChild(b);
     });
-
-    const lateralMaterial = new THREE.MeshStandardMaterial({
-      color: 0x4fd1c5,
-      roughness: 0.4,
-      metalness: 0.1,
-      side: THREE.DoubleSide
-    });
-
-    const edgeLineMaterial = new THREE.LineBasicMaterial({
-      color: 0x0f172a,
-      linewidth: 2
-    });
-
-    // Root Group for current active shape
-    let currentModelGroup = new THREE.Group();
-    scene.add(currentModelGroup);
-
-    // ------------------------------------------------------------------------
-    // 3. SHAPE BUILDERS & HINGE UNFOLD SYSTEM
-    // ------------------------------------------------------------------------
-
-    // A. TRIANGULAR PRISM (문수중 학습지 2페이지 실전 삼각기둥)
-    // 밑면 직각삼각형: 밑변 b=8, 높이 a=6, 빗변 c=10. 기둥 높이 h=10.
-    // 스케일링 계수: 시각적 균형을 위해 * 0.7 적용
-    let triHinges = [];
-
-    function buildTriangularPrism() {
-      clearModelGroup();
-      triHinges = [];
-
-      const sc = 0.65;
-      const a = 6 * sc;   // 3.9
-      const b = 8 * sc;   // 5.2
-      const c = 10 * sc;  // 6.5
-      const h = 10 * sc;  // 6.5
-
-      // Base Triangle Shape (Right-angle at origin: (0,0), (b,0), (0,a))
-      const shape = new THREE.Shape();
-      shape.moveTo(0, 0);
-      shape.lineTo(b, 0);
-      shape.lineTo(0, a);
-      shape.closePath();
-
-      const triGeom = new THREE.ShapeGeometry(shape);
-      triGeom.center(); // Center base at origin
-
-      // Centerpiece: Bottom Base Face (flat on XZ plane)
-      const bottomBase = new THREE.Mesh(triGeom, baseMaterial.clone());
-      bottomBase.rotation.x = -Math.PI / 2;
-      bottomBase.position.y = -h / 2;
-      bottomBase.userData = { type: 'bottomBase' };
-      currentModelGroup.add(bottomBase);
-
-      // Edge 1: Side along X-axis (length b)
-      // Hinge 1 at bottom edge of side 1
-      const side1Geom = new THREE.PlaneGeometry(b, h);
-      side1Geom.translate(0, h / 2, 0); // pivot at bottom
-      const side1 = new THREE.Mesh(side1Geom, lateralMaterial.clone());
-
-      const hinge1 = new THREE.Group();
-      hinge1.position.set(0, -h / 2, a / 2 - 0.2); // offset along Z
-      hinge1.rotation.y = 0;
-      hinge1.add(side1);
-      currentModelGroup.add(hinge1);
-
-      // Edge 2: Side along Y-axis (length a)
-      const side2Geom = new THREE.PlaneGeometry(a, h);
-      side2Geom.translate(0, h / 2, 0);
-      const side2 = new THREE.Mesh(side2Geom, lateralMaterial.clone());
-
-      const hinge2 = new THREE.Group();
-      hinge2.position.set(-b / 2 + 0.2, -h / 2, 0);
-      hinge2.rotation.y = Math.PI / 2;
-      hinge2.add(side2);
-      currentModelGroup.add(hinge2);
-
-      // Edge 3: Hypotenuse side (length c)
-      const side3Geom = new THREE.PlaneGeometry(c, h);
-      side3Geom.translate(0, h / 2, 0);
-      const side3 = new THREE.Mesh(side3Geom, lateralMaterial.clone());
-
-      const angleHyp = Math.atan2(a, b);
-      const hinge3 = new THREE.Group();
-      hinge3.position.set(0.2, -h / 2, -a / 2 + 0.2);
-      hinge3.rotation.y = -angleHyp;
-      hinge3.add(side3);
-      currentModelGroup.add(hinge3);
-
-      // Top Base: attached to side 1's top edge
-      const topBase = new THREE.Mesh(triGeom, baseMaterial.clone());
-      topBase.rotation.x = Math.PI / 2;
-      topBase.userData = { type: 'topBase' };
-
-      const topHinge = new THREE.Group();
-      topHinge.position.set(0, h, 0);
-      topHinge.add(topBase);
-      side1.add(topHinge);
-
-      triHinges = [hinge1, hinge2, hinge3, topHinge, bottomBase];
+    box.appendChild(opts);
+    if(p!==undefined){
+      const fb=document.createElement("p");
+      fb.className="fb "+(p===item.answer?"good":"bad");
+      fb.textContent=p===item.answer?`✓ ${item.why}`:"다시 펼쳐 보며 생각해 볼까요?";
+      box.appendChild(fb);
     }
-
-    // B. CYLINDER (문수중 학습지 2페이지 원기둥)
-    // 밑면 반지름 r=5, 기둥 높이 h=9
-    let cylMeshes = [];
-
-    function buildCylinder() {
-      clearModelGroup();
-      cylMeshes = [];
-
-      const sc = 0.7;
-      const r = 5 * sc;  // 3.5
-      const h = 9 * sc;  // 6.3
-      const circum = 2 * Math.PI * r;
-
-      // Circle Base Geometries
-      const circleGeom = new THREE.CircleGeometry(r, 48);
-
-      // Bottom Base
-      const bottomBase = new THREE.Mesh(circleGeom, baseMaterial.clone());
-      bottomBase.rotation.x = -Math.PI / 2;
-      bottomBase.position.y = -h / 2;
-      currentModelGroup.add(bottomBase);
-
-      // Top Base
-      const topBase = new THREE.Mesh(circleGeom, baseMaterial.clone());
-      topBase.rotation.x = Math.PI / 2;
-      topBase.position.y = h / 2;
-      currentModelGroup.add(topBase);
-
-      // Lateral Surface: Unrolling Curved Mesh
-      // We subdivide along circumference into 48 segments
-      const segments = 48;
-      const latGeom = new THREE.PlaneGeometry(circum, h, segments, 1);
-      const latMesh = new THREE.Mesh(latGeom, lateralMaterial.clone());
-      currentModelGroup.add(latMesh);
-
-      cylMeshes = {
-        r, h, circum, segments,
-        bottomBase, topBase, latMesh,
-        origPos: latGeom.attributes.position.clone()
-      };
-
-      updateCylinderMorph(unfoldProgress);
-    }
-
-    function updateCylinderMorph(progress) {
-      if (!cylMeshes || currentShape !== 'cylinder') return;
-      const { r, h, circum, segments, bottomBase, topBase, latMesh, origPos } = cylMeshes;
-
-      const pos = latMesh.geometry.attributes.position;
-      const invP = 1 - progress; // 1 = fully curved 3D cylinder, 0 = flat rectangle
-
-      for (let i = 0; i < pos.count; i++) {
-        const u = (origPos.getX(i) / circum) + 0.5; // 0 to 1
-        const y = origPos.getY(i);
-
-        // Angle around cylinder
-        const theta = (u - 0.5) * 2 * Math.PI * invP;
-        
-        if (invP > 0.001) {
-          const currentRadius = r / (invP);
-          const x = Math.sin(theta) * currentRadius * invP;
-          const z = (Math.cos(theta) - 1) * currentRadius * invP;
-          pos.setXYZ(i, x, y, z);
-        } else {
-          // Completely flat plane
-          pos.setXYZ(i, origPos.getX(i), y, 0);
-        }
-      }
-      pos.needsUpdate = true;
-      latMesh.geometry.computeVertexNormals();
-
-      // Bases unfold translation & rotation
-      if (progress < 0.99) {
-        // 3D position
-        bottomBase.rotation.x = -Math.PI / 2;
-        bottomBase.position.set(0, -h / 2, 0);
-
-        topBase.rotation.x = Math.PI / 2;
-        topBase.position.set(0, h / 2, 0);
-      } else {
-        // Flat 2D Net position: top circle above rectangle, bottom below
-        const flatOffsetZ = 0;
-        bottomBase.rotation.x = -Math.PI / 2;
-        bottomBase.position.set(0, -h / 2 - r, flatOffsetZ);
-
-        topBase.rotation.x = -Math.PI / 2;
-        topBase.position.set(0, h / 2 + r, flatOffsetZ);
-      }
-
-      // Smooth interpolation for bases
-      const baseYOffset = (h / 2 + r) * progress;
-      bottomBase.position.y = -h / 2 - (r * progress);
-      topBase.position.y = h / 2 + (r * progress);
-    }
-
-    // C. RECTANGULAR PRISM (직육면체 사각기둥)
-    // 가로 w=4, 세로 d=3, 높이 h=5
-    let rectHinges = [];
-
-    function buildRectangularPrism() {
-      clearModelGroup();
-      rectHinges = [];
-
-      const sc = 0.95;
-      const w = 4 * sc;
-      const d = 3 * sc;
-      const h = 5 * sc;
-
-      // Bottom Base (w x d)
-      const baseGeom = new THREE.PlaneGeometry(w, d);
-      const bottomBase = new THREE.Mesh(baseGeom, baseMaterial.clone());
-      bottomBase.rotation.x = -Math.PI / 2;
-      bottomBase.position.y = -h / 2;
-      currentModelGroup.add(bottomBase);
-
-      // Front Face (w x h)
-      const frontGeom = new THREE.PlaneGeometry(w, h);
-      frontGeom.translate(0, h / 2, 0);
-      const front = new THREE.Mesh(frontGeom, lateralMaterial.clone());
-      const hingeFront = new THREE.Group();
-      hingeFront.position.set(0, -h / 2, d / 2);
-      hingeFront.add(front);
-      currentModelGroup.add(hingeFront);
-
-      // Back Face (w x h)
-      const backGeom = new THREE.PlaneGeometry(w, h);
-      backGeom.translate(0, h / 2, 0);
-      const back = new THREE.Mesh(backGeom, lateralMaterial.clone());
-      const hingeBack = new THREE.Group();
-      hingeBack.position.set(0, -h / 2, -d / 2);
-      hingeBack.rotation.y = Math.PI;
-      hingeBack.add(back);
-      currentModelGroup.add(hingeBack);
-
-      // Left Face (d x h)
-      const leftGeom = new THREE.PlaneGeometry(d, h);
-      leftGeom.translate(0, h / 2, 0);
-      const left = new THREE.Mesh(leftGeom, lateralMaterial.clone());
-      const hingeLeft = new THREE.Group();
-      hingeLeft.position.set(-w / 2, -h / 2, 0);
-      hingeLeft.rotation.y = Math.PI / 2;
-      hingeLeft.add(left);
-      currentModelGroup.add(hingeLeft);
-
-      // Right Face (d x h)
-      const rightGeom = new THREE.PlaneGeometry(d, h);
-      rightGeom.translate(0, h / 2, 0);
-      const right = new THREE.Mesh(rightGeom, lateralMaterial.clone());
-      const hingeRight = new THREE.Group();
-      hingeRight.position.set(w / 2, -h / 2, 0);
-      hingeRight.rotation.y = -Math.PI / 2;
-      hingeRight.add(right);
-      currentModelGroup.add(hingeRight);
-
-      // Top Base attached to front face top
-      const topBaseGeom = new THREE.PlaneGeometry(w, d);
-      topBaseGeom.translate(0, d / 2, 0);
-      const topBase = new THREE.Mesh(topBaseGeom, baseMaterial.clone());
-      const hingeTop = new THREE.Group();
-      hingeTop.position.set(0, h, 0);
-      hingeTop.add(topBase);
-      front.add(hingeTop);
-
-      rectHinges = [hingeFront, hingeBack, hingeLeft, hingeRight, hingeTop, bottomBase];
-    }
-
-    function clearModelGroup() {
-      while (currentModelGroup.children.length > 0) {
-        const obj = currentModelGroup.children[0];
-        currentModelGroup.remove(obj);
-      }
-    }
-
-    // ------------------------------------------------------------------------
-    // 4. UNFOLD ANIMATION & PROGRESS UPDATE
-    // ------------------------------------------------------------------------
-    function updateUnfoldAngle(p) {
-      unfoldProgress = p;
-
-      // Update percent text
-      const percent = Math.round(p * 100);
-      document.getElementById('unfoldSlider').value = percent;
-      document.getElementById('unfoldPercentText').innerText = 
-        percent === 0 ? "0% (입체)" : percent === 100 ? "100% (완전 전개도)" : `${percent}% 전개 중`;
-
-      // Triangular Prism unfold
-      if (currentShape === 'triangular' && triHinges.length > 0) {
-        const angle = (Math.PI / 2) * (1 - p);
-        triHinges[0].rotation.x = (Math.PI / 2) * p;     // Face 1 rotates down
-        triHinges[1].rotation.x = (Math.PI / 2) * p;     // Face 2 rotates down
-        triHinges[2].rotation.x = (Math.PI / 2) * p;     // Face 3 rotates down
-        triHinges[3].rotation.x = (Math.PI / 2) * (1 - p); // Top base unfolds flat
-      }
-
-      // Cylinder unfold
-      if (currentShape === 'cylinder') {
-        updateCylinderMorph(p);
-      }
-
-      // Rectangular Prism unfold
-      if (currentShape === 'rectangular' && rectHinges.length > 0) {
-        const foldRot = (Math.PI / 2) * (1 - p);
-        rectHinges[0].rotation.x = (Math.PI / 2) * p; // Front
-        rectHinges[1].rotation.x = (Math.PI / 2) * p; // Back
-        rectHinges[2].rotation.x = (Math.PI / 2) * p; // Left
-        rectHinges[3].rotation.x = (Math.PI / 2) * p; // Right
-        rectHinges[4].rotation.x = -(Math.PI / 2) * (1 - p); // Top
-      }
-
-      // If fully unfolded, subtly guide camera to top view
-      if (p > 0.95 && controls.target) {
-        // slightly tilt up for clear net view
-      }
-    }
-
-    function handleSliderChange(val) {
-      updateUnfoldAngle(val / 100);
-    }
-
-    function animateFold(targetVal) {
-      gsap.to({ val: unfoldProgress * 100 }, {
-        val: targetVal,
-        duration: 1.0,
-        ease: "power2.inOut",
-        onUpdate: function() {
-          updateUnfoldAngle(this.targets()[0].val / 100);
-        }
-      });
-    }
-
-    function toggleExplode() {
-      isExploded = !isExploded;
-      const btn = document.getElementById('explodeBtn');
-      const text = document.getElementById('explodeBtnText');
-
-      if (isExploded) {
-        btn.classList.add('bg-rose-500', 'text-white');
-        btn.classList.remove('bg-rose-50', 'text-rose-700');
-        text.innerText = "조각 모으기";
-        gsap.to(currentModelGroup.position, { y: 2, duration: 0.5 });
-      } else {
-        btn.classList.remove('bg-rose-500', 'text-white');
-        btn.classList.add('bg-rose-50', 'text-rose-700');
-        text.innerText = "면 분해하기";
-        gsap.to(currentModelGroup.position, { y: 0, duration: 0.5 });
-      }
-    }
-
-    function resetCamera() {
-      gsap.to(camera.position, { x: 0, y: 16, z: 28, duration: 0.8, ease: "power2.out" });
-      controls.target.set(0, 0, 0);
-    }
-
-    // ------------------------------------------------------------------------
-    // 5. SHAPE SWITCHER & PEDAGOGICAL WORKBOOK SYNC
-    // ------------------------------------------------------------------------
-    function switchShape(shape) {
-      currentShape = shape;
-
-      // Update Tab Styles
-      ['triangular', 'cylinder', 'rectangular'].forEach(s => {
-        const tab = document.getElementById(`tab-${s}`);
-        if (s === shape) {
-          tab.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-900 shadow-xs";
-        } else {
-          tab.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-600 hover:text-slate-900";
-        }
-      });
-
-      // Reset fold
-      unfoldProgress = 0;
-      document.getElementById('unfoldSlider').value = 0;
-      document.getElementById('unfoldPercentText').innerText = "0% (입체)";
-
-      // Reset Step 1, 2, 3 questions
-      resetStepStates();
-
-      if (shape === 'triangular') {
-        document.getElementById('shapeBadge').innerText = "학습지 문제 1 · 직각삼각기둥";
-        document.getElementById('shapeBadge').className = "px-2.5 py-1 rounded-full text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200/60";
-        document.getElementById('dimensionSpecs').innerHTML = "📐 밑면 직각삼각형: <b>6cm, 8cm, 10cm</b> | 기둥 높이: <b>10cm</b>";
-        document.getElementById('q2QuestionText').innerText = "옆면 3개를 이어 붙인 큰 직사각형의 가로 길이는?";
-        document.getElementById('q3Block').classList.add('hidden');
-        buildTriangularPrism();
-        setupStep3Calculations('triangular');
-      } else if (shape === 'cylinder') {
-        document.getElementById('shapeBadge').innerText = "학습지 문제 2 · 원기둥";
-        document.getElementById('shapeBadge').className = "px-2.5 py-1 rounded-full text-xs font-extrabold bg-sky-50 text-sky-700 border border-sky-200/60";
-        document.getElementById('dimensionSpecs').innerHTML = "🥫 밑면 원: 반지름 <b>r = 5cm</b> | 기둥 높이: <b>9cm</b>";
-        document.getElementById('q2QuestionText').innerText = "원기둥 옆면(직사각형)의 가로 길이는 무엇과 같을까요?";
-        document.getElementById('q3Block').classList.remove('hidden');
-        buildCylinder();
-        setupStep3Calculations('cylinder');
-      } else if (shape === 'rectangular') {
-        document.getElementById('shapeBadge').innerText = "사각기둥 (직육면체) · 자유 탐구";
-        document.getElementById('shapeBadge').className = "px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/60";
-        document.getElementById('dimensionSpecs').innerHTML = "📦 가로: <b>4cm</b>, 세로: <b>3cm</b> | 기둥 높이: <b>5cm</b>";
-        document.getElementById('q2QuestionText').innerText = "옆면 4개를 이어 붙인 큰 직사각형의 가로 길이는?";
-        document.getElementById('q3Block').classList.add('hidden');
-        buildRectangularPrism();
-        setupStep3Calculations('rectangular');
-      }
-
-      resetCamera();
-    }
-
-    // ------------------------------------------------------------------------
-    // 6. STEP 1 & 2 & 3 INTERACTIVE WORKBOOK LOGIC
-    // ------------------------------------------------------------------------
-    function resetStepStates() {
-      step1_q1_done = false;
-      step1_q2_done = false;
-      step1_q3_done = false;
-      step2_unlocked = false;
-      step3_unlocked = false;
-
-      // Reset options visual
-      document.querySelectorAll('.option-btn').forEach(btn => {
-        btn.classList.remove('selected-correct', 'selected-wrong');
-      });
-
-      // Reset feedbacks
-      ['q1Feedback', 'q2Feedback', 'q3Feedback', 'step3ResultBanner'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.className = "hidden mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed";
-          el.innerHTML = "";
-        }
-      });
-
-      // Reset Step 2 & 3 lock
-      document.getElementById('step2Content').classList.add('opacity-50', 'pointer-events-none');
-      document.getElementById('step2Badge').innerText = "1단계 통과 후 개방";
-      document.getElementById('step2Badge').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500";
-
-      document.getElementById('step3Content').classList.add('opacity-50', 'pointer-events-none');
-      document.getElementById('step3Badge').innerText = "2단계 완료 후 개방";
-      document.getElementById('step3Badge').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500";
-    }
-
-    // Step 1: Q1 Handler
-    function checkQ1(ans) {
-      const fb = document.getElementById('q1Feedback');
-      const btns = document.getElementById('q1Options').children;
-      Array.from(btns).forEach(b => b.classList.remove('selected-correct', 'selected-wrong'));
-
-      if (ans === 2) {
-        step1_q1_done = true;
-        btns[1].classList.add('selected-correct');
-        fb.className = "mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed bg-emerald-50 text-emerald-800 border border-emerald-200";
-        fb.innerHTML = "✓ <b>정답입니다!</b> 모든 기둥의 위아래 두 밑면은 <b>2개</b>이며, 서로 평행하고 완벽히 <b>합동</b>이에요.";
-        highlightBases();
-      } else {
-        const idx = ans === 1 ? 0 : 2;
-        btns[idx].classList.add('selected-wrong');
-        fb.className = "mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed bg-rose-50 text-rose-800 border border-rose-200";
-        fb.innerHTML = "다시 확인해보세요! 기둥은 <b>위쪽과 아래쪽</b>에 서로 마주보는 밑면이 있습니다.";
-      }
-      fb.classList.remove('hidden');
-      checkStep1Completion();
-    }
-
-    // Step 1: Q2 Handler
-    function checkQ2(ans) {
-      const fb = document.getElementById('q2Feedback');
-      const btns = document.getElementById('q2Options').children;
-      Array.from(btns).forEach(b => b.classList.remove('selected-correct', 'selected-wrong'));
-
-      if (ans === 'perimeter') {
-        step1_q2_done = true;
-        btns[1].classList.add('selected-correct');
-        fb.className = "mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed bg-emerald-50 text-emerald-800 border border-emerald-200";
-        fb.innerHTML = "✓ <b>정답입니다!</b> 옆면이 밑면의 테두리를 한 바퀴 빈틈없이 감싸기 때문에, 큰 직사각형의 가로는 <b>밑면의 둘레</b>와 정확히 일치해요!";
-      } else {
-        const idx = ans === 'area' ? 0 : 2;
-        btns[idx].classList.add('selected-wrong');
-        fb.className = "mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed bg-rose-50 text-rose-800 border border-rose-200";
-        fb.innerHTML = "아쉬워요! 옆면 직사각형을 둘둘 말아 기둥을 조립할 때 밑면의 어느 부분과 맞닿는지 생각해보세요.";
-      }
-      fb.classList.remove('hidden');
-      checkStep1Completion();
-    }
-
-    // Step 1: Q3 Handler (Cylinder Only)
-    function checkQ3(ans) {
-      const fb = document.getElementById('q3Feedback');
-      const btns = document.getElementById('q3Options').children;
-      Array.from(btns).forEach(b => b.classList.remove('selected-correct', 'selected-wrong'));
-
-      if (ans === '2pir') {
-        step1_q3_done = true;
-        btns[0].classList.add('selected-correct');
-        fb.className = "mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed bg-emerald-50 text-emerald-800 border border-emerald-200";
-        fb.innerHTML = "✓ <b>정답입니다!</b> 원의 둘레 공식이 <b>2 × π × r = 2πr</b> 이므로 옆면 가로의 길이는 <b>2πr</b>이 됩니다!";
-      } else {
-        const idx = ans === 'pir2' ? 1 : 2;
-        btns[idx].classList.add('selected-wrong');
-        fb.className = "mt-2.5 p-2.5 rounded-xl text-xs font-semibold leading-relaxed bg-rose-50 text-rose-800 border border-rose-200";
-        fb.innerHTML = "힌트: 밑면은 원입니다! 원의 '넓이(πr²)'가 아니라 원의 '둘레(2πr)'의 길이와 같습니다.";
-      }
-      fb.classList.remove('hidden');
-      checkStep1Completion();
-    }
-
-    function checkStep1Completion() {
-      const needsQ3 = currentShape === 'cylinder';
-      const isComplete = step1_q1_done && step1_q2_done && (!needsQ3 || step1_q3_done);
-
-      if (isComplete && !step2_unlocked) {
-        step2_unlocked = true;
-        document.getElementById('step1Badge').innerText = "완료 ✓";
-        document.getElementById('step1Badge').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60";
-
-        // Unlock Step 2
-        document.getElementById('step2Content').classList.remove('opacity-50', 'pointer-events-none');
-        document.getElementById('step2Badge').innerText = "진행 가능";
-        document.getElementById('step2Badge').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60";
-
-        // Gentle celebration
-        confetti({ particleCount: 30, spread: 60, origin: { y: 0.6 } });
-      }
-    }
-
-    function highlightBases() {
-      gsap.to(baseMaterial.color, { r: 1.0, g: 0.2, b: 0.4, duration: 0.3, yoyo: true, repeat: 3, onComplete: () => {
-        baseMaterial.color.setHex(0xff8a9e);
-      }});
-    }
-
-    // Step 2 Handler
-    function proceedToStep3() {
-      step3_unlocked = true;
-      document.getElementById('step2Badge').innerText = "완료 ✓";
-      document.getElementById('step2Badge').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60";
-
-      // Unlock Step 3
-      document.getElementById('step3Content').classList.remove('opacity-50', 'pointer-events-none');
-      document.getElementById('step3Badge').innerText = "실전 풀이 중";
-      document.getElementById('step3Badge').className = "text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60";
-
-      // Auto unfold for calculation clarity
-      animateFold(100);
-    }
-
-    // Step 3 Setup & Inputs
-    function setupStep3Calculations(shape) {
-      const box = document.getElementById('calcProblemContainer');
-
-      if (shape === 'triangular') {
-        box.innerHTML = `
-          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 text-xs text-slate-700 space-y-3">
-            <div class="font-extrabold text-slate-900 flex items-center justify-between">
-              <span>① 밑넓이 (직각삼각형 1개)</span>
-              <span class="text-slate-400 font-normal">(8 × 6) ÷ 2</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input_base_1" placeholder="밑넓이" class="w-24 p-2 rounded-xl bg-white border border-slate-300 font-bold text-slate-800 text-center" />
-              <span class="font-bold">cm²</span>
-              <span class="text-xs text-slate-400">× 2개 = </span>
-              <span id="label_base_2" class="font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">? cm²</span>
-            </div>
-          </div>
-
-          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 text-xs text-slate-700 space-y-3">
-            <div class="font-extrabold text-slate-900 flex items-center justify-between">
-              <span>② 옆넓이 (큰 직사각형 1개)</span>
-              <span class="text-slate-400 font-normal">(밑면둘레 24) × (높이 10)</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input_lateral" placeholder="옆넓이" class="w-32 p-2 rounded-xl bg-white border border-slate-300 font-bold text-slate-800 text-center" />
-              <span class="font-bold">cm²</span>
-            </div>
-          </div>
-
-          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-2xl border border-emerald-200/80 text-xs text-slate-800 space-y-2">
-            <div class="font-extrabold text-emerald-950">
-              ③ 총 겉넓이 = (밑넓이 × 2) + 옆넓이
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input_total" placeholder="최종 겉넓이" class="w-36 p-2.5 rounded-xl bg-white border-2 border-emerald-400 font-extrabold text-slate-900 text-center text-sm" />
-              <span class="font-black text-emerald-800 text-sm">cm²</span>
-            </div>
-          </div>
-        `;
-
-        document.getElementById('input_base_1').addEventListener('input', (e) => {
-          const v = parseFloat(e.target.value);
-          if (!isNaN(v)) {
-            document.getElementById('label_base_2').innerText = `${v * 2} cm²`;
-          } else {
-            document.getElementById('label_base_2').innerText = "? cm²";
-          }
-        });
-      } 
-      else if (shape === 'cylinder') {
-        box.innerHTML = `
-          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 text-xs text-slate-700 space-y-3">
-            <div class="font-extrabold text-slate-900 flex items-center justify-between">
-              <span>① 밑넓이 (원 1개: 반지름 5cm)</span>
-              <span class="text-slate-400 font-normal">π × 5²</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input_base_1" placeholder="25" class="w-20 p-2 rounded-xl bg-white border border-slate-300 font-bold text-slate-800 text-center" />
-              <span class="font-bold">π cm²</span>
-              <span class="text-xs text-slate-400">× 2개 = </span>
-              <span id="label_base_2" class="font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">? π cm²</span>
-            </div>
-          </div>
-
-          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 text-xs text-slate-700 space-y-3">
-            <div class="font-extrabold text-slate-900 flex items-center justify-between">
-              <span>② 옆넓이 (직사각형: 원둘레 10π × 높이 9)</span>
-              <span class="text-slate-400 font-normal">(2 × π × 5) × 9</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input_lateral" placeholder="90" class="w-28 p-2 rounded-xl bg-white border border-slate-300 font-bold text-slate-800 text-center" />
-              <span class="font-bold">π cm²</span>
-            </div>
-          </div>
-
-          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-2xl border border-emerald-200/80 text-xs text-slate-800 space-y-2">
-            <div class="font-extrabold text-emerald-950">
-              ③ 총 겉넓이 = (밑넓이 × 2) + 옆넓이
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input_total" placeholder="140" class="w-28 p-2.5 rounded-xl bg-white border-2 border-emerald-400 font-extrabold text-slate-900 text-center text-sm" />
-              <span class="font-black text-emerald-800 text-sm">π cm²</span>
-            </div>
-          </div>
-        `;
-
-        document.getElementById('input_base_1').addEventListener('input', (e) => {
-          const v = parseFloat(e.target.value);
-          if (!isNaN(v)) {
-            document.getElementById('label_base_2').innerText = `${v * 2} π cm²`;
-          } else {
-            document.getElementById('label_base_2').innerText = "? π cm²";
-          }
-        });
-      }
-      else if (shape === 'rectangular') {
-        box.innerHTML = `
-          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 text-xs text-slate-700 space-y-2.5">
-            <div class="font-extrabold text-slate-900">가로 4cm, 세로 3cm, 높이 5cm 직육면체</div>
-            <div class="grid grid-cols-2 gap-2 text-[11px]">
-              <div class="p-2 bg-white rounded-xl border border-slate-200">
-                <span class="text-slate-400 block">밑넓이 (4×3):</span>
-                <strong class="text-sm text-rose-600">12 cm²</strong> (2개 = 24 cm²)
-              </div>
-              <div class="p-2 bg-white rounded-xl border border-slate-200">
-                <span class="text-slate-400 block">옆넓이 (둘레 14 × 높이 5):</span>
-                <strong class="text-sm text-teal-600">70 cm²</strong>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-2xl border border-emerald-200/80 text-xs text-slate-800 space-y-2">
-            <div class="font-extrabold text-emerald-950">
-              총 겉넓이 = 24 + 70
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="input_total" placeholder="최종 겉넓이 입력" class="w-36 p-2.5 rounded-xl bg-white border-2 border-emerald-400 font-extrabold text-slate-900 text-center text-sm" />
-              <span class="font-black text-emerald-800 text-sm">cm²</span>
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    // Check Step 3 Answer
-    function checkStep3Answer() {
-      const banner = document.getElementById('step3ResultBanner');
-
-      if (currentShape === 'triangular') {
-        const b1 = parseFloat(document.getElementById('input_base_1').value);
-        const lat = parseFloat(document.getElementById('input_lateral').value);
-        const tot = parseFloat(document.getElementById('input_total').value);
-
-        if (b1 === 24 && lat === 240 && tot === 288) {
-          banner.className = "mt-3 p-3.5 rounded-2xl text-center text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300";
-          banner.innerHTML = "🎉 <b>완벽합니다! 정답: 288 cm²</b><br/>학습지 2페이지의 삼각기둥 겉넓이 문제를 정확하게 풀어냈어요!";
-          banner.classList.remove('hidden');
-          confetti({ particleCount: 70, spread: 80, origin: { y: 0.7 } });
-        } else {
-          banner.className = "mt-3 p-3.5 rounded-2xl text-center text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200";
-          banner.innerHTML = "계산 값을 다시 점검해보세요!<br/>밑넓이 = 24, 옆넓이 = 240, 겉넓이 = 48 + 240 = 288 입니다.";
-          banner.classList.remove('hidden');
-        }
-      }
-      else if (currentShape === 'cylinder') {
-        const b1 = parseFloat(document.getElementById('input_base_1').value);
-        const lat = parseFloat(document.getElementById('input_lateral').value);
-        const tot = parseFloat(document.getElementById('input_total').value);
-
-        if (b1 === 25 && lat === 90 && tot === 140) {
-          banner.className = "mt-3 p-3.5 rounded-2xl text-center text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300";
-          banner.innerHTML = "🎉 <b>완벽합니다! 정답: 140π cm²</b><br/>원기둥의 겉넓이 공식 (2πr² + 2πrh)을 완벽히 마스터했어요!";
-          banner.classList.remove('hidden');
-          confetti({ particleCount: 70, spread: 80, origin: { y: 0.7 } });
-        } else {
-          banner.className = "mt-3 p-3.5 rounded-2xl text-center text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200";
-          banner.innerHTML = "계산 값을 다시 점검해보세요!<br/>밑넓이 = 25π, 옆넓이 = 90π, 겉넓이 = 50π + 90π = 140π 입니다.";
-          banner.classList.remove('hidden');
-        }
-      }
-      else if (currentShape === 'rectangular') {
-        const tot = parseFloat(document.getElementById('input_total').value);
-
-        if (tot === 94) {
-          banner.className = "mt-3 p-3.5 rounded-2xl text-center text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300";
-          banner.innerHTML = "🎉 <b>정답입니다! 94 cm²</b> (밑넓이 12×2 = 24, 옆넓이 14×5 = 70)";
-          banner.classList.remove('hidden');
-          confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-        } else {
-          banner.className = "mt-3 p-3.5 rounded-2xl text-center text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200";
-          banner.innerHTML = "다시 계산해보세요! 24 + 70 = 94 cm² 입니다.";
-          banner.classList.remove('hidden');
-        }
-      }
-    }
-
-    // ------------------------------------------------------------------------
-    // 7. RENDER LOOP & RESIZE HANDLER
-    // ------------------------------------------------------------------------
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    function onWindowResize() {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    }
-
-    window.addEventListener('resize', onWindowResize);
-
-    // Initial Startup
-    window.addEventListener('DOMContentLoaded', () => {
-      onWindowResize();
-      switchShape('triangular');
-      animate();
-    });
-
-  </script>
+    qz.appendChild(box);
+  });
+}
+
+function renderStep2(){
+  const card=$("step2card"),el=$("step2");
+  const ok=explored();
+  card.classList.toggle("locked",!ok);
+  el.innerHTML="";
+  if(!ok){el.innerHTML='<p class="hint-sm" style="margin:.5rem 0 0">1단계 질문을 모두 맞히면 열려요.</p>';return;}
+  const solid=currentSolid(),A=areas(solid);
+  const parts=solid.kind==="box"
+    ?[{name:"밑면 ×2",calc:`${solid.w} × ${solid.d}`,tone:"base"},{name:"옆면 (펼친 직사각형)",calc:`(밑면 둘레 ${basePerimeter(solid)}) × ${solid.h}`,tone:"side"}]
+    :solid.kind==="tri"
+    ?[{name:"밑면 ×2",calc:`${solid.p} × ${solid.q} ÷ 2`,tone:"base"},{name:"옆면 (펼친 직사각형)",calc:`(${solid.p}+${solid.q}+${fmt(Math.hypot(solid.p,solid.q))}) × ${solid.h}`,tone:"side"}]
+    :[{name:"밑면 ×2",calc:`π × ${solid.r}²`,tone:"base"},{name:"옆면 (펼친 직사각형)",calc:`(2π × ${solid.r}) × ${solid.h}`,tone:"side"}];
+  const ul=document.createElement("ul");ul.className="parts";
+  parts.forEach(pt=>{
+    const li=document.createElement("li");
+    const dot=document.createElement("span");dot.className=`dot dot-${pt.tone}`;
+    const div=document.createElement("div");div.style.flex="1";
+    const p1=document.createElement("p");p1.style.fontWeight="700";p1.textContent=pt.name;
+    const p2=document.createElement("p");p2.className="sub";
+    p2.textContent=state.t<1?"전개도로 펼쳐서 길이를 확인해 보세요":`넓이 = ${pt.calc}`;
+    div.append(p1,p2);li.append(dot,div);ul.appendChild(li);
+  });
+  el.appendChild(ul);
+}
+
+function renderStep3(){
+  const card=$("step3card"),el=$("step3");
+  const ok=explored();
+  card.classList.toggle("locked",!ok);
+  el.innerHTML="";
+  if(!ok)return;
+  const A=areas(currentSolid()),pi=A.pi?"π":"";
+  const res={base:isCorrect(state.inputs.base,A.base),lateral:isCorrect(state.inputs.lateral,A.lateral),total:isCorrect(state.inputs.total,A.total)};
+  const allOk=state.checked&&res.base&&res.lateral&&res.total;
+  const form=document.createElement("form");
+  form.onsubmit=e=>{e.preventDefault();state.checked=true;renderAll();};
+  [["base","밑넓이 (1개)"],["lateral","옆넓이"],["total","겉넓이"]].forEach(([k,label])=>{
+    const row=document.createElement("label");row.className="answer-row";
+    const s1=document.createElement("span");s1.textContent=label;
+    const inp=document.createElement("input");inp.className="answer-input"+(state.checked?(res[k]?" is-good":" is-bad"):"");
+    inp.inputMode="decimal";inp.value=state.inputs[k];
+    inp.oninput=()=>{state.inputs[k]=inp.value;state.checked=false;};
+    const s2=document.createElement("span");s2.style.fontSize=".875rem";s2.textContent=`${pi} cm²`;
+    row.append(s1,inp,s2);
+    if(state.checked){const s3=document.createElement("span");s3.textContent=res[k]?"✓":"✗";row.appendChild(s3);}
+    form.appendChild(row);
+  });
+  const btn=document.createElement("button");btn.type="submit";btn.className="btn-primary";btn.textContent="확인하기";
+  form.appendChild(btn);
+  if(state.checked&&!allOk){
+    const p=document.createElement("p");p.className="fb bad";
+    p.textContent="틀린 칸을 2단계 분해 결과와 비교해 보세요."+(A.pi?" (π 앞의 수만 입력)":"");
+    form.appendChild(p);
+  }
+  el.appendChild(form);
+  if(allOk){
+    const note=document.createElement("div");note.className="note";
+    note.innerHTML=`<p style="font-size:1.15rem;font-weight:700">수학노트 ✏️</p>
+      <p>(기둥의 겉넓이) = (밑넓이) × 2 + (옆넓이)</p>
+      <p class="hint-sm">= ${fmt(A.base)}${pi} × 2 + ${fmt(A.lateral)}${pi} = <b>${fmt(A.total)}${pi} cm²</b></p>
+      <p class="hint-sm" style="margin-top:.5rem">다른 크기나 다른 기둥으로도 도전해 보세요!</p>`;
+    el.appendChild(note);
+  }
+}
+
+function resetAnswers(){state.inputs={base:"",lateral:"",total:""};state.checked=false;}
+function renderAll(){renderNav();renderDims();renderViewer();renderQuiz();renderStep2();renderStep3();}
+
+// ---------- 이벤트 ----------
+$("foldSlider").addEventListener("input",e=>{state.t=+e.target.value;renderViewer();renderStep2();});
+$("btnFold").onclick=()=>{state.t=0;$("foldSlider").value=0;renderViewer();renderStep2();};
+$("btnNet").onclick=()=>{state.t=1;$("foldSlider").value=1;renderViewer();renderStep2();};
+
+let drag=null;
+viewer.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};if(e.target.setPointerCapture)try{e.target.setPointerCapture(e.pointerId);}catch(_){}});
+viewer.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  drag={x:e.clientX,y:e.clientY};
+  state.rot.x=Math.max(-89,Math.min(89,state.rot.x-dy*0.5));
+  state.rot.y+=dx*0.5;
+  renderViewer();
+});
+viewer.addEventListener("pointerup",()=>drag=null);
+viewer.addEventListener("dblclick",()=>{state.rot={x:0,y:0};renderViewer();});
+
+renderAll();
+</script>
 </body>
 </html>

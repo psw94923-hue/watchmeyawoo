@@ -21,14 +21,14 @@ export const MATH_APPS: MathApp[] = [
   // --------------------------------------------------------------------------
   {
     id: 'prism',
-    title: '기둥의 겉넓이 탐구 (전개도 메이커)',
+    title: '기둥 펼치기 탐구실 (겉넓이)',
     category: 'grade1',
     gradeText: '중1·중2 수학',
     unitText: '입체도형의 겉넓이',
-    description: '기둥을 3D로 직접 펼치고 분해해보며 밑넓이와 옆넓이의 원리를 깨닫고 학습지 실전 겉넓이 문제를 정복해보세요!',
+    description: '사각기둥, 삼각기둥, 원기둥의 전개도를 3D로 직접 펼치고 분해해보며 밑넓이와 옆넓이의 원리로 겉넓이를 탐구해보세요!',
     emoji: '📦',
     href: '/prism.html',
-    tags: ['전개도 펼치기', '기둥의 겉넓이', '클릭&확인', '3D 입체'],
+    tags: ['전개도 펼치기', '기둥의 겉넓이', '클릭&확인', '입체도형'],
     isNew: true,
     isFeatured: true,
     auroraTheme: 'sky',
