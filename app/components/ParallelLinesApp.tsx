@@ -15,8 +15,8 @@ interface Point {
 
 // Color palette for ratio pairs
 const COLOR_LEFT = "#2563eb"; // Blue (왼쪽 변 / AB:AD, AD:DB)
-const COLOR_RIGHT = "#e11d48"; // Red (오른쪽 변 / AC:AE, AE:EC)
 const COLOR_BASE = "#16a34a"; // Green (밑변·평행선 / BC:DE)
+const COLOR_RIGHT = "#e11d48"; // Red (오른쪽 변 / AC:AE, AE:EC)
 
 // ---------------------------------------------------------------------------
 // GEOMETRY HELPERS (100% Exact Vector Math)
@@ -77,11 +77,9 @@ function getArcLabelPos(p1: Point, p2: Point, bulge: number, side: 1 | -1 = 1, e
 
 // ---------------------------------------------------------------------------
 // REUSABLE SVG PRIMITIVES
-// (IMPORTANT: Outer <g> has SVG transform, inner <g> has CSS scale animation
-// so CSS transform never overwrites SVG translate/rotate!)
+// (Outer <g> has SVG transform, inner <g> has CSS scale animation)
 // ---------------------------------------------------------------------------
 
-// Parallel chevron symbol (`>` or `>>`) placed accurately at `t` along segment p1->p2
 function ParallelChevron({
   p1,
   p2,
@@ -124,7 +122,6 @@ function ParallelChevron({
   );
 }
 
-// Extended line through p1 and p2 with an optional right-end arrowhead
 function ExtendedLine({
   p1,
   p2,
@@ -174,7 +171,6 @@ function ExtendedLine({
   );
 }
 
-// Equal-length tick marks (`|` or `||`) on segment p1->p2
 function CongruenceTicks({
   p1,
   p2,
@@ -218,7 +214,6 @@ function CongruenceTicks({
   );
 }
 
-// Angle Dot (`●`) inside vertex v between p1 and p2
 function AngleDot({
   v,
   p1,
@@ -245,7 +240,6 @@ function AngleDot({
   );
 }
 
-// Angle Cross (`×`) inside vertex v between p1 and p2
 function AngleCross({
   v,
   p1,
@@ -289,7 +283,6 @@ function AngleCross({
   );
 }
 
-// Color-coded bouncy ratio curve (Blue for left, Red for right, Green for base)
 function RatioCurve({
   p1,
   p2,
@@ -330,7 +323,6 @@ function RatioCurve({
   );
 }
 
-// Thin dimension arc with label (and optional animated answer `= val`)
 function DimensionArc({
   p1,
   p2,
@@ -359,6 +351,16 @@ function DimensionArc({
 
   return (
     <g>
+      {highlight && (
+        <path
+          d={d}
+          fill="none"
+          stroke={highlightColor}
+          strokeWidth={6}
+          strokeLinecap="round"
+          opacity={0.15}
+        />
+      )}
       <path
         d={d}
         fill="none"
@@ -406,7 +408,6 @@ function DimensionArc({
   );
 }
 
-// Brown highlight polygon for similar triangles
 function BrownTriangleHighlight({
   pts,
   color = "#b45309",
@@ -441,6 +442,10 @@ function BrownTriangleHighlight({
 
 // ---------------------------------------------------------------------------
 // SUB-DIAGRAM 1: A-1 INTERNAL (AB : AD = AC : AE = BC : DE)
+// Sequential Steps:
+// 1: 동위각, 2: 닮은 삼각형, 3: 왼쪽 비(파랑), 4: 밑변 비(초록), 5: 오른쪽 비(빨강)
+// Example Steps:
+// 1: 왼쪽 비(3, 6 파랑), 2: 밑변 비(x, 8 초록), 3: 정답(x = 4)
 // ---------------------------------------------------------------------------
 function DiagramA1Internal({
   step,
@@ -448,14 +453,13 @@ function DiagramA1Internal({
   onStepChange,
   onExStepChange,
 }: {
-  step: number; // 0: base, 1: angles, 2: brown triangles, 3: color ratio curves
-  exStep: number; // 0: problem, 1: ratio hint, 2: answer x=4
+  step: number; // 0..5
+  exStep: number; // 0..3
   onStepChange: (s: number) => void;
   onExStepChange: (s: number) => void;
 }) {
   const [popOut, setPopOut] = useState(false);
 
-  // Concept triangle coordinates
   const A: Point = { x: 145, y: 42 };
   const B: Point = { x: 65, y: 215 };
   const C: Point = { x: 215, y: 215 };
@@ -463,7 +467,6 @@ function DiagramA1Internal({
   const D = lerpPt(A, B, t);
   const E = lerpPt(A, C, t);
 
-  // Example 1 triangle coordinates (exact 1:2 ratio, AD=3, AB=6, BC=8, DE=x=4)
   const EA: Point = { x: 155, y: 42 };
   const EB: Point = { x: 68, y: 215 };
   const EC: Point = { x: 242, y: 215 };
@@ -472,42 +475,62 @@ function DiagramA1Internal({
 
   return (
     <div className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
-      {/* Header Formula (Color-coded when step >= 3) */}
+      {/* Header Formula */}
       <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+            <span
+              onClick={() => onStepChange(3)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 3 ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 3 ? COLOR_LEFT : undefined }}
+            >
               <span className="overline decoration-2">AB</span> :{" "}
               <span className="overline decoration-2">AD</span>
             </span>{" "}
             ={" "}
-            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+            <span
+              onClick={() => onStepChange(5)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 5 ? "bg-rose-50 ring-1 ring-rose-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 5 ? COLOR_RIGHT : undefined }}
+            >
               <span className="overline decoration-2">AC</span> :{" "}
               <span className="overline decoration-2">AE</span>
             </span>{" "}
             ={" "}
-            <span style={{ color: step >= 3 ? COLOR_BASE : undefined }}>
+            <span
+              onClick={() => onStepChange(4)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 4 ? "bg-emerald-50 ring-1 ring-emerald-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 4 ? COLOR_BASE : undefined }}
+            >
               <span className="overline decoration-2">BC</span> :{" "}
               <span className="overline decoration-2">DE</span>
             </span>
           </span>
         </div>
 
-        {/* Step Controls */}
-        <div className="flex items-center gap-1.5">
+        {/* Step Controls (Sequential: 동위각 -> 닮음 -> 왼쪽 -> 밑변 -> 오른쪽) */}
+        <div className="flex items-center gap-1 flex-wrap">
           {[
-            { s: 1, label: "① 동위각" },
-            { s: 2, label: "② 닮은 삼각형" },
-            { s: 3, label: "③ 길이의 비" },
+            { s: 1, label: "① 동위각", activeBg: "bg-slate-800 text-white" },
+            { s: 2, label: "② 닮음", activeBg: "bg-amber-700 text-white" },
+            { s: 3, label: "③ 왼쪽 비", activeBg: "bg-blue-600 text-white" },
+            { s: 4, label: "④ 밑변 비", activeBg: "bg-emerald-600 text-white" },
+            { s: 5, label: "⑤ 오른쪽 비", activeBg: "bg-rose-600 text-white" },
           ].map((btn) => (
             <button
               key={btn.s}
               onClick={() => onStepChange(step === btn.s ? btn.s - 1 : btn.s)}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-2 py-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
                 step >= btn.s
-                  ? "bg-emerald-600 text-white shadow-xs scale-105"
+                  ? `${btn.activeBg} shadow-xs scale-105`
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -517,14 +540,13 @@ function DiagramA1Internal({
           {step >= 2 && (
             <button
               onClick={() => setPopOut(!popOut)}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+              className={`px-2 py-1 rounded-xl text-[11px] font-extrabold border transition-all cursor-pointer ${
                 popOut
                   ? "bg-amber-500 text-white border-amber-600"
                   : "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
               }`}
-              title="작은 삼각형 떼어내어 비교"
             >
-              {popOut ? "포개기" : "분리 모션"}
+              {popOut ? "포개기" : "분리"}
             </button>
           )}
         </div>
@@ -534,9 +556,9 @@ function DiagramA1Internal({
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-center">
         {/* LEFT: CONCEPT FIGURE */}
         <div
-          onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
+          onClick={() => onStepChange(step < 5 ? step + 1 : 0)}
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
-          title="클릭하면 다음 모션 단계가 진행됩니다"
+          title="클릭할 때마다 ①동위각 ➔ ②닮음 ➔ ③왼쪽 비 ➔ ④밑변 비 ➔ ⑤오른쪽 비 순서로 나타납니다"
         >
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 2: Brown Similar Triangles Highlight */}
@@ -584,18 +606,27 @@ function DiagramA1Internal({
               </>
             )}
 
-            {/* Step 3: Color-coded Ratio Loops (Blue Left, Red Right, Green Bottom) */}
+            {/* Step 3: Left Ratio (Blue: AB & AD) */}
             {step >= 3 && (
               <>
-                {/* Left (Blue): AB & AD */}
                 <RatioCurve p1={A} p2={B} bulge={48} side={1} delayMs={0} color={COLOR_LEFT} />
-                <RatioCurve p1={A} p2={D} bulge={26} side={1} delayMs={80} color={COLOR_LEFT} />
-                {/* Right (Red): AC & AE */}
-                <RatioCurve p1={A} p2={C} bulge={48} side={-1} delayMs={160} color={COLOR_RIGHT} />
-                <RatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={240} color={COLOR_RIGHT} />
-                {/* Bottom (Green, bowing downward with side=1): BC & DE */}
-                <RatioCurve p1={B} p2={C} bulge={28} side={1} delayMs={320} color={COLOR_BASE} />
-                <RatioCurve p1={D} p2={E} bulge={20} side={1} delayMs={400} color={COLOR_BASE} />
+                <RatioCurve p1={A} p2={D} bulge={26} side={1} delayMs={90} color={COLOR_LEFT} />
+              </>
+            )}
+
+            {/* Step 4: Bottom Ratio (Green: BC & DE) */}
+            {step >= 4 && (
+              <>
+                <RatioCurve p1={B} p2={C} bulge={28} side={1} delayMs={0} color={COLOR_BASE} />
+                <RatioCurve p1={D} p2={E} bulge={20} side={1} delayMs={90} color={COLOR_BASE} />
+              </>
+            )}
+
+            {/* Step 5: Right Ratio (Red: AC & AE) */}
+            {step >= 5 && (
+              <>
+                <RatioCurve p1={A} p2={C} bulge={48} side={-1} delayMs={0} color={COLOR_RIGHT} />
+                <RatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={90} color={COLOR_RIGHT} />
               </>
             )}
 
@@ -620,28 +651,34 @@ function DiagramA1Internal({
 
         {/* RIGHT: EXAMPLE 1 (3, 6, 8, x = 4) */}
         <div
-          onClick={() => onExStepChange(exStep < 2 ? exStep + 1 : 0)}
+          onClick={() => onExStepChange(exStep < 3 ? exStep + 1 : 0)}
           className="relative bg-indigo-50/40 hover:bg-indigo-50/70 rounded-2xl border border-indigo-200/70 p-2 cursor-pointer transition-colors"
-          title="클릭하면 예제 풀이가 나타납니다"
+          title="클릭할 때마다 ①왼쪽 비(3,6) ➔ ②밑변 비(x,8) ➔ ③정답(x=4) 순서로 나타납니다"
         >
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onExStepChange(exStep < 2 ? exStep + 1 : 0);
-              }}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                exStep >= 2
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
-              }`}
-            >
-              {exStep === 0 ? "예제 확인" : exStep === 1 ? "정답 보기" : "x = 4 완료"}
-            </button>
+          <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
+            {[
+              { s: 1, label: "① 왼쪽" },
+              { s: 2, label: "② 밑변" },
+              { s: 3, label: "③ x=4" },
+            ].map((b) => (
+              <button
+                key={b.s}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExStepChange(exStep === b.s ? b.s - 1 : b.s);
+                }}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                  exStep >= b.s
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-indigo-700 border border-indigo-200"
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
           </div>
 
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
-            {/* Base Triangle */}
             <polygon
               points={`${EA.x},${EA.y} ${EB.x},${EB.y} ${EC.x},${EC.y}`}
               fill="none"
@@ -653,7 +690,7 @@ function DiagramA1Internal({
             <ParallelChevron p1={ED} p2={EE} t={0.5} count={1} />
             <ParallelChevron p1={EB} p2={EC} t={0.5} count={1} />
 
-            {/* Dimension Arcs (Blue for Left 3 & 6, Green for Base x & 8 bowing downward with side=1) */}
+            {/* ExStep 1: Left 3 & 6 (Blue) */}
             <DimensionArc
               p1={EA}
               p2={ED}
@@ -672,6 +709,7 @@ function DiagramA1Internal({
               highlight={exStep >= 1}
               highlightColor={COLOR_LEFT}
             />
+            {/* ExStep 2: Base x & 8 (Green), ExStep 3: x = 4 */}
             <DimensionArc
               p1={ED}
               p2={EE}
@@ -679,8 +717,8 @@ function DiagramA1Internal({
               side={1}
               label="x"
               answer="4"
-              showAnswer={exStep >= 2}
-              highlight={exStep >= 1}
+              showAnswer={exStep >= 3}
+              highlight={exStep >= 2}
               highlightColor={COLOR_BASE}
             />
             <DimensionArc
@@ -689,7 +727,7 @@ function DiagramA1Internal({
               bulge={28}
               side={1}
               label="8"
-              highlight={exStep >= 1}
+              highlight={exStep >= 2}
               highlightColor={COLOR_BASE}
             />
           </svg>
@@ -701,6 +739,10 @@ function DiagramA1Internal({
 
 // ---------------------------------------------------------------------------
 // SUB-DIAGRAM 2: A-1 HOURGLASS (AB : AD = AC : AE = BC : DE)
+// Sequential Steps:
+// 1: 엇각, 2: 닮은 삼각형, 3: 왼쪽 대각선 비(파랑), 4: 밑변 비(초록), 5: 오른쪽 대각선 비(빨강)
+// Example Steps:
+// 1: 밑변 비(4, 8 초록), 2: 대각선 비(x, 10 파랑), 3: 정답(x = 5)
 // ---------------------------------------------------------------------------
 function DiagramA1Hourglass({
   step,
@@ -708,23 +750,20 @@ function DiagramA1Hourglass({
   onStepChange,
   onExStepChange,
 }: {
-  step: number;
-  exStep: number;
+  step: number; // 0..5
+  exStep: number; // 0..3
   onStepChange: (s: number) => void;
   onExStepChange: (s: number) => void;
 }) {
   const [rotated, setRotated] = useState(false);
 
-  // Concept Hourglass coordinates: A is intersection of BD and CE
   const A: Point = { x: 145, y: 120 };
   const B: Point = { x: 65, y: 218 };
   const C: Point = { x: 205, y: 218 };
   const t = 0.55;
-  // D is top-right on extension of BA; E is top-left on extension of CA
   const D: Point = { x: A.x - (B.x - A.x) * t, y: A.y - (B.y - A.y) * t };
   const E: Point = { x: A.x - (C.x - A.x) * t, y: A.y - (C.y - A.y) * t };
 
-  // Example 2 Hourglass coordinates (ED=4, BC=8, AB=10, AD=x=5)
   const EA: Point = { x: 155, y: 118 };
   const EB: Point = { x: 72, y: 218 };
   const EC: Point = { x: 215, y: 218 };
@@ -736,39 +775,59 @@ function DiagramA1Hourglass({
     <div className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
       {/* Header Formula */}
       <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+            <span
+              onClick={() => onStepChange(3)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 3 ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 3 ? COLOR_LEFT : undefined }}
+            >
               <span className="overline decoration-2">AB</span> :{" "}
               <span className="overline decoration-2">AD</span>
             </span>{" "}
             ={" "}
-            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+            <span
+              onClick={() => onStepChange(5)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 5 ? "bg-rose-50 ring-1 ring-rose-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 5 ? COLOR_RIGHT : undefined }}
+            >
               <span className="overline decoration-2">AC</span> :{" "}
               <span className="overline decoration-2">AE</span>
             </span>{" "}
             ={" "}
-            <span style={{ color: step >= 3 ? COLOR_BASE : undefined }}>
+            <span
+              onClick={() => onStepChange(4)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 4 ? "bg-emerald-50 ring-1 ring-emerald-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 4 ? COLOR_BASE : undefined }}
+            >
               <span className="overline decoration-2">BC</span> :{" "}
               <span className="overline decoration-2">DE</span>
             </span>
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 flex-wrap">
           {[
-            { s: 1, label: "① 엇각" },
-            { s: 2, label: "② 닮은 삼각형" },
-            { s: 3, label: "③ 길이의 비" },
+            { s: 1, label: "① 엇각", activeBg: "bg-slate-800 text-white" },
+            { s: 2, label: "② 닮음", activeBg: "bg-amber-700 text-white" },
+            { s: 3, label: "③ 왼쪽 비", activeBg: "bg-blue-600 text-white" },
+            { s: 4, label: "④ 밑변 비", activeBg: "bg-emerald-600 text-white" },
+            { s: 5, label: "⑤ 오른쪽 비", activeBg: "bg-rose-600 text-white" },
           ].map((btn) => (
             <button
               key={btn.s}
               onClick={() => onStepChange(step === btn.s ? btn.s - 1 : btn.s)}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-2 py-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
                 step >= btn.s
-                  ? "bg-emerald-600 text-white shadow-xs scale-105"
+                  ? `${btn.activeBg} shadow-xs scale-105`
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -778,14 +837,13 @@ function DiagramA1Hourglass({
           {step >= 2 && (
             <button
               onClick={() => setRotated(!rotated)}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+              className={`px-2 py-1 rounded-xl text-[11px] font-extrabold border transition-all cursor-pointer ${
                 rotated
                   ? "bg-amber-500 text-white border-amber-600"
                   : "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100"
               }`}
-              title="위쪽 삼각형을 180도 회전해 아래 삼각형과 방향 맞추기"
             >
-              {rotated ? "원래대로" : "180° 회전 비교"}
+              {rotated ? "원래대로" : "180° 회전"}
             </button>
           )}
         </div>
@@ -795,8 +853,9 @@ function DiagramA1Hourglass({
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-center">
         {/* LEFT: CONCEPT HOURGLASS */}
         <div
-          onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
+          onClick={() => onStepChange(step < 5 ? step + 1 : 0)}
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
+          title="클릭할 때마다 ①엇각 ➔ ②닮음 ➔ ③왼쪽 비 ➔ ④밑변 비 ➔ ⑤오른쪽 비 순서로 나타납니다"
         >
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 2: Brown Similar Triangles */}
@@ -813,7 +872,7 @@ function DiagramA1Hourglass({
                   <BrownTriangleHighlight pts={[A, D, E]} delayMs={90} />
                   {rotated && (
                     <>
-                      <AngleDot v={D} p1={A} p2={E} r={14} color="#2563eb" />
+                      <AngleDot v={D} p1={A} p2={E} r={14} color="#ea580c" />
                       <AngleCross v={E} p1={A} p2={D} r={14} color="#2563eb" />
                     </>
                   )}
@@ -827,7 +886,7 @@ function DiagramA1Hourglass({
             <ParallelChevron p1={E} p2={D} t={0.5} count={1} />
             <ParallelChevron p1={B} p2={C} t={0.5} count={1} />
 
-            {/* Diagonals BD and CE with small top extensions */}
+            {/* Diagonals BD and CE */}
             <ExtendedLine p1={B} p2={D} extLeft={0} extRight={18} endArrow={false} />
             <ExtendedLine p1={C} p2={E} extLeft={0} extRight={18} endArrow={false} />
 
@@ -841,18 +900,27 @@ function DiagramA1Hourglass({
               </>
             )}
 
-            {/* Step 3: Color-coded Ratio Loops (Blue on BD, Red on CE, Green on BC & ED) */}
+            {/* Step 3: Left Diagonal BD (Blue: AB & AD) */}
             {step >= 3 && (
               <>
-                {/* Diagonal BD (Blue): AB & AD */}
                 <RatioCurve p1={A} p2={B} bulge={26} side={1} delayMs={0} color={COLOR_LEFT} />
-                <RatioCurve p1={D} p2={A} bulge={22} side={1} delayMs={80} color={COLOR_LEFT} />
-                {/* Diagonal CE (Red): AC & AE */}
-                <RatioCurve p1={A} p2={C} bulge={26} side={-1} delayMs={160} color={COLOR_RIGHT} />
-                <RatioCurve p1={E} p2={A} bulge={22} side={-1} delayMs={240} color={COLOR_RIGHT} />
-                {/* Parallel Bases (Green): BC (downward) & ED (upward) */}
-                <RatioCurve p1={B} p2={C} bulge={28} side={1} delayMs={320} color={COLOR_BASE} />
-                <RatioCurve p1={E} p2={D} bulge={22} side={-1} delayMs={400} color={COLOR_BASE} />
+                <RatioCurve p1={D} p2={A} bulge={22} side={1} delayMs={90} color={COLOR_LEFT} />
+              </>
+            )}
+
+            {/* Step 4: Parallel Bases (Green: BC & ED) */}
+            {step >= 4 && (
+              <>
+                <RatioCurve p1={B} p2={C} bulge={28} side={1} delayMs={0} color={COLOR_BASE} />
+                <RatioCurve p1={E} p2={D} bulge={22} side={-1} delayMs={90} color={COLOR_BASE} />
+              </>
+            )}
+
+            {/* Step 5: Right Diagonal CE (Red: AC & AE) */}
+            {step >= 5 && (
+              <>
+                <RatioCurve p1={A} p2={C} bulge={26} side={-1} delayMs={0} color={COLOR_RIGHT} />
+                <RatioCurve p1={E} p2={A} bulge={22} side={-1} delayMs={90} color={COLOR_RIGHT} />
               </>
             )}
 
@@ -877,23 +945,31 @@ function DiagramA1Hourglass({
 
         {/* RIGHT: EXAMPLE 2 (4, 8, 10, x = 5) */}
         <div
-          onClick={() => onExStepChange(exStep < 2 ? exStep + 1 : 0)}
+          onClick={() => onExStepChange(exStep < 3 ? exStep + 1 : 0)}
           className="relative bg-indigo-50/40 hover:bg-indigo-50/70 rounded-2xl border border-indigo-200/70 p-2 cursor-pointer transition-colors"
+          title="클릭할 때마다 ①밑변 비(4,8) ➔ ②대각선 비(x,10) ➔ ③정답(x=5) 순서로 나타납니다"
         >
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onExStepChange(exStep < 2 ? exStep + 1 : 0);
-              }}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                exStep >= 2
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
-              }`}
-            >
-              {exStep === 0 ? "예제 확인" : exStep === 1 ? "정답 보기" : "x = 5 완료"}
-            </button>
+          <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
+            {[
+              { s: 1, label: "① 밑변" },
+              { s: 2, label: "② 왼쪽" },
+              { s: 3, label: "③ x=5" },
+            ].map((b) => (
+              <button
+                key={b.s}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExStepChange(exStep === b.s ? b.s - 1 : b.s);
+                }}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                  exStep >= b.s
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-indigo-700 border border-indigo-200"
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
           </div>
 
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
@@ -905,7 +981,7 @@ function DiagramA1Hourglass({
             <ExtendedLine p1={EB} p2={ED} extLeft={0} extRight={18} endArrow={false} />
             <ExtendedLine p1={EC} p2={EE} extLeft={0} extRight={18} endArrow={false} />
 
-            {/* Dimension Arcs: Green for parallel bases 4 (upward) & 8 (downward), Blue for diagonal 10 & x */}
+            {/* ExStep 1: Parallel bases 4 & 8 (Green) */}
             <DimensionArc
               p1={EE}
               p2={ED}
@@ -924,13 +1000,14 @@ function DiagramA1Hourglass({
               highlight={exStep >= 1}
               highlightColor={COLOR_BASE}
             />
+            {/* ExStep 2: Diagonal 10 & x (Blue), ExStep 3: x = 5 */}
             <DimensionArc
               p1={EA}
               p2={EB}
               bulge={26}
               side={-1}
               label="10"
-              highlight={exStep >= 1}
+              highlight={exStep >= 2}
               highlightColor={COLOR_LEFT}
             />
             <DimensionArc
@@ -940,8 +1017,8 @@ function DiagramA1Hourglass({
               side={1}
               label="x"
               answer="5"
-              showAnswer={exStep >= 2}
-              highlight={exStep >= 1}
+              showAnswer={exStep >= 3}
+              highlight={exStep >= 2}
               highlightColor={COLOR_LEFT}
               labelOffset={8}
             />
@@ -954,6 +1031,10 @@ function DiagramA1Hourglass({
 
 // ---------------------------------------------------------------------------
 // SUB-DIAGRAM 3: A-2 INTERNAL PARTIAL SIDES (AD : DB = AE : EC)
+// Sequential Steps:
+// 1: 보조선·평행이동, 2: 동위각·삼각형, 3: 왼쪽 비(파랑 AD:DB), 4: 오른쪽 비(빨강 AE:EC)
+// Example Steps:
+// 1: 왼쪽 비(10, 5 파랑), 2: 오른쪽 비(6, x 빨강), 3: 정답(x = 3)
 // ---------------------------------------------------------------------------
 function DiagramA2Internal({
   step,
@@ -961,22 +1042,19 @@ function DiagramA2Internal({
   onStepChange,
   onExStepChange,
 }: {
-  step: number; // 0: base, 1: aux line EF + slide DB->EF, 2: angles & brown triangles, 3: color snowman loops
-  exStep: number; // 0: problem, 1: ratio hint, 2: x=3
+  step: number; // 0..4
+  exStep: number; // 0..3
   onStepChange: (s: number) => void;
   onExStepChange: (s: number) => void;
 }) {
-  // Concept triangle coordinates
   const A: Point = { x: 145, y: 42 };
   const B: Point = { x: 65, y: 215 };
   const C: Point = { x: 215, y: 215 };
   const t = 0.54;
   const D = lerpPt(A, B, t);
   const E = lerpPt(A, C, t);
-  // F on BC such that EF || AB => vector EF = vector DB
   const F: Point = { x: E.x + (B.x - D.x), y: E.y + (B.y - D.y) };
 
-  // Example 3 coordinates (10, 5, 6, x=3 => 2:1 ratio)
   const EA: Point = { x: 175, y: 46 };
   const EB: Point = { x: 52, y: 215 };
   const EC: Point = { x: 232, y: 215 };
@@ -988,34 +1066,47 @@ function DiagramA2Internal({
     <div className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
       {/* Header Formula */}
       <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+            <span
+              onClick={() => onStepChange(3)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 3 ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 3 ? COLOR_LEFT : undefined }}
+            >
               <span className="overline decoration-2">AD</span> :{" "}
               <span className="overline decoration-2">DB</span>
             </span>{" "}
             ={" "}
-            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+            <span
+              onClick={() => onStepChange(4)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 4 ? "bg-rose-50 ring-1 ring-rose-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 4 ? COLOR_RIGHT : undefined }}
+            >
               <span className="overline decoration-2">AE</span> :{" "}
               <span className="overline decoration-2">EC</span>
             </span>
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 flex-wrap">
           {[
-            { s: 1, label: "① 보조선·평행이동" },
-            { s: 2, label: "② 동위각·삼각형" },
-            { s: 3, label: "③ 길이의 비" },
+            { s: 1, label: "① 평행이동", activeBg: "bg-slate-800 text-white" },
+            { s: 2, label: "② 각·닮음", activeBg: "bg-amber-700 text-white" },
+            { s: 3, label: "③ 왼쪽 비", activeBg: "bg-blue-600 text-white" },
+            { s: 4, label: "④ 오른쪽 비", activeBg: "bg-rose-600 text-white" },
           ].map((btn) => (
             <button
               key={btn.s}
               onClick={() => onStepChange(step === btn.s ? btn.s - 1 : btn.s)}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-2 py-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
                 step >= btn.s
-                  ? "bg-emerald-600 text-white shadow-xs scale-105"
+                  ? `${btn.activeBg} shadow-xs scale-105`
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -1028,8 +1119,9 @@ function DiagramA2Internal({
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-center">
         {/* LEFT: CONCEPT FIGURE */}
         <div
-          onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
+          onClick={() => onStepChange(step < 4 ? step + 1 : 0)}
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
+          title="클릭할 때마다 ①평행이동 ➔ ②각·닮음 ➔ ③왼쪽 비 ➔ ④오른쪽 비 순서로 나타납니다"
         >
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 1: Parallelogram DBFE subtle fill */}
@@ -1101,7 +1193,7 @@ function DiagramA2Internal({
               </>
             )}
 
-            {/* Step 2: Corresponding Angles on ADE and EFC (Cross at A & E, Dot at E & C) */}
+            {/* Step 2: Corresponding Angles on ADE and EFC */}
             {step >= 2 && (
               <>
                 <AngleCross v={A} p1={D} p2={E} r={19} color="#2563eb" />
@@ -1111,13 +1203,19 @@ function DiagramA2Internal({
               </>
             )}
 
-            {/* Step 3: Color-coded Snowman Loops (Blue Left AD:DB, Red Right AE:EC) */}
+            {/* Step 3: Left Snowman Loops (Blue: AD & DB) */}
             {step >= 3 && (
               <>
                 <RatioCurve p1={A} p2={D} bulge={26} side={1} delayMs={0} color={COLOR_LEFT} />
                 <RatioCurve p1={D} p2={B} bulge={24} side={1} delayMs={90} color={COLOR_LEFT} />
-                <RatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={180} color={COLOR_RIGHT} />
-                <RatioCurve p1={E} p2={C} bulge={24} side={-1} delayMs={270} color={COLOR_RIGHT} />
+              </>
+            )}
+
+            {/* Step 4: Right Snowman Loops (Red: AE & EC) */}
+            {step >= 4 && (
+              <>
+                <RatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={0} color={COLOR_RIGHT} />
+                <RatioCurve p1={E} p2={C} bulge={24} side={-1} delayMs={90} color={COLOR_RIGHT} />
               </>
             )}
 
@@ -1145,23 +1243,31 @@ function DiagramA2Internal({
 
         {/* RIGHT: EXAMPLE 3 (10, 5, 6, x = 3) */}
         <div
-          onClick={() => onExStepChange(exStep < 2 ? exStep + 1 : 0)}
+          onClick={() => onExStepChange(exStep < 3 ? exStep + 1 : 0)}
           className="relative bg-indigo-50/40 hover:bg-indigo-50/70 rounded-2xl border border-indigo-200/70 p-2 cursor-pointer transition-colors"
+          title="클릭할 때마다 ①왼쪽 비(10,5) ➔ ②오른쪽 비(6,x) ➔ ③정답(x=3) 순서로 나타납니다"
         >
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onExStepChange(exStep < 2 ? exStep + 1 : 0);
-              }}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                exStep >= 2
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
-              }`}
-            >
-              {exStep === 0 ? "예제 확인" : exStep === 1 ? "정답 보기" : "x = 3 완료"}
-            </button>
+          <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
+            {[
+              { s: 1, label: "① 왼쪽" },
+              { s: 2, label: "② 오른쪽" },
+              { s: 3, label: "③ x=3" },
+            ].map((b) => (
+              <button
+                key={b.s}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExStepChange(exStep === b.s ? b.s - 1 : b.s);
+                }}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                  exStep >= b.s
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-indigo-700 border border-indigo-200"
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
           </div>
 
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
@@ -1176,7 +1282,7 @@ function DiagramA2Internal({
             <ParallelChevron p1={ED} p2={EE} t={0.5} count={1} />
             <ParallelChevron p1={EB} p2={EC} t={0.5} count={1} />
 
-            {/* Dimension Arcs (Blue for Left 10 & 5, Red for Right 6 & x) */}
+            {/* ExStep 1: Left 10 & 5 (Blue) */}
             <DimensionArc
               p1={EA}
               p2={ED}
@@ -1195,13 +1301,14 @@ function DiagramA2Internal({
               highlight={exStep >= 1}
               highlightColor={COLOR_LEFT}
             />
+            {/* ExStep 2: Right 6 & x (Red), ExStep 3: x = 3 */}
             <DimensionArc
               p1={EA}
               p2={EE}
               bulge={24}
               side={-1}
               label="6"
-              highlight={exStep >= 1}
+              highlight={exStep >= 2}
               highlightColor={COLOR_RIGHT}
             />
             <DimensionArc
@@ -1211,8 +1318,8 @@ function DiagramA2Internal({
               side={-1}
               label="x"
               answer="3"
-              showAnswer={exStep >= 2}
-              highlight={exStep >= 1}
+              showAnswer={exStep >= 3}
+              highlight={exStep >= 2}
               highlightColor={COLOR_RIGHT}
               labelOffset={6}
             />
@@ -1225,6 +1332,10 @@ function DiagramA2Internal({
 
 // ---------------------------------------------------------------------------
 // SUB-DIAGRAM 4: A-2 HOURGLASS PARTIAL SIDES (AD : DB = AE : EC)
+// Sequential Steps:
+// 1: 보조선·평행이동, 2: 각·삼각형, 3: 왼쪽 대각선 비(파랑 AD:DB), 4: 오른쪽 대각선 비(빨강 AE:EC)
+// Example Steps:
+// 1: 오른쪽 비(3, 9 빨강), 2: 왼쪽 비(4, x 파랑), 3: 정답(x = 12)
 // ---------------------------------------------------------------------------
 function DiagramA2Hourglass({
   step,
@@ -1232,22 +1343,19 @@ function DiagramA2Hourglass({
   onStepChange,
   onExStepChange,
 }: {
-  step: number;
-  exStep: number;
+  step: number; // 0..4
+  exStep: number; // 0..3
   onStepChange: (s: number) => void;
   onExStepChange: (s: number) => void;
 }) {
-  // Concept Hourglass with auxiliary line DF || EC (F on BC extension)
   const A: Point = { x: 118, y: 118 };
   const B: Point = { x: 42, y: 218 };
   const C: Point = { x: 162, y: 218 };
   const t = 0.52;
   const D: Point = { x: A.x - (B.x - A.x) * t, y: A.y - (B.y - A.y) * t };
   const E: Point = { x: A.x - (C.x - A.x) * t, y: A.y - (C.y - A.y) * t };
-  // F on horizontal line y=218 such that DF || EC => vector DF = vector EC
   const F: Point = { x: D.x + (C.x - E.x), y: C.y };
 
-  // Example 4 coordinates (3, 4, 9, x=12)
   const EA: Point = { x: 162, y: 102 };
   const EB: Point = { x: 65, y: 218 };
   const EC: Point = { x: 215, y: 218 };
@@ -1259,34 +1367,47 @@ function DiagramA2Hourglass({
     <div className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
       {/* Header Formula */}
       <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+            <span
+              onClick={() => onStepChange(3)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 3 ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 3 ? COLOR_LEFT : undefined }}
+            >
               <span className="overline decoration-2">AD</span> :{" "}
               <span className="overline decoration-2">DB</span>
             </span>{" "}
             ={" "}
-            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+            <span
+              onClick={() => onStepChange(4)}
+              className={`cursor-pointer px-1 py-0.5 rounded-lg transition-all ${
+                step >= 4 ? "bg-rose-50 ring-1 ring-rose-200" : "hover:bg-slate-100"
+              }`}
+              style={{ color: step >= 4 ? COLOR_RIGHT : undefined }}
+            >
               <span className="overline decoration-2">AE</span> :{" "}
               <span className="overline decoration-2">EC</span>
             </span>
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 flex-wrap">
           {[
-            { s: 1, label: "① 보조선·평행이동" },
-            { s: 2, label: "② 각·삼각형" },
-            { s: 3, label: "③ 길이의 비" },
+            { s: 1, label: "① 평행이동", activeBg: "bg-slate-800 text-white" },
+            { s: 2, label: "② 각·닮음", activeBg: "bg-amber-700 text-white" },
+            { s: 3, label: "③ 왼쪽 비", activeBg: "bg-blue-600 text-white" },
+            { s: 4, label: "④ 오른쪽 비", activeBg: "bg-rose-600 text-white" },
           ].map((btn) => (
             <button
               key={btn.s}
               onClick={() => onStepChange(step === btn.s ? btn.s - 1 : btn.s)}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-2 py-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
                 step >= btn.s
-                  ? "bg-emerald-600 text-white shadow-xs scale-105"
+                  ? `${btn.activeBg} shadow-xs scale-105`
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -1299,8 +1420,9 @@ function DiagramA2Hourglass({
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-center">
         {/* LEFT: CONCEPT HOURGLASS WITH AUXILIARY DF */}
         <div
-          onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
+          onClick={() => onStepChange(step < 4 ? step + 1 : 0)}
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
+          title="클릭할 때마다 ①평행이동 ➔ ②각·닮음 ➔ ③왼쪽 비 ➔ ④오른쪽 비 순서로 나타납니다"
         >
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 1: Parallelogram ECDF subtle fill */}
@@ -1313,7 +1435,7 @@ function DiagramA2Hourglass({
               />
             )}
 
-            {/* Step 2: Brown Highlight matching Photo 2 */}
+            {/* Step 2: Brown Highlight */}
             {step >= 2 && (
               <>
                 <BrownTriangleHighlight pts={[A, B, C]} />
@@ -1378,7 +1500,7 @@ function DiagramA2Hourglass({
               </>
             )}
 
-            {/* Step 2: Angles matching Photo 2 */}
+            {/* Step 2: Angles */}
             {step >= 2 && (
               <>
                 <AngleDot v={D} p1={E} p2={A} r={15} color="#ea580c" />
@@ -1389,13 +1511,19 @@ function DiagramA2Hourglass({
               </>
             )}
 
-            {/* Step 3: Color-coded Ratio Loops (Blue on BD, Red on EC) */}
+            {/* Step 3: Left Diagonal BD Ratio (Blue: AD & DB) */}
             {step >= 3 && (
               <>
                 <RatioCurve p1={D} p2={A} bulge={20} side={1} delayMs={0} color={COLOR_LEFT} />
                 <RatioCurve p1={D} p2={B} bulge={42} side={1} delayMs={90} color={COLOR_LEFT} />
-                <RatioCurve p1={E} p2={A} bulge={20} side={-1} delayMs={180} color={COLOR_RIGHT} />
-                <RatioCurve p1={E} p2={C} bulge={42} side={-1} delayMs={270} color={COLOR_RIGHT} />
+              </>
+            )}
+
+            {/* Step 4: Right Diagonal EC Ratio (Red: AE & EC) */}
+            {step >= 4 && (
+              <>
+                <RatioCurve p1={E} p2={A} bulge={20} side={-1} delayMs={0} color={COLOR_RIGHT} />
+                <RatioCurve p1={E} p2={C} bulge={42} side={-1} delayMs={90} color={COLOR_RIGHT} />
               </>
             )}
 
@@ -1423,23 +1551,31 @@ function DiagramA2Hourglass({
 
         {/* RIGHT: EXAMPLE 4 (3, 4, 9, x = 12) */}
         <div
-          onClick={() => onExStepChange(exStep < 2 ? exStep + 1 : 0)}
+          onClick={() => onExStepChange(exStep < 3 ? exStep + 1 : 0)}
           className="relative bg-indigo-50/40 hover:bg-indigo-50/70 rounded-2xl border border-indigo-200/70 p-2 cursor-pointer transition-colors"
+          title="클릭할 때마다 ①오른쪽 비(3,9) ➔ ②왼쪽 비(4,x) ➔ ③정답(x=12) 순서로 나타납니다"
         >
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onExStepChange(exStep < 2 ? exStep + 1 : 0);
-              }}
-              className={`px-2.5 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                exStep >= 2
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
-              }`}
-            >
-              {exStep === 0 ? "예제 확인" : exStep === 1 ? "정답 보기" : "x = 12 완료"}
-            </button>
+          <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
+            {[
+              { s: 1, label: "① 오른쪽" },
+              { s: 2, label: "② 왼쪽" },
+              { s: 3, label: "③ x=12" },
+            ].map((b) => (
+              <button
+                key={b.s}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExStepChange(exStep === b.s ? b.s - 1 : b.s);
+                }}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                  exStep >= b.s
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-indigo-700 border border-indigo-200"
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
           </div>
 
           <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
@@ -1451,7 +1587,7 @@ function DiagramA2Hourglass({
             <ExtendedLine p1={EB} p2={ED} extLeft={0} extRight={18} endArrow={false} />
             <ExtendedLine p1={EC} p2={EE} extLeft={0} extRight={18} endArrow={false} />
 
-            {/* Dimension Arcs (Red for 3 & 9 on EC, Blue for 4 & x=12 on BD) */}
+            {/* ExStep 1: Right 3 & 9 (Red) */}
             <DimensionArc
               p1={EE}
               p2={EA}
@@ -1462,15 +1598,6 @@ function DiagramA2Hourglass({
               highlightColor={COLOR_RIGHT}
             />
             <DimensionArc
-              p1={EA}
-              p2={ED}
-              bulge={18}
-              side={-1}
-              label="4"
-              highlight={exStep >= 1}
-              highlightColor={COLOR_LEFT}
-            />
-            <DimensionArc
               p1={EE}
               p2={EC}
               bulge={44}
@@ -1479,6 +1606,16 @@ function DiagramA2Hourglass({
               highlight={exStep >= 1}
               highlightColor={COLOR_RIGHT}
             />
+            {/* ExStep 2: Left 4 & x (Blue), ExStep 3: x = 12 */}
+            <DimensionArc
+              p1={EA}
+              p2={ED}
+              bulge={18}
+              side={-1}
+              label="4"
+              highlight={exStep >= 2}
+              highlightColor={COLOR_LEFT}
+            />
             <DimensionArc
               p1={ED}
               p2={EB}
@@ -1486,8 +1623,8 @@ function DiagramA2Hourglass({
               side={1}
               label="x"
               answer="12"
-              showAnswer={exStep >= 2}
-              highlight={exStep >= 1}
+              showAnswer={exStep >= 3}
+              highlight={exStep >= 2}
               highlightColor={COLOR_LEFT}
             />
           </svg>
@@ -1499,6 +1636,10 @@ function DiagramA2Hourglass({
 
 // ---------------------------------------------------------------------------
 // SUB-DIAGRAM 5: SECTION B (선분 길이의 비 일정 ⇒ 평행)
+// Sequential Steps:
+// 1: 왼쪽 비(파랑), 2: 오른쪽 비(빨강), 3: 평행 기호(초록)
+// Example Steps:
+// 1: 양변 비 & 평행 표시, 2: y° = 60°, 3: x = 14
 // ---------------------------------------------------------------------------
 function DiagramSectionB({
   step,
@@ -1506,26 +1647,23 @@ function DiagramSectionB({
   onStepChange,
   onExStepChange,
 }: {
-  step: number; // 0: ratio curves only, 1: green parallel lines & chevrons pop in!
-  exStep: number; // 0: problem, 1: parallel mark, 2: y=60, 3: x=14
+  step: number; // 0..3
+  exStep: number; // 0..3
   onStepChange: (s: number) => void;
   onExStepChange: (s: number) => void;
 }) {
-  // Left concept figure
   const A1: Point = { x: 72, y: 36 };
   const B1: Point = { x: 24, y: 175 };
   const C1: Point = { x: 118, y: 175 };
   const D1 = lerpPt(A1, B1, 0.55);
   const E1 = lerpPt(A1, C1, 0.55);
 
-  // Right concept figure
   const A2: Point = { x: 208, y: 36 };
   const B2: Point = { x: 160, y: 175 };
   const C2: Point = { x: 254, y: 175 };
   const D2 = lerpPt(A2, B2, 0.55);
   const E2 = lerpPt(A2, C2, 0.55);
 
-  // Bottom Example 5 figure (y°=60°, DE=7, BC=x=14)
   const EA: Point = { x: 145, y: 24 };
   const EB: Point = { x: 64, y: 180 };
   const EC: Point = { x: 232, y: 180 };
@@ -1540,52 +1678,65 @@ function DiagramSectionB({
           <div className="flex items-center gap-1.5">
             <span className="text-amber-500 text-lg font-black">★</span>
             <span className="text-base sm:text-lg font-black text-slate-900">
-              <span style={{ color: COLOR_LEFT }}>
+              <span style={{ color: step >= 1 ? COLOR_LEFT : undefined }}>
                 <span className="overline decoration-2">AB</span> :{" "}
                 <span className="overline decoration-2">AD</span>
               </span>{" "}
               ={" "}
-              <span style={{ color: COLOR_RIGHT }}>
+              <span style={{ color: step >= 2 ? COLOR_RIGHT : undefined }}>
                 <span className="overline decoration-2">AC</span> :{" "}
                 <span className="overline decoration-2">AE</span>
               </span>{" "}
               <span className="text-emerald-600 mx-0.5">⇒</span>{" "}
-              <span className="text-emerald-700">평행</span>
+              <span style={{ color: step >= 3 ? COLOR_BASE : undefined }}>평행</span>
             </span>
           </div>
-          <button
-            onClick={() => onStepChange(step === 0 ? 1 : 0)}
-            className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              step >= 1
-                ? "bg-emerald-600 text-white shadow-xs scale-105"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-            }`}
-          >
-            {step >= 1 ? "✅ 평행 표시 완료" : "▶ 평행 기호 켜기"}
-          </button>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-amber-500 text-lg font-black">★</span>
-          <span className="text-base sm:text-lg font-black text-slate-900">
-            <span style={{ color: COLOR_LEFT }}>
-              <span className="overline decoration-2">AD</span> :{" "}
-              <span className="overline decoration-2">DB</span>
-            </span>{" "}
-            ={" "}
-            <span style={{ color: COLOR_RIGHT }}>
-              <span className="overline decoration-2">AE</span> :{" "}
-              <span className="overline decoration-2">EC</span>
-            </span>{" "}
-            <span className="text-emerald-600 mx-0.5">⇒</span>{" "}
-            <span className="text-emerald-700">평행</span>
-          </span>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="text-amber-500 text-lg font-black">★</span>
+            <span className="text-base sm:text-lg font-black text-slate-900">
+              <span style={{ color: step >= 1 ? COLOR_LEFT : undefined }}>
+                <span className="overline decoration-2">AD</span> :{" "}
+                <span className="overline decoration-2">DB</span>
+              </span>{" "}
+              ={" "}
+              <span style={{ color: step >= 2 ? COLOR_RIGHT : undefined }}>
+                <span className="overline decoration-2">AE</span> :{" "}
+                <span className="overline decoration-2">EC</span>
+              </span>{" "}
+              <span className="text-emerald-600 mx-0.5">⇒</span>{" "}
+              <span style={{ color: step >= 3 ? COLOR_BASE : undefined }}>평행</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {[
+              { s: 1, label: "① 왼쪽 비", activeBg: "bg-blue-600 text-white" },
+              { s: 2, label: "② 오른쪽 비", activeBg: "bg-rose-600 text-white" },
+              { s: 3, label: "③ 평행", activeBg: "bg-emerald-600 text-white" },
+            ].map((btn) => (
+              <button
+                key={btn.s}
+                onClick={() => onStepChange(step === btn.s ? btn.s - 1 : btn.s)}
+                className={`px-2 py-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer ${
+                  step >= btn.s
+                    ? `${btn.activeBg} shadow-xs scale-105`
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Top Concept Diagrams (2 Triangles) */}
       <div
-        onClick={() => onStepChange(step === 0 ? 1 : 0)}
+        onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
         className="bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 mb-3 cursor-pointer transition-colors"
+        title="클릭할 때마다 ①왼쪽 비 ➔ ②오른쪽 비 ➔ ③평행 기호 순서로 나타납니다"
       >
         <svg viewBox="0 0 280 198" className="w-full h-auto overflow-visible select-none">
           {/* LEFT TRIANGLE: AB:AD = AC:AE */}
@@ -1596,14 +1747,30 @@ function DiagramSectionB({
             strokeWidth={2}
           />
           <ExtendedLine p1={D1} p2={E1} extLeft={18} extRight={20} endArrow />
-          {/* Color-coded ratio arcs (Blue Left, Red Right) */}
-          <path d={makeArcPath(A1, D1, 18, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
-          <path d={makeArcPath(A1, B1, 34, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
-          <path d={makeArcPath(A1, E1, 18, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
-          <path d={makeArcPath(A1, C1, 34, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
+          {/* Base thin grey arcs */}
+          <path d={makeArcPath(A1, D1, 18, 1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
+          <path d={makeArcPath(A1, B1, 34, 1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
+          <path d={makeArcPath(A1, E1, 18, -1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
+          <path d={makeArcPath(A1, C1, 34, -1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
 
-          {/* Green Parallel Highlight on Step 1 */}
+          {/* Step 1: Left Blue Ratio Curves */}
           {step >= 1 && (
+            <>
+              <RatioCurve p1={A1} p2={D1} bulge={18} side={1} delayMs={0} color={COLOR_LEFT} />
+              <RatioCurve p1={A1} p2={B1} bulge={34} side={1} delayMs={70} color={COLOR_LEFT} />
+            </>
+          )}
+
+          {/* Step 2: Right Red Ratio Curves */}
+          {step >= 2 && (
+            <>
+              <RatioCurve p1={A1} p2={E1} bulge={18} side={-1} delayMs={0} color={COLOR_RIGHT} />
+              <RatioCurve p1={A1} p2={C1} bulge={34} side={-1} delayMs={70} color={COLOR_RIGHT} />
+            </>
+          )}
+
+          {/* Step 3: Green Parallel Highlight */}
+          {step >= 3 && (
             <g>
               <line
                 x1={D1.x}
@@ -1642,14 +1809,30 @@ function DiagramSectionB({
             strokeWidth={2}
           />
           <ExtendedLine p1={D2} p2={E2} extLeft={18} extRight={20} endArrow />
-          {/* Color-coded ratio arcs (Blue Left, Red Right) */}
-          <path d={makeArcPath(A2, D2, 18, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
-          <path d={makeArcPath(D2, B2, 16, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
-          <path d={makeArcPath(A2, E2, 18, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
-          <path d={makeArcPath(E2, C2, 16, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
+          {/* Base thin grey arcs */}
+          <path d={makeArcPath(A2, D2, 18, 1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
+          <path d={makeArcPath(D2, B2, 16, 1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
+          <path d={makeArcPath(A2, E2, 18, -1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
+          <path d={makeArcPath(E2, C2, 16, -1)} fill="none" stroke="#94a3b8" strokeWidth={1.2} />
 
-          {/* Green Parallel Highlight on Step 1 */}
+          {/* Step 1: Left Blue Ratio Curves */}
           {step >= 1 && (
+            <>
+              <RatioCurve p1={A2} p2={D2} bulge={18} side={1} delayMs={0} color={COLOR_LEFT} />
+              <RatioCurve p1={D2} p2={B2} bulge={16} side={1} delayMs={70} color={COLOR_LEFT} />
+            </>
+          )}
+
+          {/* Step 2: Right Red Ratio Curves */}
+          {step >= 2 && (
+            <>
+              <RatioCurve p1={A2} p2={E2} bulge={18} side={-1} delayMs={0} color={COLOR_RIGHT} />
+              <RatioCurve p1={E2} p2={C2} bulge={16} side={-1} delayMs={70} color={COLOR_RIGHT} />
+            </>
+          )}
+
+          {/* Step 3: Green Parallel Highlight */}
+          {step >= 3 && (
             <g>
               <line
                 x1={D2.x}
@@ -1678,7 +1861,7 @@ function DiagramSectionB({
           <text x={B2.x - 10} y={B2.y + 5} textAnchor="middle" fontSize="13" fontWeight="800" fill="#0f172a">B</text>
           <text x={C2.x + 10} y={C2.y + 5} textAnchor="middle" fontSize="13" fontWeight="800" fill="#0f172a">C</text>
           <text x={D2.x - 10} y={D2.y - 4} textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">D</text>
-          <text x={E2.x + 10} y={E1.y - 4} textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">E</text>
+          <text x={E2.x + 10} y={E2.y - 4} textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">E</text>
         </svg>
       </div>
 
@@ -1756,7 +1939,7 @@ function DiagramSectionB({
             </g>
           )}
 
-          {/* Dimension Arcs for DE=7 and BC=x=14 (bowing downward with side=1) */}
+          {/* Dimension Arcs for DE=7 and BC=x=14 */}
           <DimensionArc
             p1={ED}
             p2={EE}
@@ -1789,6 +1972,7 @@ function DiagramSectionB({
 function InteractiveDragLab() {
   const [t, setT] = useState<number>(0.5);
   const [ratioMode, setRatioMode] = useState<"whole" | "part">("whole");
+  const [dragStep, setDragStep] = useState<number>(3); // 1: 왼쪽, 2: 밑변, 3: 오른쪽까지 모두
   const svgRef = useRef<SVGSVGElement | null>(null);
   const isDraggingRef = useRef(false);
 
@@ -1853,9 +2037,25 @@ function InteractiveDragLab() {
             <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-600 text-white">
               {isHourglass ? "⏳ 모래시계형 (위쪽 연장선)" : "📐 기본 삼각형 내부"}
             </span>
-            <span className="text-xs font-bold text-slate-500">
-              평행선 DE를 위·아래로 드래그해보세요!
-            </span>
+            <div className="flex items-center gap-1">
+              {[
+                { s: 1, label: "① 왼쪽 비", color: "bg-blue-600 text-white" },
+                ...(ratioMode === "whole"
+                  ? [{ s: 2, label: "② 밑변 비", color: "bg-emerald-600 text-white" }]
+                  : []),
+                { s: 3, label: ratioMode === "whole" ? "③ 오른쪽 비" : "② 오른쪽 비", color: "bg-rose-600 text-white" },
+              ].map((b) => (
+                <button
+                  key={b.s}
+                  onClick={() => setDragStep(dragStep === b.s ? b.s - 1 : b.s)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-extrabold cursor-pointer transition-all ${
+                    dragStep >= b.s ? b.color : "bg-white border border-slate-200 text-slate-600"
+                  }`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -1953,28 +2153,48 @@ function InteractiveDragLab() {
           <AngleCross v={E} p1={A} p2={D} r={20} color="#2563eb" size={5} />
           <AngleCross v={C} p1={A} p2={B} r={22} color="#2563eb" size={5} />
 
-          {/* Color-coded Ratio Curves based on selected mode */}
+          {/* Sequential Color-coded Ratio Curves */}
           {ratioMode === "whole" ? (
             <>
-              <RatioCurve p1={A} p2={B} bulge={58} side={1} color={COLOR_LEFT} />
-              <RatioCurve p1={A} p2={D} bulge={30} side={1} color={COLOR_LEFT} />
-              <RatioCurve p1={A} p2={C} bulge={58} side={-1} color={COLOR_RIGHT} />
-              <RatioCurve p1={A} p2={E} bulge={30} side={-1} color={COLOR_RIGHT} />
-              <RatioCurve p1={B} p2={C} bulge={32} side={1} color={COLOR_BASE} />
-              <RatioCurve
-                p1={isHourglass ? E : D}
-                p2={isHourglass ? D : E}
-                bulge={24}
-                side={isHourglass ? -1 : 1}
-                color={COLOR_BASE}
-              />
+              {dragStep >= 1 && (
+                <>
+                  <RatioCurve p1={A} p2={B} bulge={58} side={1} color={COLOR_LEFT} />
+                  <RatioCurve p1={A} p2={D} bulge={30} side={1} color={COLOR_LEFT} />
+                </>
+              )}
+              {dragStep >= 2 && (
+                <>
+                  <RatioCurve p1={B} p2={C} bulge={32} side={1} color={COLOR_BASE} />
+                  <RatioCurve
+                    p1={isHourglass ? E : D}
+                    p2={isHourglass ? D : E}
+                    bulge={24}
+                    side={isHourglass ? -1 : 1}
+                    color={COLOR_BASE}
+                  />
+                </>
+              )}
+              {dragStep >= 3 && (
+                <>
+                  <RatioCurve p1={A} p2={C} bulge={58} side={-1} color={COLOR_RIGHT} />
+                  <RatioCurve p1={A} p2={E} bulge={30} side={-1} color={COLOR_RIGHT} />
+                </>
+              )}
             </>
           ) : (
             <>
-              <RatioCurve p1={A} p2={D} bulge={30} side={1} color={COLOR_LEFT} />
-              <RatioCurve p1={D} p2={B} bulge={30} side={1} color={COLOR_LEFT} />
-              <RatioCurve p1={A} p2={E} bulge={30} side={-1} color={COLOR_RIGHT} />
-              <RatioCurve p1={E} p2={C} bulge={30} side={-1} color={COLOR_RIGHT} />
+              {dragStep >= 1 && (
+                <>
+                  <RatioCurve p1={A} p2={D} bulge={30} side={1} color={COLOR_LEFT} />
+                  <RatioCurve p1={D} p2={B} bulge={30} side={1} color={COLOR_LEFT} />
+                </>
+              )}
+              {dragStep >= 3 && (
+                <>
+                  <RatioCurve p1={A} p2={E} bulge={30} side={-1} color={COLOR_RIGHT} />
+                  <RatioCurve p1={E} p2={C} bulge={30} side={-1} color={COLOR_RIGHT} />
+                </>
+              )}
             </>
           )}
 
@@ -2020,7 +2240,10 @@ function InteractiveDragLab() {
       <div className="lg:col-span-5 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setRatioMode("whole")}
+            onClick={() => {
+              setRatioMode("whole");
+              setDragStep(3);
+            }}
             className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all cursor-pointer ${
               ratioMode === "whole"
                 ? "bg-slate-900 text-white shadow-sm"
@@ -2030,7 +2253,10 @@ function InteractiveDragLab() {
             AB : AD = AC : AE = BC : DE
           </button>
           <button
-            onClick={() => setRatioMode("part")}
+            onClick={() => {
+              setRatioMode("part");
+              setDragStep(3);
+            }}
             className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all cursor-pointer ${
               ratioMode === "part"
                 ? "bg-slate-900 text-white shadow-sm"
@@ -2053,22 +2279,37 @@ function InteractiveDragLab() {
             </div>
 
             <div className="grid grid-cols-3 gap-2.5 text-center">
-              <div className="bg-blue-50/80 rounded-2xl p-3 border-2 border-blue-200">
-                <div className="text-xs font-extrabold text-blue-700 mb-1">왼쪽 변 (AB : AD)</div>
+              <div
+                onClick={() => setDragStep(1)}
+                className={`rounded-2xl p-3 border-2 cursor-pointer transition-all ${
+                  dragStep >= 1 ? "bg-blue-50/80 border-blue-300" : "bg-white border-slate-200 opacity-50"
+                }`}
+              >
+                <div className="text-xs font-extrabold text-blue-700 mb-1">① 왼쪽 (AB : AD)</div>
                 <div className="text-lg font-black text-blue-700">
                   {lenAB} : {lenAD}
                 </div>
               </div>
-              <div className="bg-rose-50/80 rounded-2xl p-3 border-2 border-rose-200">
-                <div className="text-xs font-extrabold text-rose-600 mb-1">오른쪽 변 (AC : AE)</div>
-                <div className="text-lg font-black text-rose-600">
-                  {lenAC} : {lenAE}
-                </div>
-              </div>
-              <div className="bg-emerald-50/80 rounded-2xl p-3 border-2 border-emerald-200">
-                <div className="text-xs font-extrabold text-emerald-700 mb-1">밑변 (BC : DE)</div>
+              <div
+                onClick={() => setDragStep(2)}
+                className={`rounded-2xl p-3 border-2 cursor-pointer transition-all ${
+                  dragStep >= 2 ? "bg-emerald-50/80 border-emerald-300" : "bg-white border-slate-200 opacity-50"
+                }`}
+              >
+                <div className="text-xs font-extrabold text-emerald-700 mb-1">② 밑변 (BC : DE)</div>
                 <div className="text-lg font-black text-emerald-700">
                   {lenBC} : {lenDE}
+                </div>
+              </div>
+              <div
+                onClick={() => setDragStep(3)}
+                className={`rounded-2xl p-3 border-2 cursor-pointer transition-all ${
+                  dragStep >= 3 ? "bg-rose-50/80 border-rose-300" : "bg-white border-slate-200 opacity-50"
+                }`}
+              >
+                <div className="text-xs font-extrabold text-rose-600 mb-1">③ 오른쪽 (AC : AE)</div>
+                <div className="text-lg font-black text-rose-600">
+                  {lenAC} : {lenAE}
                 </div>
               </div>
             </div>
@@ -2085,14 +2326,24 @@ function InteractiveDragLab() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="bg-blue-50/80 rounded-2xl p-3.5 border-2 border-blue-200">
-                <div className="text-xs font-extrabold text-blue-700 mb-1">왼쪽 변 (AD : DB)</div>
+              <div
+                onClick={() => setDragStep(1)}
+                className={`rounded-2xl p-3.5 border-2 cursor-pointer transition-all ${
+                  dragStep >= 1 ? "bg-blue-50/80 border-blue-300" : "bg-white border-slate-200 opacity-50"
+                }`}
+              >
+                <div className="text-xs font-extrabold text-blue-700 mb-1">① 왼쪽 변 (AD : DB)</div>
                 <div className="text-xl font-black text-blue-700">
                   {lenAD} : {lenDB}
                 </div>
               </div>
-              <div className="bg-rose-50/80 rounded-2xl p-3.5 border-2 border-rose-200">
-                <div className="text-xs font-extrabold text-rose-600 mb-1">오른쪽 변 (AE : EC)</div>
+              <div
+                onClick={() => setDragStep(3)}
+                className={`rounded-2xl p-3.5 border-2 cursor-pointer transition-all ${
+                  dragStep >= 3 ? "bg-rose-50/80 border-rose-300" : "bg-white border-slate-200 opacity-50"
+                }`}
+              >
+                <div className="text-xs font-extrabold text-rose-600 mb-1">② 오른쪽 변 (AE : EC)</div>
                 <div className="text-xl font-black text-rose-600">
                   {lenAE} : {lenEC}
                 </div>
@@ -2112,31 +2363,31 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
   const [activeTab, setActiveTab] = useState<MainTab>("board");
 
   // Individual animation states for the 5 sections matching Photo 2
-  const [sA1Top, setSA1Top] = useState(0);
-  const [exA1Top, setExA1Top] = useState(0);
+  const [sA1Top, setSA1Top] = useState(0); // 0..5
+  const [exA1Top, setExA1Top] = useState(0); // 0..3
 
-  const [sA1Bot, setSA1Bot] = useState(0);
-  const [exA1Bot, setExA1Bot] = useState(0);
+  const [sA1Bot, setSA1Bot] = useState(0); // 0..5
+  const [exA1Bot, setExA1Bot] = useState(0); // 0..3
 
-  const [sA2Top, setSA2Top] = useState(0);
-  const [exA2Top, setExA2Top] = useState(0);
+  const [sA2Top, setSA2Top] = useState(0); // 0..4
+  const [exA2Top, setExA2Top] = useState(0); // 0..3
 
-  const [sA2Bot, setSA2Bot] = useState(0);
-  const [exA2Bot, setExA2Bot] = useState(0);
+  const [sA2Bot, setSA2Bot] = useState(0); // 0..4
+  const [exA2Bot, setExA2Bot] = useState(0); // 0..3
 
-  const [sB, setSB] = useState(0);
-  const [exB, setExB] = useState(0);
+  const [sB, setSB] = useState(0); // 0..3
+  const [exB, setExB] = useState(0); // 0..3
 
   const isAllRevealed =
-    sA1Top === 3 &&
-    exA1Top === 2 &&
-    sA1Bot === 3 &&
-    exA1Bot === 2 &&
-    sA2Top === 3 &&
-    exA2Top === 2 &&
-    sA2Bot === 3 &&
-    exA2Bot === 2 &&
-    sB === 1 &&
+    sA1Top === 5 &&
+    exA1Top === 3 &&
+    sA1Bot === 5 &&
+    exA1Bot === 3 &&
+    sA2Top === 4 &&
+    exA2Top === 3 &&
+    sA2Bot === 4 &&
+    exA2Bot === 3 &&
+    sB === 3 &&
     exB === 3;
 
   const handleToggleAll = () => {
@@ -2152,15 +2403,15 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
       setSB(0);
       setExB(0);
     } else {
-      setSA1Top(3);
-      setExA1Top(2);
-      setSA1Bot(3);
-      setExA1Bot(2);
-      setSA2Top(3);
-      setExA2Top(2);
-      setSA2Bot(3);
-      setExA2Bot(2);
-      setSB(1);
+      setSA1Top(5);
+      setExA1Top(3);
+      setSA1Bot(5);
+      setExA1Bot(3);
+      setSA2Top(4);
+      setExA2Top(3);
+      setSA2Bot(4);
+      setExA2Bot(3);
+      setSB(3);
       setExB(3);
     }
   };
@@ -2305,10 +2556,10 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
 
       {/* MAIN CONTENT WORKSPACE */}
       <main className="flex-1 max-w-[1720px] w-full mx-auto p-4 sm:p-6">
-        {/* TAB 1: FULL BOARD VIEW (100% MATCH TO 2ND PHOTO LAYOUT) */}
+        {/* TAB 1: FULL BOARD VIEW */}
         {activeTab === "board" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-            {/* LEFT 8 COLUMNS: SECTION A (평행 ⇒ 선분 길이의 비 일정) */}
+            {/* LEFT 8 COLUMNS: SECTION A */}
             <div className="lg:col-span-8 flex flex-col gap-4">
               <div className="bg-white rounded-2xl border-2 border-slate-800 px-5 py-3 flex items-center justify-between shadow-2xs flex-wrap gap-2">
                 <div className="flex items-center gap-2.5">
@@ -2324,13 +2575,13 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
                 </div>
                 <div className="flex items-center gap-3 text-xs font-extrabold">
                   <span className="flex items-center gap-1 text-blue-600">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> 왼쪽 변의 비
-                  </span>
-                  <span className="flex items-center gap-1 text-rose-600">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" /> 오른쪽 변의 비
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> 왼쪽 비
                   </span>
                   <span className="flex items-center gap-1 text-emerald-600">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" /> 밑변(평행선)의 비
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" /> 밑변 비
+                  </span>
+                  <span className="flex items-center gap-1 text-rose-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" /> 오른쪽 비
                   </span>
                 </div>
               </div>
@@ -2370,7 +2621,7 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
               </div>
             </div>
 
-            {/* RIGHT 4 COLUMNS: SECTION B (선분 길이의 비 일정 ⇒ 평행) */}
+            {/* RIGHT 4 COLUMNS: SECTION B */}
             <div className="lg:col-span-4 flex flex-col gap-4">
               <div className="bg-white rounded-2xl border-2 border-slate-800 px-5 py-3 flex items-center gap-2.5 shadow-2xs">
                 <span className="w-7 h-7 rounded-lg bg-slate-900 text-white font-black text-base flex items-center justify-center">
