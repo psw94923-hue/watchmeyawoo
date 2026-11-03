@@ -13,6 +13,11 @@ interface Point {
   y: number;
 }
 
+// Color palette for ratio pairs
+const COLOR_LEFT = "#2563eb"; // Blue (왼쪽 변 / AB:AD, AD:DB)
+const COLOR_RIGHT = "#e11d48"; // Red (오른쪽 변 / AC:AE, AE:EC)
+const COLOR_BASE = "#16a34a"; // Green (밑변·평행선 / BC:DE)
+
 // ---------------------------------------------------------------------------
 // GEOMETRY HELPERS (100% Exact Vector Math)
 // ---------------------------------------------------------------------------
@@ -46,11 +51,10 @@ function angleMarkerPos(v: Point, p1: Point, p2: Point, r: number): Point {
 }
 
 // Quadratic bezier arc path between p1 and p2 bowing out by `bulge` pixels
-// `side` = 1 bows to the right of vector p1->p2, `-1` bows to the left
+// Normal vector is (-u.y * side, u.x * side)
 function makeArcPath(p1: Point, p2: Point, bulge: number, side: 1 | -1 = 1): string {
   const mid = lerpPt(p1, p2, 0.5);
   const u = unitVec(p1, p2);
-  // Normal vector (-u.y, u.x)
   const nx = -u.y * side;
   const ny = u.x * side;
   const cx = mid.x + nx * bulge;
@@ -73,6 +77,8 @@ function getArcLabelPos(p1: Point, p2: Point, bulge: number, side: 1 | -1 = 1, e
 
 // ---------------------------------------------------------------------------
 // REUSABLE SVG PRIMITIVES
+// (IMPORTANT: Outer <g> has SVG transform, inner <g> has CSS scale animation
+// so CSS transform never overwrites SVG translate/rotate!)
 // ---------------------------------------------------------------------------
 
 // Parallel chevron symbol (`>` or `>>`) placed accurately at `t` along segment p1->p2
@@ -100,21 +106,20 @@ function ParallelChevron({
   const offsets = count === 1 ? [0] : [-3.5, 3.5];
 
   return (
-    <g
-      transform={`translate(${center.x}, ${center.y}) rotate(${angleDeg})`}
-      className={bouncy ? "animate-pop-elastic" : ""}
-    >
-      {offsets.map((ox, i) => (
-        <polyline
-          key={i}
-          points={`${ox - size * 0.7},${-size * 0.75} ${ox + size * 0.5},0 ${ox - size * 0.7},${size * 0.75}`}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ))}
+    <g transform={`translate(${center.x}, ${center.y}) rotate(${angleDeg})`}>
+      <g className={bouncy ? "animate-pop-elastic" : ""}>
+        {offsets.map((ox, i) => (
+          <polyline
+            key={i}
+            points={`${ox - size * 0.7},${-size * 0.75} ${ox + size * 0.5},0 ${ox - size * 0.7},${size * 0.75}`}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </g>
     </g>
   );
 }
@@ -194,22 +199,21 @@ function CongruenceTicks({
   const offsets = count === 1 ? [0] : [-3, 3];
 
   return (
-    <g
-      transform={`translate(${center.x}, ${center.y}) rotate(${angleDeg})`}
-      className={bouncy ? "animate-pop-elastic" : ""}
-    >
-      {offsets.map((ox, i) => (
-        <line
-          key={i}
-          x1={ox}
-          y1={-size}
-          x2={ox}
-          y2={size}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-        />
-      ))}
+    <g transform={`translate(${center.x}, ${center.y}) rotate(${angleDeg})`}>
+      <g className={bouncy ? "animate-pop-elastic" : ""}>
+        {offsets.map((ox, i) => (
+          <line
+            key={i}
+            x1={ox}
+            y1={-size}
+            x2={ox}
+            y2={size}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        ))}
+      </g>
     </g>
   );
 }
@@ -219,7 +223,7 @@ function AngleDot({
   v,
   p1,
   p2,
-  r = 17,
+  r = 16,
   color = "#ea580c",
   radius = 4,
 }: {
@@ -232,9 +236,11 @@ function AngleDot({
 }) {
   const pos = angleMarkerPos(v, p1, p2, r);
   return (
-    <g transform={`translate(${pos.x}, ${pos.y})`} className="animate-pop-elastic">
-      <circle r={radius + 3} fill={color} opacity={0.18} />
-      <circle r={radius} fill={color} />
+    <g transform={`translate(${pos.x}, ${pos.y})`}>
+      <g className="animate-pop-elastic">
+        <circle r={radius + 3} fill={color} opacity={0.2} />
+        <circle r={radius} fill={color} />
+      </g>
     </g>
   );
 }
@@ -244,7 +250,7 @@ function AngleCross({
   v,
   p1,
   p2,
-  r = 18,
+  r = 17,
   color = "#2563eb",
   size = 4.2,
 }: {
@@ -257,38 +263,40 @@ function AngleCross({
 }) {
   const pos = angleMarkerPos(v, p1, p2, r);
   return (
-    <g transform={`translate(${pos.x}, ${pos.y})`} className="animate-pop-elastic">
-      <circle r={size + 3.5} fill={color} opacity={0.14} />
-      <line
-        x1={-size}
-        y1={-size}
-        x2={size}
-        y2={size}
-        stroke={color}
-        strokeWidth={2.4}
-        strokeLinecap="round"
-      />
-      <line
-        x1={size}
-        y1={-size}
-        x2={-size}
-        y2={size}
-        stroke={color}
-        strokeWidth={2.4}
-        strokeLinecap="round"
-      />
+    <g transform={`translate(${pos.x}, ${pos.y})`}>
+      <g className="animate-pop-elastic">
+        <circle r={size + 3.5} fill={color} opacity={0.15} />
+        <line
+          x1={-size}
+          y1={-size}
+          x2={size}
+          y2={size}
+          stroke={color}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+        />
+        <line
+          x1={size}
+          y1={-size}
+          x2={-size}
+          y2={size}
+          stroke={color}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+        />
+      </g>
     </g>
   );
 }
 
-// Green bouncy ratio curve matching the 2nd photo
-function GreenRatioCurve({
+// Color-coded bouncy ratio curve (Blue for left, Red for right, Green for base)
+function RatioCurve({
   p1,
   p2,
   bulge,
   side = 1,
   delayMs = 0,
-  color = "#15803d",
+  color = COLOR_BASE,
 }: {
   p1: Point;
   p2: Point;
@@ -299,14 +307,14 @@ function GreenRatioCurve({
 }) {
   const d = makeArcPath(p1, p2, bulge, side);
   return (
-    <g style={{ animationDelay: `${delayMs}ms` }} className="animate-draw-curve">
+    <g>
       <path
         d={d}
         fill="none"
         stroke={color}
-        strokeWidth={6}
+        strokeWidth={6.5}
         strokeLinecap="round"
-        opacity={0.18}
+        opacity={0.16}
       />
       <path
         d={d}
@@ -322,7 +330,7 @@ function GreenRatioCurve({
   );
 }
 
-// Thin dimension arc with label (and optional animated blue answer `= val`)
+// Thin dimension arc with label (and optional animated answer `= val`)
 function DimensionArc({
   p1,
   p2,
@@ -332,6 +340,7 @@ function DimensionArc({
   answer,
   showAnswer = false,
   highlight = false,
+  highlightColor = COLOR_BASE,
   labelOffset = 0,
 }: {
   p1: Point;
@@ -342,6 +351,7 @@ function DimensionArc({
   answer?: string;
   showAnswer?: boolean;
   highlight?: boolean;
+  highlightColor?: string;
   labelOffset?: number;
 }) {
   const d = makeArcPath(p1, p2, bulge, side);
@@ -352,9 +362,8 @@ function DimensionArc({
       <path
         d={d}
         fill="none"
-        stroke={highlight ? "#16a34a" : "#475569"}
-        strokeWidth={highlight ? 2.6 : 1.3}
-        strokeDasharray={highlight ? "none" : undefined}
+        stroke={highlight ? highlightColor : "#475569"}
+        strokeWidth={highlight ? 2.8 : 1.3}
         className="transition-all duration-300"
       />
       <g transform={`translate(${labelPos.x}, ${labelPos.y})`}>
@@ -365,7 +374,7 @@ function DimensionArc({
           height={22}
           rx={8}
           fill="#ffffff"
-          opacity={0.92}
+          opacity={0.94}
         />
         {!showAnswer || !answer ? (
           <text
@@ -374,7 +383,7 @@ function DimensionArc({
             textAnchor="middle"
             fontSize="15"
             fontWeight="800"
-            fill={label === "x" ? "#1e293b" : "#0f172a"}
+            fill={highlight ? highlightColor : "#0f172a"}
             fontStyle={label === "x" ? "italic" : "normal"}
           >
             {label}
@@ -385,7 +394,7 @@ function DimensionArc({
               <tspan fill="#1e293b" fontStyle="italic">
                 {label}
               </tspan>
-              <tspan fill="#2563eb" fontWeight="900">
+              <tspan fill={highlightColor} fontWeight="900">
                 {" "}
                 = {answer}
               </tspan>
@@ -438,45 +447,51 @@ function DiagramA1Internal({
   exStep,
   onStepChange,
   onExStepChange,
-  compact = false,
 }: {
-  step: number; // 0: base, 1: angles, 2: brown triangles, 3: green ratio curves
+  step: number; // 0: base, 1: angles, 2: brown triangles, 3: color ratio curves
   exStep: number; // 0: problem, 1: ratio hint, 2: answer x=4
   onStepChange: (s: number) => void;
   onExStepChange: (s: number) => void;
-  compact?: boolean;
 }) {
   const [popOut, setPopOut] = useState(false);
 
   // Concept triangle coordinates
   const A: Point = { x: 145, y: 42 };
-  const B: Point = { x: 65, y: 218 };
-  const C: Point = { x: 215, y: 218 };
+  const B: Point = { x: 65, y: 215 };
+  const C: Point = { x: 215, y: 215 };
   const t = 0.52;
   const D = lerpPt(A, B, t);
   const E = lerpPt(A, C, t);
 
   // Example 1 triangle coordinates (exact 1:2 ratio, AD=3, AB=6, BC=8, DE=x=4)
   const EA: Point = { x: 155, y: 42 };
-  const EB: Point = { x: 68, y: 218 };
-  const EC: Point = { x: 242, y: 218 };
+  const EB: Point = { x: 68, y: 215 };
+  const EC: Point = { x: 242, y: 215 };
   const ED = lerpPt(EA, EB, 0.5);
   const EE = lerpPt(EA, EC, 0.5);
 
   return (
     <div className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
-      {/* Header Formula */}
+      {/* Header Formula (Color-coded when step >= 3) */}
       <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span className="overline decoration-2">AB</span> :{" "}
-            <span className="overline decoration-2">AD</span> ={" "}
-            <span className="overline decoration-2">AC</span> :{" "}
-            <span className="overline decoration-2">AE</span> ={" "}
-            <span className="overline decoration-2">BC</span> :{" "}
-            <span className="overline decoration-2">DE</span>
+            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+              <span className="overline decoration-2">AB</span> :{" "}
+              <span className="overline decoration-2">AD</span>
+            </span>{" "}
+            ={" "}
+            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+              <span className="overline decoration-2">AC</span> :{" "}
+              <span className="overline decoration-2">AE</span>
+            </span>{" "}
+            ={" "}
+            <span style={{ color: step >= 3 ? COLOR_BASE : undefined }}>
+              <span className="overline decoration-2">BC</span> :{" "}
+              <span className="overline decoration-2">DE</span>
+            </span>
           </span>
         </div>
 
@@ -523,7 +538,7 @@ function DiagramA1Internal({
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
           title="클릭하면 다음 모션 단계가 진행됩니다"
         >
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 2: Brown Similar Triangles Highlight */}
             {step >= 2 && (
               <>
@@ -569,18 +584,18 @@ function DiagramA1Internal({
               </>
             )}
 
-            {/* Step 3: Green Bouncy Ratio Loops (Exact 2nd Photo Match) */}
+            {/* Step 3: Color-coded Ratio Loops (Blue Left, Red Right, Green Bottom) */}
             {step >= 3 && (
               <>
-                {/* Left: AB & AD */}
-                <GreenRatioCurve p1={A} p2={B} bulge={48} side={1} delayMs={0} />
-                <GreenRatioCurve p1={A} p2={D} bulge={26} side={1} delayMs={80} />
-                {/* Right: AC & AE */}
-                <GreenRatioCurve p1={A} p2={C} bulge={48} side={-1} delayMs={160} />
-                <GreenRatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={240} />
-                {/* Bottom: BC & DE */}
-                <GreenRatioCurve p1={B} p2={C} bulge={26} side={-1} delayMs={320} />
-                <GreenRatioCurve p1={D} p2={E} bulge={18} side={-1} delayMs={400} />
+                {/* Left (Blue): AB & AD */}
+                <RatioCurve p1={A} p2={B} bulge={48} side={1} delayMs={0} color={COLOR_LEFT} />
+                <RatioCurve p1={A} p2={D} bulge={26} side={1} delayMs={80} color={COLOR_LEFT} />
+                {/* Right (Red): AC & AE */}
+                <RatioCurve p1={A} p2={C} bulge={48} side={-1} delayMs={160} color={COLOR_RIGHT} />
+                <RatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={240} color={COLOR_RIGHT} />
+                {/* Bottom (Green, bowing downward with side=1): BC & DE */}
+                <RatioCurve p1={B} p2={C} bulge={28} side={1} delayMs={320} color={COLOR_BASE} />
+                <RatioCurve p1={D} p2={E} bulge={20} side={1} delayMs={400} color={COLOR_BASE} />
               </>
             )}
 
@@ -625,7 +640,7 @@ function DiagramA1Internal({
             </button>
           </div>
 
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Base Triangle */}
             <polygon
               points={`${EA.x},${EA.y} ${EB.x},${EB.y} ${EC.x},${EC.y}`}
@@ -638,7 +653,7 @@ function DiagramA1Internal({
             <ParallelChevron p1={ED} p2={EE} t={0.5} count={1} />
             <ParallelChevron p1={EB} p2={EC} t={0.5} count={1} />
 
-            {/* Dimension Arcs */}
+            {/* Dimension Arcs (Blue for Left 3 & 6, Green for Base x & 8 bowing downward with side=1) */}
             <DimensionArc
               p1={EA}
               p2={ED}
@@ -646,6 +661,7 @@ function DiagramA1Internal({
               side={1}
               label="3"
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
             />
             <DimensionArc
               p1={EA}
@@ -654,24 +670,27 @@ function DiagramA1Internal({
               side={1}
               label="6"
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
             />
             <DimensionArc
               p1={ED}
               p2={EE}
               bulge={22}
-              side={-1}
+              side={1}
               label="x"
               answer="4"
               showAnswer={exStep >= 2}
               highlight={exStep >= 1}
+              highlightColor={COLOR_BASE}
             />
             <DimensionArc
               p1={EB}
               p2={EC}
-              bulge={26}
-              side={-1}
+              bulge={28}
+              side={1}
               label="8"
               highlight={exStep >= 1}
+              highlightColor={COLOR_BASE}
             />
           </svg>
         </div>
@@ -698,8 +717,8 @@ function DiagramA1Hourglass({
 
   // Concept Hourglass coordinates: A is intersection of BD and CE
   const A: Point = { x: 145, y: 120 };
-  const B: Point = { x: 65, y: 222 };
-  const C: Point = { x: 205, y: 222 };
+  const B: Point = { x: 65, y: 218 };
+  const C: Point = { x: 205, y: 218 };
   const t = 0.55;
   // D is top-right on extension of BA; E is top-left on extension of CA
   const D: Point = { x: A.x - (B.x - A.x) * t, y: A.y - (B.y - A.y) * t };
@@ -707,8 +726,8 @@ function DiagramA1Hourglass({
 
   // Example 2 Hourglass coordinates (ED=4, BC=8, AB=10, AD=x=5)
   const EA: Point = { x: 155, y: 118 };
-  const EB: Point = { x: 72, y: 222 };
-  const EC: Point = { x: 215, y: 222 };
+  const EB: Point = { x: 72, y: 218 };
+  const EC: Point = { x: 215, y: 218 };
   const et = 0.5;
   const ED: Point = { x: EA.x - (EB.x - EA.x) * et, y: EA.y - (EB.y - EA.y) * et };
   const EE: Point = { x: EA.x - (EC.x - EA.x) * et, y: EA.y - (EC.y - EA.y) * et };
@@ -721,12 +740,20 @@ function DiagramA1Hourglass({
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span className="overline decoration-2">AB</span> :{" "}
-            <span className="overline decoration-2">AD</span> ={" "}
-            <span className="overline decoration-2">AC</span> :{" "}
-            <span className="overline decoration-2">AE</span> ={" "}
-            <span className="overline decoration-2">BC</span> :{" "}
-            <span className="overline decoration-2">DE</span>
+            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+              <span className="overline decoration-2">AB</span> :{" "}
+              <span className="overline decoration-2">AD</span>
+            </span>{" "}
+            ={" "}
+            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+              <span className="overline decoration-2">AC</span> :{" "}
+              <span className="overline decoration-2">AE</span>
+            </span>{" "}
+            ={" "}
+            <span style={{ color: step >= 3 ? COLOR_BASE : undefined }}>
+              <span className="overline decoration-2">BC</span> :{" "}
+              <span className="overline decoration-2">DE</span>
+            </span>
           </span>
         </div>
 
@@ -771,7 +798,7 @@ function DiagramA1Hourglass({
           onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
         >
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 2: Brown Similar Triangles */}
             {step >= 2 && (
               <>
@@ -804,27 +831,28 @@ function DiagramA1Hourglass({
             <ExtendedLine p1={B} p2={D} extLeft={0} extRight={18} endArrow={false} />
             <ExtendedLine p1={C} p2={E} extLeft={0} extRight={18} endArrow={false} />
 
-            {/* Step 1: Alternate Interior Angles (Blue Dot & Blue Cross matching Photo 2) */}
+            {/* Step 1: Alternate Interior Angles (Dot & Cross) */}
             {step >= 1 && (
               <>
-                <AngleDot v={D} p1={A} p2={E} r={15} color="#2563eb" />
-                <AngleDot v={B} p1={A} p2={C} r={17} color="#2563eb" />
+                <AngleDot v={D} p1={A} p2={E} r={15} color="#ea580c" />
+                <AngleDot v={B} p1={A} p2={C} r={17} color="#ea580c" />
                 <AngleCross v={E} p1={A} p2={D} r={15} color="#2563eb" />
                 <AngleCross v={C} p1={A} p2={B} r={17} color="#2563eb" />
               </>
             )}
 
-            {/* Step 3: Green Figure-8 Ratio Loops */}
+            {/* Step 3: Color-coded Ratio Loops (Blue on BD, Red on CE, Green on BC & ED) */}
             {step >= 3 && (
               <>
-                {/* Upper loops on ADE */}
-                <GreenRatioCurve p1={E} p2={D} bulge={18} side={1} delayMs={0} />
-                <GreenRatioCurve p1={E} p2={A} bulge={20} side={-1} delayMs={70} />
-                <GreenRatioCurve p1={D} p2={A} bulge={20} side={1} delayMs={140} />
-                {/* Lower loops on ABC */}
-                <GreenRatioCurve p1={A} p2={B} bulge={26} side={1} delayMs={210} />
-                <GreenRatioCurve p1={A} p2={C} bulge={26} side={-1} delayMs={280} />
-                <GreenRatioCurve p1={B} p2={C} bulge={26} side={-1} delayMs={350} />
+                {/* Diagonal BD (Blue): AB & AD */}
+                <RatioCurve p1={A} p2={B} bulge={26} side={1} delayMs={0} color={COLOR_LEFT} />
+                <RatioCurve p1={D} p2={A} bulge={22} side={1} delayMs={80} color={COLOR_LEFT} />
+                {/* Diagonal CE (Red): AC & AE */}
+                <RatioCurve p1={A} p2={C} bulge={26} side={-1} delayMs={160} color={COLOR_RIGHT} />
+                <RatioCurve p1={E} p2={A} bulge={22} side={-1} delayMs={240} color={COLOR_RIGHT} />
+                {/* Parallel Bases (Green): BC (downward) & ED (upward) */}
+                <RatioCurve p1={B} p2={C} bulge={28} side={1} delayMs={320} color={COLOR_BASE} />
+                <RatioCurve p1={E} p2={D} bulge={22} side={-1} delayMs={400} color={COLOR_BASE} />
               </>
             )}
 
@@ -868,7 +896,7 @@ function DiagramA1Hourglass({
             </button>
           </div>
 
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             <ExtendedLine p1={EE} p2={ED} extLeft={34} extRight={34} endArrow />
             <ExtendedLine p1={EB} p2={EC} extLeft={22} extRight={24} endArrow />
             <ParallelChevron p1={EE} p2={ED} t={0.5} count={1} />
@@ -877,22 +905,24 @@ function DiagramA1Hourglass({
             <ExtendedLine p1={EB} p2={ED} extLeft={0} extRight={18} endArrow={false} />
             <ExtendedLine p1={EC} p2={EE} extLeft={0} extRight={18} endArrow={false} />
 
-            {/* Dimension Arcs matching Photo 2 */}
+            {/* Dimension Arcs: Green for parallel bases 4 (upward) & 8 (downward), Blue for diagonal 10 & x */}
             <DimensionArc
               p1={EE}
               p2={ED}
-              bulge={22}
-              side={1}
+              bulge={24}
+              side={-1}
               label="4"
               highlight={exStep >= 1}
+              highlightColor={COLOR_BASE}
             />
             <DimensionArc
               p1={EB}
               p2={EC}
-              bulge={24}
-              side={-1}
+              bulge={26}
+              side={1}
               label="8"
               highlight={exStep >= 1}
+              highlightColor={COLOR_BASE}
             />
             <DimensionArc
               p1={EA}
@@ -901,6 +931,7 @@ function DiagramA1Hourglass({
               side={-1}
               label="10"
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
             />
             <DimensionArc
               p1={EA}
@@ -911,6 +942,7 @@ function DiagramA1Hourglass({
               answer="5"
               showAnswer={exStep >= 2}
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
               labelOffset={8}
             />
           </svg>
@@ -929,15 +961,15 @@ function DiagramA2Internal({
   onStepChange,
   onExStepChange,
 }: {
-  step: number; // 0: base, 1: aux line EF + slide DB->EF, 2: angles & brown triangles, 3: green snowman loops
+  step: number; // 0: base, 1: aux line EF + slide DB->EF, 2: angles & brown triangles, 3: color snowman loops
   exStep: number; // 0: problem, 1: ratio hint, 2: x=3
   onStepChange: (s: number) => void;
   onExStepChange: (s: number) => void;
 }) {
   // Concept triangle coordinates
   const A: Point = { x: 145, y: 42 };
-  const B: Point = { x: 65, y: 218 };
-  const C: Point = { x: 215, y: 218 };
+  const B: Point = { x: 65, y: 215 };
+  const C: Point = { x: 215, y: 215 };
   const t = 0.54;
   const D = lerpPt(A, B, t);
   const E = lerpPt(A, C, t);
@@ -946,8 +978,8 @@ function DiagramA2Internal({
 
   // Example 3 coordinates (10, 5, 6, x=3 => 2:1 ratio)
   const EA: Point = { x: 175, y: 46 };
-  const EB: Point = { x: 52, y: 218 };
-  const EC: Point = { x: 232, y: 218 };
+  const EB: Point = { x: 52, y: 215 };
+  const EC: Point = { x: 232, y: 215 };
   const et = 2 / 3;
   const ED = lerpPt(EA, EB, et);
   const EE = lerpPt(EA, EC, et);
@@ -960,10 +992,15 @@ function DiagramA2Internal({
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span className="overline decoration-2">AD</span> :{" "}
-            <span className="overline decoration-2">DB</span> ={" "}
-            <span className="overline decoration-2">AE</span> :{" "}
-            <span className="overline decoration-2">EC</span>
+            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+              <span className="overline decoration-2">AD</span> :{" "}
+              <span className="overline decoration-2">DB</span>
+            </span>{" "}
+            ={" "}
+            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+              <span className="overline decoration-2">AE</span> :{" "}
+              <span className="overline decoration-2">EC</span>
+            </span>
           </span>
         </div>
 
@@ -994,7 +1031,7 @@ function DiagramA2Internal({
           onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
         >
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 1: Parallelogram DBFE subtle fill */}
             {step >= 1 && (
               <polygon
@@ -1069,18 +1106,18 @@ function DiagramA2Internal({
               <>
                 <AngleCross v={A} p1={D} p2={E} r={19} color="#2563eb" />
                 <AngleCross v={E} p1={F} p2={C} r={19} color="#2563eb" />
-                <AngleDot v={E} p1={A} p2={D} r={15} color="#2563eb" />
-                <AngleDot v={C} p1={E} p2={F} r={17} color="#2563eb" />
+                <AngleDot v={E} p1={A} p2={D} r={15} color="#ea580c" />
+                <AngleDot v={C} p1={E} p2={F} r={17} color="#ea580c" />
               </>
             )}
 
-            {/* Step 3: Green Snowman Loops (AD:DB = AE:EC) */}
+            {/* Step 3: Color-coded Snowman Loops (Blue Left AD:DB, Red Right AE:EC) */}
             {step >= 3 && (
               <>
-                <GreenRatioCurve p1={A} p2={D} bulge={26} side={1} delayMs={0} />
-                <GreenRatioCurve p1={D} p2={B} bulge={24} side={1} delayMs={90} />
-                <GreenRatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={180} />
-                <GreenRatioCurve p1={E} p2={C} bulge={24} side={-1} delayMs={270} />
+                <RatioCurve p1={A} p2={D} bulge={26} side={1} delayMs={0} color={COLOR_LEFT} />
+                <RatioCurve p1={D} p2={B} bulge={24} side={1} delayMs={90} color={COLOR_LEFT} />
+                <RatioCurve p1={A} p2={E} bulge={26} side={-1} delayMs={180} color={COLOR_RIGHT} />
+                <RatioCurve p1={E} p2={C} bulge={24} side={-1} delayMs={270} color={COLOR_RIGHT} />
               </>
             )}
 
@@ -1127,7 +1164,7 @@ function DiagramA2Internal({
             </button>
           </div>
 
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             <polygon
               points={`${EA.x},${EA.y} ${EB.x},${EB.y} ${EC.x},${EC.y}`}
               fill="none"
@@ -1139,7 +1176,7 @@ function DiagramA2Internal({
             <ParallelChevron p1={ED} p2={EE} t={0.5} count={1} />
             <ParallelChevron p1={EB} p2={EC} t={0.5} count={1} />
 
-            {/* Dimension Arcs */}
+            {/* Dimension Arcs (Blue for Left 10 & 5, Red for Right 6 & x) */}
             <DimensionArc
               p1={EA}
               p2={ED}
@@ -1147,6 +1184,7 @@ function DiagramA2Internal({
               side={1}
               label="10"
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
             />
             <DimensionArc
               p1={ED}
@@ -1155,6 +1193,7 @@ function DiagramA2Internal({
               side={1}
               label="5"
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
             />
             <DimensionArc
               p1={EA}
@@ -1163,6 +1202,7 @@ function DiagramA2Internal({
               side={-1}
               label="6"
               highlight={exStep >= 1}
+              highlightColor={COLOR_RIGHT}
             />
             <DimensionArc
               p1={EE}
@@ -1173,6 +1213,7 @@ function DiagramA2Internal({
               answer="3"
               showAnswer={exStep >= 2}
               highlight={exStep >= 1}
+              highlightColor={COLOR_RIGHT}
               labelOffset={6}
             />
           </svg>
@@ -1198,18 +1239,18 @@ function DiagramA2Hourglass({
 }) {
   // Concept Hourglass with auxiliary line DF || EC (F on BC extension)
   const A: Point = { x: 118, y: 118 };
-  const B: Point = { x: 42, y: 222 };
-  const C: Point = { x: 162, y: 222 };
+  const B: Point = { x: 42, y: 218 };
+  const C: Point = { x: 162, y: 218 };
   const t = 0.52;
   const D: Point = { x: A.x - (B.x - A.x) * t, y: A.y - (B.y - A.y) * t };
   const E: Point = { x: A.x - (C.x - A.x) * t, y: A.y - (C.y - A.y) * t };
-  // F on horizontal line y=222 such that DF || EC => vector DF = vector EC
+  // F on horizontal line y=218 such that DF || EC => vector DF = vector EC
   const F: Point = { x: D.x + (C.x - E.x), y: C.y };
 
   // Example 4 coordinates (3, 4, 9, x=12)
   const EA: Point = { x: 162, y: 102 };
-  const EB: Point = { x: 65, y: 222 };
-  const EC: Point = { x: 215, y: 222 };
+  const EB: Point = { x: 65, y: 218 };
+  const EC: Point = { x: 215, y: 218 };
   const et = 0.36;
   const ED: Point = { x: EA.x - (EB.x - EA.x) * et, y: EA.y - (EB.y - EA.y) * et };
   const EE: Point = { x: EA.x - (EC.x - EA.x) * et, y: EA.y - (EC.y - EA.y) * et };
@@ -1222,10 +1263,15 @@ function DiagramA2Hourglass({
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
             평행 <span className="text-indigo-600 mx-0.5">⇒</span>{" "}
-            <span className="overline decoration-2">AD</span> :{" "}
-            <span className="overline decoration-2">DB</span> ={" "}
-            <span className="overline decoration-2">AE</span> :{" "}
-            <span className="overline decoration-2">EC</span>
+            <span style={{ color: step >= 3 ? COLOR_LEFT : undefined }}>
+              <span className="overline decoration-2">AD</span> :{" "}
+              <span className="overline decoration-2">DB</span>
+            </span>{" "}
+            ={" "}
+            <span style={{ color: step >= 3 ? COLOR_RIGHT : undefined }}>
+              <span className="overline decoration-2">AE</span> :{" "}
+              <span className="overline decoration-2">EC</span>
+            </span>
           </span>
         </div>
 
@@ -1256,7 +1302,7 @@ function DiagramA2Hourglass({
           onClick={() => onStepChange(step < 3 ? step + 1 : 0)}
           className="relative bg-slate-50/70 hover:bg-slate-50 rounded-2xl border border-slate-200/70 p-2 cursor-pointer transition-colors"
         >
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             {/* Step 1: Parallelogram ECDF subtle fill */}
             {step >= 1 && (
               <polygon
@@ -1335,21 +1381,21 @@ function DiagramA2Hourglass({
             {/* Step 2: Angles matching Photo 2 */}
             {step >= 2 && (
               <>
-                <AngleDot v={D} p1={E} p2={A} r={15} color="#2563eb" />
-                <AngleDot v={B} p1={D} p2={C} r={17} color="#2563eb" />
+                <AngleDot v={D} p1={E} p2={A} r={15} color="#ea580c" />
+                <AngleDot v={B} p1={D} p2={C} r={17} color="#ea580c" />
                 <AngleCross v={E} p1={D} p2={A} r={14} color="#2563eb" />
                 <AngleCross v={C} p1={A} p2={B} r={16} color="#2563eb" />
                 <AngleCross v={F} p1={D} p2={B} r={16} color="#2563eb" />
               </>
             )}
 
-            {/* Step 3: Green Ratio Loops matching Photo 2 */}
+            {/* Step 3: Color-coded Ratio Loops (Blue on BD, Red on EC) */}
             {step >= 3 && (
               <>
-                <GreenRatioCurve p1={D} p2={A} bulge={20} side={1} delayMs={0} />
-                <GreenRatioCurve p1={A} p2={B} bulge={26} side={1} delayMs={90} />
-                <GreenRatioCurve p1={E} p2={A} bulge={20} side={-1} delayMs={180} />
-                <GreenRatioCurve p1={A} p2={C} bulge={24} side={-1} delayMs={270} />
+                <RatioCurve p1={D} p2={A} bulge={20} side={1} delayMs={0} color={COLOR_LEFT} />
+                <RatioCurve p1={D} p2={B} bulge={42} side={1} delayMs={90} color={COLOR_LEFT} />
+                <RatioCurve p1={E} p2={A} bulge={20} side={-1} delayMs={180} color={COLOR_RIGHT} />
+                <RatioCurve p1={E} p2={C} bulge={42} side={-1} delayMs={270} color={COLOR_RIGHT} />
               </>
             )}
 
@@ -1396,7 +1442,7 @@ function DiagramA2Hourglass({
             </button>
           </div>
 
-          <svg viewBox="0 0 280 255" className="w-full h-auto overflow-visible select-none">
+          <svg viewBox="0 0 280 260" className="w-full h-auto overflow-visible select-none">
             <ExtendedLine p1={EE} p2={ED} extLeft={42} extRight={38} endArrow />
             <ExtendedLine p1={EB} p2={EC} extLeft={14} extRight={14} endArrow={false} />
             <ParallelChevron p1={EE} p2={ED} t={0.5} count={1} />
@@ -1405,7 +1451,7 @@ function DiagramA2Hourglass({
             <ExtendedLine p1={EB} p2={ED} extLeft={0} extRight={18} endArrow={false} />
             <ExtendedLine p1={EC} p2={EE} extLeft={0} extRight={18} endArrow={false} />
 
-            {/* Dimension Arcs matching Photo 2 (3, 4, 9, x = 12) */}
+            {/* Dimension Arcs (Red for 3 & 9 on EC, Blue for 4 & x=12 on BD) */}
             <DimensionArc
               p1={EE}
               p2={EA}
@@ -1413,6 +1459,7 @@ function DiagramA2Hourglass({
               side={-1}
               label="3"
               highlight={exStep >= 1}
+              highlightColor={COLOR_RIGHT}
             />
             <DimensionArc
               p1={EA}
@@ -1421,6 +1468,7 @@ function DiagramA2Hourglass({
               side={-1}
               label="4"
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
             />
             <DimensionArc
               p1={EE}
@@ -1429,6 +1477,7 @@ function DiagramA2Hourglass({
               side={1}
               label="9"
               highlight={exStep >= 1}
+              highlightColor={COLOR_RIGHT}
             />
             <DimensionArc
               p1={ED}
@@ -1439,6 +1488,7 @@ function DiagramA2Hourglass({
               answer="12"
               showAnswer={exStep >= 2}
               highlight={exStep >= 1}
+              highlightColor={COLOR_LEFT}
             />
           </svg>
         </div>
@@ -1477,8 +1527,8 @@ function DiagramSectionB({
 
   // Bottom Example 5 figure (y°=60°, DE=7, BC=x=14)
   const EA: Point = { x: 145, y: 24 };
-  const EB: Point = { x: 64, y: 182 };
-  const EC: Point = { x: 232, y: 182 };
+  const EB: Point = { x: 64, y: 180 };
+  const EC: Point = { x: 232, y: 180 };
   const ED = lerpPt(EA, EB, 0.5);
   const EE = lerpPt(EA, EC, 0.5);
 
@@ -1490,11 +1540,17 @@ function DiagramSectionB({
           <div className="flex items-center gap-1.5">
             <span className="text-amber-500 text-lg font-black">★</span>
             <span className="text-base sm:text-lg font-black text-slate-900">
-              <span className="overline decoration-2">AB</span> :{" "}
-              <span className="overline decoration-2">AD</span> ={" "}
-              <span className="overline decoration-2">AC</span> :{" "}
-              <span className="overline decoration-2">AE</span>{" "}
-              <span className="text-emerald-600 mx-0.5">⇒</span> 평행
+              <span style={{ color: COLOR_LEFT }}>
+                <span className="overline decoration-2">AB</span> :{" "}
+                <span className="overline decoration-2">AD</span>
+              </span>{" "}
+              ={" "}
+              <span style={{ color: COLOR_RIGHT }}>
+                <span className="overline decoration-2">AC</span> :{" "}
+                <span className="overline decoration-2">AE</span>
+              </span>{" "}
+              <span className="text-emerald-600 mx-0.5">⇒</span>{" "}
+              <span className="text-emerald-700">평행</span>
             </span>
           </div>
           <button
@@ -1511,11 +1567,17 @@ function DiagramSectionB({
         <div className="flex items-center gap-1.5">
           <span className="text-amber-500 text-lg font-black">★</span>
           <span className="text-base sm:text-lg font-black text-slate-900">
-            <span className="overline decoration-2">AD</span> :{" "}
-            <span className="overline decoration-2">DB</span> ={" "}
-            <span className="overline decoration-2">AE</span> :{" "}
-            <span className="overline decoration-2">EC</span>{" "}
-            <span className="text-emerald-600 mx-0.5">⇒</span> 평행
+            <span style={{ color: COLOR_LEFT }}>
+              <span className="overline decoration-2">AD</span> :{" "}
+              <span className="overline decoration-2">DB</span>
+            </span>{" "}
+            ={" "}
+            <span style={{ color: COLOR_RIGHT }}>
+              <span className="overline decoration-2">AE</span> :{" "}
+              <span className="overline decoration-2">EC</span>
+            </span>{" "}
+            <span className="text-emerald-600 mx-0.5">⇒</span>{" "}
+            <span className="text-emerald-700">평행</span>
           </span>
         </div>
       </div>
@@ -1534,21 +1596,21 @@ function DiagramSectionB({
             strokeWidth={2}
           />
           <ExtendedLine p1={D1} p2={E1} extLeft={18} extRight={20} endArrow />
-          {/* Thin ratio arcs */}
-          <path d={makeArcPath(A1, D1, 18, 1)} fill="none" stroke="#475569" strokeWidth={1.2} />
-          <path d={makeArcPath(A1, B1, 34, 1)} fill="none" stroke="#475569" strokeWidth={1.2} />
-          <path d={makeArcPath(A1, E1, 18, -1)} fill="none" stroke="#475569" strokeWidth={1.2} />
-          <path d={makeArcPath(A1, C1, 34, -1)} fill="none" stroke="#475569" strokeWidth={1.2} />
+          {/* Color-coded ratio arcs (Blue Left, Red Right) */}
+          <path d={makeArcPath(A1, D1, 18, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
+          <path d={makeArcPath(A1, B1, 34, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
+          <path d={makeArcPath(A1, E1, 18, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
+          <path d={makeArcPath(A1, C1, 34, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
 
           {/* Green Parallel Highlight on Step 1 */}
           {step >= 1 && (
-            <g className="animate-pop-elastic">
+            <g>
               <line
                 x1={D1.x}
                 y1={D1.y}
                 x2={E1.x}
                 y2={E1.y}
-                stroke="#15803d"
+                stroke={COLOR_BASE}
                 strokeWidth={4.5}
                 strokeLinecap="round"
               />
@@ -1557,12 +1619,12 @@ function DiagramSectionB({
                 y1={B1.y}
                 x2={C1.x}
                 y2={C1.y}
-                stroke="#15803d"
+                stroke={COLOR_BASE}
                 strokeWidth={4.5}
                 strokeLinecap="round"
               />
-              <ParallelChevron p1={D1} p2={E1} t={0.52} count={1} color="#15803d" size={9} strokeWidth={3.2} bouncy />
-              <ParallelChevron p1={B1} p2={C1} t={0.52} count={1} color="#15803d" size={9} strokeWidth={3.2} bouncy />
+              <ParallelChevron p1={D1} p2={E1} t={0.52} count={1} color={COLOR_BASE} size={9} strokeWidth={3.2} bouncy />
+              <ParallelChevron p1={B1} p2={C1} t={0.52} count={1} color={COLOR_BASE} size={9} strokeWidth={3.2} bouncy />
             </g>
           )}
 
@@ -1580,21 +1642,21 @@ function DiagramSectionB({
             strokeWidth={2}
           />
           <ExtendedLine p1={D2} p2={E2} extLeft={18} extRight={20} endArrow />
-          {/* Thin ratio arcs */}
-          <path d={makeArcPath(A2, D2, 18, 1)} fill="none" stroke="#475569" strokeWidth={1.2} />
-          <path d={makeArcPath(D2, B2, 16, 1)} fill="none" stroke="#475569" strokeWidth={1.2} />
-          <path d={makeArcPath(A2, E2, 18, -1)} fill="none" stroke="#475569" strokeWidth={1.2} />
-          <path d={makeArcPath(E2, C2, 16, -1)} fill="none" stroke="#475569" strokeWidth={1.2} />
+          {/* Color-coded ratio arcs (Blue Left, Red Right) */}
+          <path d={makeArcPath(A2, D2, 18, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
+          <path d={makeArcPath(D2, B2, 16, 1)} fill="none" stroke={COLOR_LEFT} strokeWidth={1.8} />
+          <path d={makeArcPath(A2, E2, 18, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
+          <path d={makeArcPath(E2, C2, 16, -1)} fill="none" stroke={COLOR_RIGHT} strokeWidth={1.8} />
 
           {/* Green Parallel Highlight on Step 1 */}
           {step >= 1 && (
-            <g className="animate-pop-elastic">
+            <g>
               <line
                 x1={D2.x}
                 y1={D2.y}
                 x2={E2.x}
                 y2={E2.y}
-                stroke="#15803d"
+                stroke={COLOR_BASE}
                 strokeWidth={4.5}
                 strokeLinecap="round"
               />
@@ -1603,12 +1665,12 @@ function DiagramSectionB({
                 y1={B2.y}
                 x2={C2.x}
                 y2={C2.y}
-                stroke="#15803d"
+                stroke={COLOR_BASE}
                 strokeWidth={4.5}
                 strokeLinecap="round"
               />
-              <ParallelChevron p1={D2} p2={E2} t={0.52} count={1} color="#15803d" size={9} strokeWidth={3.2} bouncy />
-              <ParallelChevron p1={B2} p2={C2} t={0.52} count={1} color="#15803d" size={9} strokeWidth={3.2} bouncy />
+              <ParallelChevron p1={D2} p2={E2} t={0.52} count={1} color={COLOR_BASE} size={9} strokeWidth={3.2} bouncy />
+              <ParallelChevron p1={B2} p2={C2} t={0.52} count={1} color={COLOR_BASE} size={9} strokeWidth={3.2} bouncy />
             </g>
           )}
 
@@ -1616,7 +1678,7 @@ function DiagramSectionB({
           <text x={B2.x - 10} y={B2.y + 5} textAnchor="middle" fontSize="13" fontWeight="800" fill="#0f172a">B</text>
           <text x={C2.x + 10} y={C2.y + 5} textAnchor="middle" fontSize="13" fontWeight="800" fill="#0f172a">C</text>
           <text x={D2.x - 10} y={D2.y - 4} textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">D</text>
-          <text x={E2.x + 10} y={E2.y - 4} textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">E</text>
+          <text x={E2.x + 10} y={E1.y - 4} textAnchor="middle" fontSize="12" fontWeight="800" fill="#0f172a">E</text>
         </svg>
       </div>
 
@@ -1651,7 +1713,7 @@ function DiagramSectionB({
           </div>
         </div>
 
-        <svg viewBox="0 0 280 220" className="w-full h-auto overflow-visible select-none">
+        <svg viewBox="0 0 280 225" className="w-full h-auto overflow-visible select-none">
           <polygon
             points={`${EA.x},${EA.y} ${EB.x},${EB.y} ${EC.x},${EC.y}`}
             fill="none"
@@ -1661,17 +1723,17 @@ function DiagramSectionB({
           />
           <ExtendedLine p1={ED} p2={EE} extLeft={26} extRight={28} endArrow />
 
-          {/* Equal-length tick marks on AD, DB (1 tick) and AE, EC (2 ticks) */}
-          <CongruenceTicks p1={EA} p2={ED} t={0.5} count={1} color="#1e293b" size={5.5} />
-          <CongruenceTicks p1={ED} p2={EB} t={0.5} count={1} color="#1e293b" size={5.5} />
-          <CongruenceTicks p1={EA} p2={EE} t={0.5} count={2} color="#1e293b" size={5.5} />
-          <CongruenceTicks p1={EE} p2={EC} t={0.5} count={2} color="#1e293b" size={5.5} />
+          {/* Equal-length tick marks on AD, DB (Blue 1 tick) and AE, EC (Red 2 ticks) */}
+          <CongruenceTicks p1={EA} p2={ED} t={0.5} count={1} color={COLOR_LEFT} size={5.5} />
+          <CongruenceTicks p1={ED} p2={EB} t={0.5} count={1} color={COLOR_LEFT} size={5.5} />
+          <CongruenceTicks p1={EA} p2={EE} t={0.5} count={2} color={COLOR_RIGHT} size={5.5} />
+          <CongruenceTicks p1={EE} p2={EC} t={0.5} count={2} color={COLOR_RIGHT} size={5.5} />
 
-          {/* Step 1: Blue Parallel Chevrons pop onto DE and BC */}
+          {/* Step 1: Parallel Chevrons pop onto DE and BC */}
           {exStep >= 1 && (
-            <g className="animate-pop-elastic">
-              <ParallelChevron p1={ED} p2={EE} t={0.62} count={1} color="#2563eb" size={8} strokeWidth={3} bouncy />
-              <ParallelChevron p1={EB} p2={EC} t={0.62} count={1} color="#2563eb" size={8} strokeWidth={3} bouncy />
+            <g>
+              <ParallelChevron p1={ED} p2={EE} t={0.62} count={1} color={COLOR_BASE} size={8} strokeWidth={3} bouncy />
+              <ParallelChevron p1={EB} p2={EC} t={0.62} count={1} color={COLOR_BASE} size={8} strokeWidth={3} bouncy />
             </g>
           )}
 
@@ -1684,32 +1746,36 @@ function DiagramSectionB({
               y°
             </text>
           ) : (
-            <g className="animate-pop-elastic">
-              <text x={ED.x + 16} y={ED.y - 7} fontSize="14" fontWeight="900">
-                <tspan fill="#0f172a" fontStyle="italic">y°</tspan>
-                <tspan fill="#2563eb"> = 60°</tspan>
-              </text>
+            <g transform={`translate(${ED.x + 38}, ${ED.y - 7})`}>
+              <g className="animate-pop-elastic">
+                <text x={0} y={0} textAnchor="middle" fontSize="14" fontWeight="900">
+                  <tspan fill="#0f172a" fontStyle="italic">y°</tspan>
+                  <tspan fill="#2563eb"> = 60°</tspan>
+                </text>
+              </g>
             </g>
           )}
 
-          {/* Dimension Arcs for DE=7 and BC=x=14 */}
+          {/* Dimension Arcs for DE=7 and BC=x=14 (bowing downward with side=1) */}
           <DimensionArc
             p1={ED}
             p2={EE}
             bulge={20}
-            side={-1}
+            side={1}
             label="7"
             highlight={exStep >= 3}
+            highlightColor={COLOR_BASE}
           />
           <DimensionArc
             p1={EB}
             p2={EC}
             bulge={26}
-            side={-1}
+            side={1}
             label="x"
             answer="14"
             showAnswer={exStep >= 3}
             highlight={exStep >= 3}
+            highlightColor={COLOR_BASE}
           />
         </svg>
       </div>
@@ -1721,9 +1787,6 @@ function DiagramSectionB({
 // INTERACTIVE DRAG LAB: CONTINUOUS PARALLEL LINE DRAGGING (INTERNAL <-> HOURGLASS)
 // ---------------------------------------------------------------------------
 function InteractiveDragLab() {
-  // Parameter `t`:
-  // t in (0.15, 0.9) => Internal triangle (D on AB, E on AC)
-  // t in (-0.85, -0.2) => Hourglass above A (D, E on extensions above A)
   const [t, setT] = useState<number>(0.5);
   const [ratioMode, setRatioMode] = useState<"whole" | "part">("whole");
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -1733,14 +1796,12 @@ function InteractiveDragLab() {
   const B: Point = { x: 160, y: 385 };
   const C: Point = { x: 470, y: 385 };
 
-  // Compute D and E from parameter t
   const D = lerpPt(A, B, t);
   const E = lerpPt(A, C, t);
 
   const absT = Math.abs(t);
   const isHourglass = t < 0;
 
-  // Base lengths (let AB = 10, AC = 12, BC = 14 for clean classroom numbers)
   const lenAB = 10;
   const lenAC = 12;
   const lenBC = 14;
@@ -1755,11 +1816,9 @@ function InteractiveDragLab() {
     const rect = svgRef.current.getBoundingClientRect();
     const svgY = ((clientY - rect.top) / rect.height) * 440;
     let rawT = (svgY - A.y) / (B.y - A.y);
-    // Avoid degenerate singularity right on vertex A (|t| < 0.18)
     if (rawT >= 0 && rawT < 0.18) rawT = 0.18;
     if (rawT < 0 && rawT > -0.18) rawT = -0.18;
     rawT = Math.max(-0.75, Math.min(0.88, rawT));
-    // Snap to nice ratios (0.5, -0.5, 0.25, 0.75)
     for (const snap of [-0.5, 0.25, 0.5, 0.75]) {
       if (Math.abs(rawT - snap) < 0.03) {
         rawT = snap;
@@ -1866,7 +1925,7 @@ function InteractiveDragLab() {
 
           {/* Base BC parallel chevron */}
           <ExtendedLine p1={B} p2={C} extLeft={40} extRight={45} endArrow />
-          <ParallelChevron p1={B} p2={C} t={0.5} count={1} color="#15803d" size={9} strokeWidth={3} />
+          <ParallelChevron p1={B} p2={C} t={0.5} count={1} color={COLOR_BASE} size={9} strokeWidth={3} />
 
           {/* Draggable Parallel Line DE */}
           <ExtendedLine
@@ -1875,7 +1934,7 @@ function InteractiveDragLab() {
             extLeft={55}
             extRight={55}
             endArrow
-            stroke="#15803d"
+            stroke={COLOR_BASE}
             strokeWidth={3.5}
           />
           <ParallelChevron
@@ -1883,7 +1942,7 @@ function InteractiveDragLab() {
             p2={isHourglass ? D : E}
             t={0.5}
             count={1}
-            color="#15803d"
+            color={COLOR_BASE}
             size={9}
             strokeWidth={3}
           />
@@ -1894,20 +1953,28 @@ function InteractiveDragLab() {
           <AngleCross v={E} p1={A} p2={D} r={20} color="#2563eb" size={5} />
           <AngleCross v={C} p1={A} p2={B} r={22} color="#2563eb" size={5} />
 
-          {/* Ratio Curves based on selected mode */}
+          {/* Color-coded Ratio Curves based on selected mode */}
           {ratioMode === "whole" ? (
             <>
-              <GreenRatioCurve p1={A} p2={B} bulge={58} side={1} />
-              <GreenRatioCurve p1={A} p2={D} bulge={30} side={1} />
-              <GreenRatioCurve p1={A} p2={C} bulge={58} side={-1} />
-              <GreenRatioCurve p1={A} p2={E} bulge={30} side={-1} />
+              <RatioCurve p1={A} p2={B} bulge={58} side={1} color={COLOR_LEFT} />
+              <RatioCurve p1={A} p2={D} bulge={30} side={1} color={COLOR_LEFT} />
+              <RatioCurve p1={A} p2={C} bulge={58} side={-1} color={COLOR_RIGHT} />
+              <RatioCurve p1={A} p2={E} bulge={30} side={-1} color={COLOR_RIGHT} />
+              <RatioCurve p1={B} p2={C} bulge={32} side={1} color={COLOR_BASE} />
+              <RatioCurve
+                p1={isHourglass ? E : D}
+                p2={isHourglass ? D : E}
+                bulge={24}
+                side={isHourglass ? -1 : 1}
+                color={COLOR_BASE}
+              />
             </>
           ) : (
             <>
-              <GreenRatioCurve p1={A} p2={D} bulge={30} side={1} />
-              <GreenRatioCurve p1={D} p2={B} bulge={30} side={1} />
-              <GreenRatioCurve p1={A} p2={E} bulge={30} side={-1} />
-              <GreenRatioCurve p1={E} p2={C} bulge={30} side={-1} />
+              <RatioCurve p1={A} p2={D} bulge={30} side={1} color={COLOR_LEFT} />
+              <RatioCurve p1={D} p2={B} bulge={30} side={1} color={COLOR_LEFT} />
+              <RatioCurve p1={A} p2={E} bulge={30} side={-1} color={COLOR_RIGHT} />
+              <RatioCurve p1={E} p2={C} bulge={30} side={-1} color={COLOR_RIGHT} />
             </>
           )}
 
@@ -1919,7 +1986,7 @@ function InteractiveDragLab() {
               width={88}
               height={30}
               rx={15}
-              fill="#15803d"
+              fill={COLOR_BASE}
               stroke="#ffffff"
               strokeWidth={2.5}
             />
@@ -1929,8 +1996,8 @@ function InteractiveDragLab() {
           </g>
 
           {/* Vertex Points & Labels */}
-          <circle cx={D.x} cy={D.y} r={6} fill="#15803d" stroke="#fff" strokeWidth={2} />
-          <circle cx={E.x} cy={E.y} r={6} fill="#15803d" stroke="#fff" strokeWidth={2} />
+          <circle cx={D.x} cy={D.y} r={6} fill={COLOR_LEFT} stroke="#fff" strokeWidth={2} />
+          <circle cx={E.x} cy={E.y} r={6} fill={COLOR_RIGHT} stroke="#fff" strokeWidth={2} />
           <text x={A.x + (isHourglass ? 18 : 0)} y={A.y - 12} textAnchor="middle" fontSize="17" fontWeight="900" fill="#0f172a">
             A
           </text>
@@ -1940,10 +2007,10 @@ function InteractiveDragLab() {
           <text x={C.x + 18} y={C.y + 6} textAnchor="middle" fontSize="17" fontWeight="900" fill="#0f172a">
             C
           </text>
-          <text x={D.x + (isHourglass ? 18 : -18)} y={D.y - 8} textAnchor="middle" fontSize="16" fontWeight="900" fill="#15803d">
+          <text x={D.x + (isHourglass ? 18 : -18)} y={D.y - 8} textAnchor="middle" fontSize="16" fontWeight="900" fill={COLOR_LEFT}>
             D
           </text>
-          <text x={E.x + (isHourglass ? -18 : 18)} y={E.y - 8} textAnchor="middle" fontSize="16" fontWeight="900" fill="#15803d">
+          <text x={E.x + (isHourglass ? -18 : 18)} y={E.y - 8} textAnchor="middle" fontSize="16" fontWeight="900" fill={COLOR_RIGHT}>
             E
           </text>
         </svg>
@@ -1956,7 +2023,7 @@ function InteractiveDragLab() {
             onClick={() => setRatioMode("whole")}
             className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all cursor-pointer ${
               ratioMode === "whole"
-                ? "bg-emerald-600 text-white shadow-sm"
+                ? "bg-slate-900 text-white shadow-sm"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -1966,7 +2033,7 @@ function InteractiveDragLab() {
             onClick={() => setRatioMode("part")}
             className={`flex-1 py-3 rounded-2xl text-sm font-black transition-all cursor-pointer ${
               ratioMode === "part"
-                ? "bg-emerald-600 text-white shadow-sm"
+                ? "bg-slate-900 text-white shadow-sm"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -1975,9 +2042,9 @@ function InteractiveDragLab() {
         </div>
 
         {ratioMode === "whole" ? (
-          <div className="bg-emerald-50/70 border-2 border-emerald-200 rounded-3xl p-5 flex flex-col gap-4">
+          <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-5 flex flex-col gap-4">
             <div className="text-center">
-              <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+              <span className="text-xs font-extrabold text-slate-700 bg-slate-200/80 px-3 py-1 rounded-full">
                 일정한 닮음비 유지
               </span>
               <div className="text-3xl font-black text-slate-900 mt-2">
@@ -1986,20 +2053,20 @@ function InteractiveDragLab() {
             </div>
 
             <div className="grid grid-cols-3 gap-2.5 text-center">
-              <div className="bg-white rounded-2xl p-3 border border-emerald-200/80">
-                <div className="text-xs font-extrabold text-slate-500 mb-1">AB : AD</div>
-                <div className="text-lg font-black text-emerald-700">
+              <div className="bg-blue-50/80 rounded-2xl p-3 border-2 border-blue-200">
+                <div className="text-xs font-extrabold text-blue-700 mb-1">왼쪽 변 (AB : AD)</div>
+                <div className="text-lg font-black text-blue-700">
                   {lenAB} : {lenAD}
                 </div>
               </div>
-              <div className="bg-white rounded-2xl p-3 border border-emerald-200/80">
-                <div className="text-xs font-extrabold text-slate-500 mb-1">AC : AE</div>
-                <div className="text-lg font-black text-emerald-700">
+              <div className="bg-rose-50/80 rounded-2xl p-3 border-2 border-rose-200">
+                <div className="text-xs font-extrabold text-rose-600 mb-1">오른쪽 변 (AC : AE)</div>
+                <div className="text-lg font-black text-rose-600">
                   {lenAC} : {lenAE}
                 </div>
               </div>
-              <div className="bg-white rounded-2xl p-3 border border-emerald-200/80">
-                <div className="text-xs font-extrabold text-slate-500 mb-1">BC : DE</div>
+              <div className="bg-emerald-50/80 rounded-2xl p-3 border-2 border-emerald-200">
+                <div className="text-xs font-extrabold text-emerald-700 mb-1">밑변 (BC : DE)</div>
                 <div className="text-lg font-black text-emerald-700">
                   {lenBC} : {lenDE}
                 </div>
@@ -2007,9 +2074,9 @@ function InteractiveDragLab() {
             </div>
           </div>
         ) : (
-          <div className="bg-emerald-50/70 border-2 border-emerald-200 rounded-3xl p-5 flex flex-col gap-4">
+          <div className="bg-slate-50 border-2 border-slate-200 rounded-3xl p-5 flex flex-col gap-4">
             <div className="text-center">
-              <span className="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+              <span className="text-xs font-extrabold text-slate-700 bg-slate-200/80 px-3 py-1 rounded-full">
                 양변의 부분 비 일치
               </span>
               <div className="text-3xl font-black text-slate-900 mt-2">
@@ -2018,15 +2085,15 @@ function InteractiveDragLab() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="bg-white rounded-2xl p-3.5 border border-emerald-200/80">
-                <div className="text-xs font-extrabold text-slate-500 mb-1">AD : DB</div>
-                <div className="text-xl font-black text-emerald-700">
+              <div className="bg-blue-50/80 rounded-2xl p-3.5 border-2 border-blue-200">
+                <div className="text-xs font-extrabold text-blue-700 mb-1">왼쪽 변 (AD : DB)</div>
+                <div className="text-xl font-black text-blue-700">
                   {lenAD} : {lenDB}
                 </div>
               </div>
-              <div className="bg-white rounded-2xl p-3.5 border border-emerald-200/80">
-                <div className="text-xs font-extrabold text-slate-500 mb-1">AE : EC</div>
-                <div className="text-xl font-black text-emerald-700">
+              <div className="bg-rose-50/80 rounded-2xl p-3.5 border-2 border-rose-200">
+                <div className="text-xs font-extrabold text-rose-600 mb-1">오른쪽 변 (AE : EC)</div>
+                <div className="text-xl font-black text-rose-600">
                   {lenAE} : {lenEC}
                 </div>
               </div>
@@ -2109,7 +2176,7 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
           }
           60% {
             opacity: 1;
-            transform: scale(1.22);
+            transform: scale(1.24);
           }
           82% {
             transform: scale(0.92);
@@ -2138,16 +2205,9 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
             stroke-dasharray: 100;
             stroke-dashoffset: 100;
           }
-          70% {
-            stroke-dashoffset: 0;
-          }
-          85% {
-            transform: scale(1.03);
-          }
           100% {
             stroke-dasharray: 100;
             stroke-dashoffset: 0;
-            transform: scale(1);
           }
         }
         @keyframes slideSegment {
@@ -2177,9 +2237,7 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
         .curve-stroke-anim {
           stroke-dasharray: 100;
           stroke-dashoffset: 100;
-          animation: drawCurveStroke 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-          transform-box: fill-box;
-          transform-origin: center;
+          animation: drawCurveStroke 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .slide-db-to-ef {
           animation: slideSegment 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -2252,7 +2310,7 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
             {/* LEFT 8 COLUMNS: SECTION A (평행 ⇒ 선분 길이의 비 일정) */}
             <div className="lg:col-span-8 flex flex-col gap-4">
-              <div className="bg-white rounded-2xl border-2 border-slate-800 px-5 py-3 flex items-center justify-between shadow-2xs">
+              <div className="bg-white rounded-2xl border-2 border-slate-800 px-5 py-3 flex items-center justify-between shadow-2xs flex-wrap gap-2">
                 <div className="flex items-center gap-2.5">
                   <span className="w-7 h-7 rounded-lg bg-slate-900 text-white font-black text-base flex items-center justify-center">
                     A
@@ -2264,9 +2322,17 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
                     </span>
                   </span>
                 </div>
-                <span className="text-xs font-bold text-slate-400">
-                  도형이나 단계 버튼을 클릭하면 모션이 재생됩니다
-                </span>
+                <div className="flex items-center gap-3 text-xs font-extrabold">
+                  <span className="flex items-center gap-1 text-blue-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> 왼쪽 변의 비
+                  </span>
+                  <span className="flex items-center gap-1 text-rose-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" /> 오른쪽 변의 비
+                  </span>
+                  <span className="flex items-center gap-1 text-emerald-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" /> 밑변(평행선)의 비
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
@@ -2385,4 +2451,3 @@ export default function ParallelLinesApp({ onBack }: ParallelLinesAppProps) {
     </div>
   );
 }
-
