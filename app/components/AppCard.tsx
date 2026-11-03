@@ -6,7 +6,7 @@ import { MathApp } from "../data/apps";
 
 interface AppCardProps {
   app: MathApp;
-  onOpenApp?: (internalAppId: 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras') => void;
+  onOpenApp?: (internalAppId: 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras' | 'parallel') => void;
 }
 
 export default function AppCard({ app, onOpenApp }: AppCardProps) {

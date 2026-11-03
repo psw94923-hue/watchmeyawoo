@@ -7,7 +7,7 @@ export interface MathApp {
   description: string;
   emoji: string;
   href?: string;
-  internalAppId?: 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras';
+  internalAppId?: 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras' | 'parallel';
   tags: string[];
   isNew?: boolean;
   isFeatured?: boolean;
@@ -88,6 +88,21 @@ export const MATH_APPS: MathApp[] = [
   // --------------------------------------------------------------------------
   // 중학교 2학년 (Grade 2)
   // --------------------------------------------------------------------------
+  {
+    id: 'parallel',
+    title: '삼각형에서 평행선과 선분 길이의 비',
+    category: 'grade2',
+    gradeText: '중2 수학',
+    unitText: '도형의 닮음 · 평행선',
+    description: '삼각형 내부와 모래시계형 평행선에서 동위각·엇각, 보조선 평행이동, 초록색 길이의 비 곡선과 5가지 예제를 통통 튀는 모션으로 탐구해보세요!',
+    emoji: '📐',
+    internalAppId: 'parallel',
+    href: '/parallel',
+    tags: ['평행선과 선분의 비', '모래시계 닮음', '보조선 평행이동', '드래그 실험'],
+    isNew: true,
+    isFeatured: true,
+    auroraTheme: 'mint',
+  },
   {
     id: 'similarity',
     title: '닮은 그림 찾기!',

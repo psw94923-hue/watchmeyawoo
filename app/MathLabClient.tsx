@@ -4,13 +4,14 @@ import React, { useState, useEffect, useRef } from "react";
 import CheeseCuttingApp from "./components/CheeseCuttingApp";
 import CircumcenterApp from "./components/CircumcenterApp";
 import ExteriorAngleApp from "./components/ExteriorAngleApp";
+import ParallelLinesApp from "./components/ParallelLinesApp";
 import Navbar from "./components/Navbar";
 import AppCard from "./components/AppCard";
 import { MATH_APPS } from "./data/apps";
 import Link from "next/link";
 
 type Step = 'setup' | 'step1' | 'step2' | 'analysis';
-type ActiveApp = 'hub' | 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras';
+type ActiveApp = 'hub' | 'cheese' | 'circumcenter' | 'exterior' | 'pythagoras' | 'parallel';
 
 interface MathLabClientProps {
   initialCategory?: 'all' | 'grade1' | 'grade2' | 'challenge';
@@ -26,12 +27,12 @@ export default function MathLabClient({
   // App States for Pythagoras AR App
   const [step, setStep] = useState<Step>('setup');
   const [eyeHeight, setEyeHeight] = useState<number>(1.50); // h
-  
+
   // Real-time Pitch Angle (0° = Horizon Level)
   const [currentPitch, setCurrentPitch] = useState<number>(0);
   const [fixedPitch1, setFixedPitch1] = useState<number | null>(null);
   const [fixedPitch2, setFixedPitch2] = useState<number | null>(null);
-  
+
   const [theta1, setTheta1] = useState<number | null>(null); // looking down angle (>0)
   const [theta2, setTheta2] = useState<number | null>(null); // looking up angle (>0)
 
@@ -247,6 +248,13 @@ export default function MathLabClient({
   }
 
   // -------------------------------------------------------------
+  // RENDER APP 4: PARALLEL LINES & SEGMENT RATIO APP
+  // -------------------------------------------------------------
+  if (activeApp === 'parallel') {
+    return <ParallelLinesApp onBack={() => setActiveApp('hub')} />;
+  }
+
+  // -------------------------------------------------------------
   // RENDER HUB: MODERN PASTEL AURORA SELECTION HUB
   // -------------------------------------------------------------
   if (activeApp === 'hub') {
@@ -283,14 +291,14 @@ export default function MathLabClient({
                 {selectedCategory === 'all' && '아이들의 눈높이에 맞춘 인터랙티브 수학 놀이터'}
               </span>
             </div>
-            
+
             <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
               {selectedCategory === 'grade1' && <>1학년 <span className="text-rose-500">수학 실험실</span></>}
               {selectedCategory === 'grade2' && <>2학년 <span className="text-indigo-600">수학 실험실</span></>}
               {selectedCategory === 'challenge' && <>챌린지 <span className="aurora-gradient-text">게임 모음</span></>}
               {selectedCategory === 'all' && <>세원쌤의 <span className="aurora-gradient-text">수학 실험실</span></>}
             </h1>
-            
+
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl mx-auto font-normal">
               {selectedCategory === 'grade1' && '입체도형 접기, 피자 자르기, 치즈 다각형 분할, 외각 모으기로 도형의 원리를 발견해보세요.'}
               {selectedCategory === 'grade2' && '손그림 마을 닮음 찾기, 밤하늘 외심 항성 탐사, 카메라 AR 피타고라스 실측을 체험해보세요.'}
@@ -325,7 +333,7 @@ export default function MathLabClient({
                         🌸
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">
-                        4개 활동 수록
+                        {grade1Count}개 활동 수록
                       </span>
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 group-hover:text-rose-600 transition-colors mb-1.5">
@@ -361,14 +369,14 @@ export default function MathLabClient({
                         🔮
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-                        3개 활동 수록
+                        {grade2Count}개 활동 수록
                       </span>
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors mb-1.5">
                       중학교 2학년 수학
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
-                      손그림 마을 닮음 찾기, 밤하늘 외심 탐사선 랭킹, 카메라 AR 피타고라스 실측
+                      평행선과 선분 길이의 비, 손그림 마을 닮음 찾기, 밤하늘 외심 탐사선, AR 피타고라스 실측
                     </p>
                   </div>
                   <div className="relative z-10 pt-2 flex items-center justify-between">
@@ -532,43 +540,39 @@ export default function MathLabClient({
               <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    selectedCategory === 'all'
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${selectedCategory === 'all'
                       ? "bg-slate-900 text-white shadow-xs"
                       : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-slate-200/60"
-                  }`}
+                    }`}
                 >
                   전체보기 ({MATH_APPS.length})
                 </button>
                 <button
                   onClick={() => setSelectedCategory('grade1')}
-                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                    selectedCategory === 'grade1'
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${selectedCategory === 'grade1'
                       ? "bg-rose-500 text-white shadow-xs shadow-rose-500/20"
                       : "bg-white text-rose-700 hover:bg-rose-50 border border-rose-200/60"
-                  }`}
+                    }`}
                 >
                   <span>🌸</span>
                   <span>중1 수학 ({grade1Count})</span>
                 </button>
                 <button
                   onClick={() => setSelectedCategory('grade2')}
-                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                    selectedCategory === 'grade2'
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${selectedCategory === 'grade2'
                       ? "bg-indigo-600 text-white shadow-xs shadow-indigo-600/20"
                       : "bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200/60"
-                  }`}
+                    }`}
                 >
                   <span>🔮</span>
                   <span>중2 수학 ({grade2Count})</span>
                 </button>
                 <button
                   onClick={() => setSelectedCategory('challenge')}
-                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                    selectedCategory === 'challenge'
+                  className={`px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${selectedCategory === 'challenge'
                       ? "bg-purple-600 text-white shadow-xs shadow-purple-600/20"
                       : "bg-white text-purple-700 hover:bg-purple-50 border border-purple-200/60"
-                  }`}
+                    }`}
                 >
                   <span>🏆</span>
                   <span>챌린지 게임 ({challengeCount})</span>
@@ -632,9 +636,8 @@ export default function MathLabClient({
           playsInline
           muted
           autoPlay
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-            cameraActive ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${cameraActive ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
         />
       )}
 
@@ -1034,11 +1037,11 @@ export default function MathLabClient({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-1">
                 <div className="bg-slate-950 p-2 rounded-xl text-purple-200">
                   <span className="block text-[10px] text-slate-400">바닥 시선 거리 (c₁)</span>
-                  {`c₁ = √(${fmt(d,2)}² + ${fmt(eyeHeight,2)}²) = ${fmt(c1, 2)}m`}
+                  {`c₁ = √(${fmt(d, 2)}² + ${fmt(eyeHeight, 2)}²) = ${fmt(c1, 2)}m`}
                 </div>
                 <div className="bg-slate-950 p-2 rounded-xl text-purple-200">
                   <span className="block text-[10px] text-slate-400">꼭대기 시선 거리 (c₂)</span>
-                  {`c₂ = √(${fmt(d,2)}² + ${fmt(y,2)}²) = ${fmt(c2, 2)}m`}
+                  {`c₂ = √(${fmt(d, 2)}² + ${fmt(y, 2)}²) = ${fmt(c2, 2)}m`}
                 </div>
               </div>
             </div>
