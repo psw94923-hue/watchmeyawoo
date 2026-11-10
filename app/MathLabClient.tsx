@@ -278,6 +278,74 @@ export default function MathLabClient({
 
         {/* HERO HEADER */}
         <main className="flex-1 flex flex-col items-center p-4 sm:p-8 max-w-7xl mx-auto w-full">
+          {/* TOP OPEN-CLASS HUB BANNER (달콤베이커리 도수분포다각형 × AI 융합 공개수업) */}
+          <section className="w-full mb-4 animate-fade-in">
+            <div className="rounded-3xl bg-gradient-to-r from-[#b3001b] via-[#e63946] to-[#ff7a1a] text-white p-5 sm:p-6 shadow-md border border-red-200/30">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold mb-2">
+                    <span>🚨 중1 수학 AI 융합 공개수업 특별관</span>
+                    <span>·</span>
+                    <span>도수분포표와 도수분포다각형 해석 &amp; 전략 수립</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                    🥐 달콤베이커리 본사 긴급 경영 속보 (지점별 상황실 허브)
+                  </h2>
+                  <p className="text-xs sm:text-sm text-white/90 mt-1">
+                    모둠별로 배정된 지점(1~5지점) 고유 페이지로 바로 이동하거나, 전체 게시판에서 QR·접속 주소를 확인할 수 있습니다.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <Link
+                    href="/bakery"
+                    className="px-4 py-2.5 rounded-xl bg-white text-[#b3001b] hover:bg-orange-50 font-extrabold text-xs sm:text-sm shadow-sm transition-all"
+                  >
+                    📋 지점별 게시판(허브) 열기 ➔
+                  </Link>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3.5 border-t border-white/20 grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <a
+                  href="/bakery-1.html"
+                  className="px-3 py-2 rounded-xl bg-black/20 hover:bg-black/35 text-white text-xs sm:text-sm font-bold flex items-center justify-between transition-all"
+                >
+                  <span>🎒 1지점 · 학교앞점</span>
+                  <span>➔</span>
+                </a>
+                <a
+                  href="/bakery-2.html"
+                  className="px-3 py-2 rounded-xl bg-black/20 hover:bg-black/35 text-white text-xs sm:text-sm font-bold flex items-center justify-between transition-all"
+                >
+                  <span>🌊 2지점 · 해변공원점</span>
+                  <span>➔</span>
+                </a>
+                <a
+                  href="/bakery-3.html"
+                  className="px-3 py-2 rounded-xl bg-black/20 hover:bg-black/35 text-white text-xs sm:text-sm font-bold flex items-center justify-between transition-all"
+                >
+                  <span>🏢 3지점 · 오피스점</span>
+                  <span>➔</span>
+                </a>
+                <a
+                  href="/bakery-4.html"
+                  className="px-3 py-2 rounded-xl bg-black/20 hover:bg-black/35 text-white text-xs sm:text-sm font-bold flex items-center justify-between transition-all"
+                >
+                  <span>🌿 4지점 · 실버타운점</span>
+                  <span>➔</span>
+                </a>
+                <a
+                  href="/bakery-5.html"
+                  className="col-span-2 sm:col-span-1 px-3 py-2 rounded-xl bg-black/20 hover:bg-black/35 text-white text-xs sm:text-sm font-bold flex items-center justify-between transition-all"
+                >
+                  <span>🍓 5지점 · 감성핫플점</span>
+                  <span>➔</span>
+                </a>
+              </div>
+            </div>
+          </section>
+
           {/* DYNAMIC HERO HEADER */}
           <section className="text-center my-6 sm:my-10 max-w-3xl animate-fade-in relative">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full aurora-gradient-pill border border-purple-200/50 shadow-xs mb-4">

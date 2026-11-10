@@ -19,20 +19,22 @@ export default function Navbar({
 
   // Active category determination:
   // If pathname matches a dedicated page, use it; otherwise fallback to currentCategory prop.
-  let activeTab = currentCategory;
-  if (pathname === '/grade1') activeTab = 'grade1';
+  let activeTab: string = currentCategory;
+  if (pathname === '/bakery') activeTab = 'bakery';
+  else if (pathname === '/grade1') activeTab = 'grade1';
   else if (pathname === '/grade2') activeTab = 'grade2';
   else if (pathname === '/challenge') activeTab = 'challenge';
   else if (pathname === '/') activeTab = currentCategory;
 
   const handleNavClick = (cat: 'all' | 'grade1' | 'grade2' | 'challenge', href: string) => {
     if (onResetApp) onResetApp();
-    if (onSelectCategory && pathname === '/') {
+    if (onSelectCategory && pathname === '/' && href === '/') {
       onSelectCategory(cat);
     }
   };
 
   const navItems = [
+    { id: 'bakery', label: '공개수업(베이커리)', href: '/bakery', emoji: '🥐', highlight: true },
     { id: 'all', label: '전체 홈', href: '/', emoji: '🏠' },
     { id: 'grade1', label: '중1 수학', href: '/grade1', emoji: '🌸' },
     { id: 'grade2', label: '중2 수학', href: '/grade2', emoji: '🔮' },
@@ -65,7 +67,7 @@ export default function Navbar({
         </Link>
 
         {/* NAVIGATION LINKS */}
-        <nav className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <nav className="flex items-center gap-1 sm:gap-2 shrink-0 overflow-x-auto">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
 
@@ -77,6 +79,8 @@ export default function Navbar({
                 className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 shrink-0 whitespace-nowrap ${
                   isActive
                     ? "bg-slate-900 text-white shadow-xs font-bold"
+                    : item.highlight
+                    ? "bg-orange-500 hover:bg-orange-600 text-white font-extrabold shadow-xs"
                     : "text-slate-600 hover:text-slate-950 hover:bg-slate-100/70"
                 }`}
               >

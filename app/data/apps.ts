@@ -20,6 +20,20 @@ export const MATH_APPS: MathApp[] = [
   // 중학교 1학년 (Grade 1)
   // --------------------------------------------------------------------------
   {
+    id: 'bakery-open-class',
+    title: '달콤베이커리 긴급 경영 속보 (5개 지점 허브)',
+    category: 'grade1',
+    gradeText: '중1 수학 · 공개수업',
+    unitText: '도수분포표와 도수분포다각형',
+    description: '달콤베이커리 5개 지점(학교앞점·해변공원점·오피스점·실버타운점·감성핫플점)의 돌발 속보와 도수분포다각형을 분석해 AI로 경영 전략을 검증받는 수업 허브입니다.',
+    emoji: '🥐',
+    href: '/bakery',
+    tags: ['도수분포다각형', 'AI 융합수업', '5개 지점별 게시판', '공개수업'],
+    isNew: true,
+    isFeatured: true,
+    auroraTheme: 'peach',
+  },
+  {
     id: 'prism',
     title: '기둥 펼치기 탐구실 (겉넓이)',
     category: 'grade1',

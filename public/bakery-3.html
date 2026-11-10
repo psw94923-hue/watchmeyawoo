@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>달콤베이커리 본사 긴급 경영 속보 - 오피스점</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --primary:#ff7a1a; --primary-dark:#e2640a; --accent:#e63946; --ink:#222; --muted:#6b6b6b;
+    --bg:#fff7ef; --card:#ffffff; --border:#e8ddd2; --radius:14px; --ok:#2a9d8f;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+       color:var(--ink);background:var(--bg);font-size:17px;line-height:1.6}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px}
+  section{padding:28px 0 48px}
+  h1,h2,h3{margin:0 0 12px;line-height:1.3}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:50px;padding:12px 22px;
+       border-radius:12px;border:2px solid transparent;font-size:17px;font-weight:700;cursor:pointer;
+       text-decoration:none;transition:transform .08s,background .15s;user-select:none}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-dark)}
+  .btn.secondary{background:#fff;color:var(--primary-dark);border-color:var(--primary)}
+  .btn.secondary:hover{background:#fff1e6}
+  .btn.ghost{background:#f3f3f3;color:#444}
+  .btn.ghost:hover{background:#e8e8e8}
+  .btn.big{width:100%;font-size:19px;min-height:58px}
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .btn-row .btn{flex:1 1 220px}
+
+  /* ===== 섹션 1 ===== */
+  #sec1{min-height:100vh;display:flex;align-items:flex-start}
+  #sec1 .wrap{width:100%}
+  .split1{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
+  @media (min-width:900px){
+    .split1{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+    .split1 .news{position:sticky;top:20px}
+  }
+  .hero{background:linear-gradient(135deg,#b3001b,#e63946);color:#fff;border-radius:var(--radius);padding:22px 28px;margin-bottom:18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+  .hero h1{font-size:clamp(22px,2.6vw,32px);margin:0 0 4px}
+  .hero p{margin:0;opacity:.95;font-size:16px}
+  .branch-badge{background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.55);color:#fff;padding:8px 16px;border-radius:999px;font-weight:800;font-size:15px;white-space:nowrap}
+  .news{background:#fff;border:3px solid var(--accent);border-radius:var(--radius);padding:24px 26px;margin:0}
+  .news .tag{display:inline-block;background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:4px 12px;border-radius:6px;letter-spacing:1px;margin-bottom:10px}
+  .news h2{font-size:clamp(19px,2.2vw,25px);color:#b3001b;margin-bottom:12px}
+  .news-photo{margin:0 0 14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fdf8f3}
+  .news-photo svg{display:block;width:100%;height:auto;max-height:150px}
+  .news-photo figcaption{padding:6px 12px;font-size:13px;color:var(--muted);background:#f9f3ec;border-top:1px solid var(--border)}
+  .news p{margin:0;font-size:17px;line-height:1.85;white-space:pre-line}
+  .news .meta{margin-top:18px;padding-top:14px;border-top:1px dashed var(--border);color:var(--muted);font-size:14px}
+  .news .meta b{color:var(--accent)}
+  .q{padding:16px 0;border-top:1px dashed var(--border)}
+  .q:first-of-type{border-top:none}
+  .q.invalid{background:#fff0f0;border-radius:10px;padding-left:12px;padding-right:12px;outline:2px solid var(--accent)}
+  .qt{font-weight:800;font-size:18px;margin:0 0 10px}
+  .qt .num{color:var(--primary-dark);margin-right:6px}
+  input[type=text],textarea{width:100%;font:inherit;font-size:17px;padding:12px 14px;border:2px solid var(--border);border-radius:10px;background:#fff;color:var(--ink)}
+  input[type=text]:focus,textarea:focus{outline:none;border-color:var(--primary)}
+  textarea{min-height:140px;resize:vertical;line-height:1.6}
+  .radios{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{position:relative;cursor:pointer}
+  .chip input{position:absolute;opacity:0;width:0;height:0}
+  .chip span{display:inline-block;padding:11px 18px;border-radius:999px;border:2px solid var(--border);background:#fff;font-weight:600;font-size:16px;transition:.15s}
+  .chip input:checked + span{background:var(--primary);border-color:var(--primary);color:#fff}
+  .chip input:focus-visible + span{outline:3px solid #ffd3b0}
+  .err{color:var(--accent);font-weight:700;margin:12px 0 0}
+
+  /* ===== 섹션 2 ===== */
+  .sec-title{font-size:clamp(22px,2.4vw,28px);margin-bottom:16px}
+  .split{display:grid;grid-template-columns:1fr;gap:18px}
+  @media (min-width:900px){ .split{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)} }
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+  .panel h3{font-size:20px}
+  .help{margin:0 0 10px;color:var(--muted);font-size:15px}
+  .help b{color:var(--accent)}
+  .chart-box{position:relative;height:420px;touch-action:none;background:#fff;border-radius:10px;border:1px solid var(--border)}
+  @media (max-width:899px){ .chart-box{height:340px} }
+  .chart-box canvas{touch-action:none;cursor:default}
+  .chart-box canvas.grab{cursor:grab}
+  .chart-box canvas.dragging{cursor:grabbing}
+  table.live{width:100%;border-collapse:collapse;margin-top:14px;font-size:15px}
+  table.live th,table.live td{padding:8px 6px;border-bottom:1px solid var(--border);text-align:center}
+  table.live th{background:#fff4ea;font-weight:800}
+  table.live td.now{color:var(--accent);font-weight:800;font-size:17px}
+  table.live td.up{color:var(--accent)} table.live td.down{color:#1d6fd1} table.live td.same{color:var(--muted)}
+  table.live tr.total td{font-weight:800;background:#fafafa}
+  .summary{background:#fff4ea;border-left:6px solid var(--primary);border-radius:10px;padding:16px 18px;margin-bottom:16px;font-size:17px}
+  .summary .lbl{font-size:13px;font-weight:800;color:var(--primary-dark);letter-spacing:1px;margin-bottom:6px}
+  .summary mark{background:#ffe0c2;padding:0 4px;border-radius:4px}
+  label.block{display:block;font-weight:800;font-size:18px;margin:8px 0 8px}
+  .hint{margin:12px 0 16px;border:2px dashed var(--border);border-radius:10px;padding:0 14px}
+  .hint-toggle{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+               font:inherit;font-weight:700;font-size:16px;padding:12px 0;color:var(--primary-dark)}
+  .hint-toggle .lock{margin-left:auto;font-size:18px}
+  .hint.open .hint-toggle{border-bottom:1px solid var(--border)}
+  .hint-lock{padding:14px 0 16px}
+  .hint-lock p{margin:0 0 12px;font-size:16px}
+  .hint-lock p b{color:var(--accent);font-size:18px}
+  .hint-lock small{color:var(--muted)}
+  .pw-row{display:flex;gap:8px}
+  .pw-row input{flex:1;font:inherit;font-size:18px;letter-spacing:3px;padding:10px 14px;border:2px solid var(--border);border-radius:10px}
+  .pw-row input:focus{outline:none;border-color:var(--primary)}
+  .pw-row .btn{min-height:46px;padding:8px 20px}
+  .hint-lock .err{margin-top:10px;font-size:15px}
+  .shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
+  .hint-grid[hidden]{display:none}
+  .hint-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px 0 14px}
+  .hint-grid button{min-height:46px;padding:8px 10px;border-radius:10px;border:2px solid #ffd3b0;background:#fff8f2;font:inherit;font-size:15px;font-weight:600;cursor:pointer;color:#5a3a1f}
+  .hint-grid button:hover{background:#ffe9d6}
+  .hint-grid button.used{opacity:.5}
+  #promptArea{margin-top:18px;padding-top:16px;border-top:2px solid var(--border)}
+  #promptBox{min-height:300px;font-size:15px;background:#fafafa;font-family:ui-monospace,Menlo,Consolas,"Noto Sans KR",monospace}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:12px 20px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:99}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  footer{text-align:center;color:var(--muted);font-size:14px;padding:16px 0 30px}
+</style>
+</head>
+<body>
+
+<!-- ============ 섹션 1 : 위기 진단 ============ -->
+<section id="sec1">
+  <div class="wrap">
+    <header class="hero">
+      <div>
+        <h1>🚨 달콤베이커리 본사 긴급 경영 속보 - <span id="branchName"></span></h1>
+        <p>본사 경영진의 긴급 요청: 아래 속보를 읽고 우리 매장의 위기를 진단하세요.</p>
+      </div>
+      <div class="branch-badge">📍 3지점 · 오피스점</div>
+    </header>
+
+    <div class="split1">
+    <article class="news">
+      <div class="tag">BREAKING NEWS</div>
+      <h2 id="newsTitle"></h2>
+      <figure class="news-photo">
+        <svg viewBox="0 0 480 145" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="오피스점 사옥 야근 귀신 괴담과 직장인 대피 일러스트">
+          <rect width="480" height="145" fill="#1e293b"/>
+          <rect x="0" y="114" width="480" height="31" fill="#334155"/>
+          <!-- 테크노밸리 사옥 (어두운 빌딩) -->
+          <rect x="24" y="14" width="150" height="100" rx="4" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+          <text x="99" y="34" font-size="11" font-weight="bold" fill="#94a3b8" text-anchor="middle">테크노밸리 사옥</text>
+          <rect x="38" y="44" width="122" height="34" rx="4" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5"/>
+          <text x="99" y="65" font-size="11" font-weight="bold" fill="#c7d2fe" text-anchor="middle">👻 B1 야근 귀신 괴담!</text>
+          <text x="99" y="98" font-size="11" font-weight="bold" fill="#f87171" text-anchor="middle">🏃‍♂️💨 직장인 긴급 탈출</text>
+          <!-- 화살표 -->
+          <text x="202" y="75" font-size="22">➡️</text>
+          <!-- 지상 1층 달콤베이커리 오피스점 (밝고 안전한 곳) -->
+          <rect x="236" y="18" width="220" height="96" rx="6" fill="#fffbeb" stroke="#f59e0b" stroke-width="3"/>
+          <rect x="232" y="12" width="228" height="18" rx="4" fill="#f59e0b"/>
+          <text x="346" y="25" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">💡 지상 1층 달콤베이커리 오피스점</text>
+          <rect x="252" y="38" width="188" height="60" rx="4" fill="#fff" stroke="#fde68a" stroke-width="2"/>
+          <text x="346" y="63" font-size="18" text-anchor="middle">👨‍💼💻 👩‍💼💻 👨‍💼☕ 👩‍💼💻</text>
+          <text x="346" y="87" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">30~50대 직장인 노트북·수다 대피소화!</text>
+        </svg>
+        <figcaption>📸 [현장 포토] 지하 1층 괴담을 피해 밝은 1층 달콤베이커리로 노트북을 들고 대피한 직장인들</figcaption>
+      </figure>
+      <p id="newsBody"></p>
+      <div class="meta">📍 <b id="branchName2"></b> · 기사를 꼼꼼히 읽고 오른쪽 질문에 답해 보세요 👉</div>
+    </article>
+
+    <form id="diagForm" class="card" onsubmit="return false;">
+      <h2>📝 1단계: 위기 진단</h2>
+
+      <div class="q" id="q1">
+        <p class="qt"><span class="num">Q1.</span>돌발상황을 한 줄로 요약해 보세요.</p>
+        <input type="text" id="q1Input" maxlength="80" placeholder="예) 사옥 지하 귀신 괴담으로 30~50대 직장인들이 1층 베이커리로 단체 대피" autocomplete="off">
+      </div>
+
+      <div class="q" id="q2">
+        <p class="qt"><span class="num">Q2.</span>예상 매출 변화는?</p>
+        <div class="radios">
+          <label class="chip"><input type="radio" name="q2" value="오를 것이다"><span>📈 오를 것이다</span></label>
+          <label class="chip"><input type="radio" name="q2" value="유지될 것이다"><span>➡️ 유지될 것이다</span></label>
+          <label class="chip"><input type="radio" name="q2" value="내려갈 것이다"><span>📉 내려갈 것이다</span></label>
+        </div>
+      </div>
+
+      <div class="q" id="q3">
+        <p class="qt"><span class="num">Q3.</span>방문객 수가 가장 크게 변할 연령대는?</p>
+        <div class="radios">
+          <label class="chip"><input type="radio" name="q3" value="10대"><span>10대</span></label>
+          <label class="chip"><input type="radio" name="q3" value="20대"><span>20대</span></label>
+          <label class="chip"><input type="radio" name="q3" value="30대"><span>30대</span></label>
+          <label class="chip"><input type="radio" name="q3" value="40대"><span>40대</span></label>
+          <label class="chip"><input type="radio" name="q3" value="50대"><span>50대</span></label>
+          <label class="chip"><input type="radio" name="q3" value="60대 이상"><span>60대 이상</span></label>
+        </div>
+      </div>
+
+      <div class="q" id="q4">
+        <p class="qt"><span class="num">Q4.</span>예상되는 매장 문제는?</p>
+        <div class="radios">
+          <label class="chip"><input type="radio" name="q4" value="대기줄 및 좌석 부족"><span>🪑 대기줄 및 좌석 부족</span></label>
+          <label class="chip"><input type="radio" name="q4" value="단골 이탈 및 재고 낭비"><span>📦 단골 이탈 및 재고 낭비</span></label>
+          <label class="chip"><input type="radio" name="q4" value="결제 지연 및 동선 혼잡"><span>💳 결제 지연 및 동선 혼잡</span></label>
+          <label class="chip"><input type="radio" name="q4" value="특정 메뉴 조기 품절"><span>🥐 특정 메뉴 조기 품절</span></label>
+        </div>
+      </div>
+
+      <p class="err" id="formErr" hidden>⚠️ 아직 답하지 않은 질문이 있어요. 빨간 테두리 질문을 확인해 주세요.</p>
+      <div style="margin-top:18px">
+        <button type="button" id="nextBtn" class="btn primary big">다음 단계: 오늘 방문객 예측하기 ⬇️</button>
+      </div>
+    </form>
+    </div><!-- /.split1 -->
+  </div>
+</section>
+
+<!-- ============ 섹션 2 : 그래프 조작 & 전략 ============ -->
+<section id="sec2" hidden>
+  <div class="wrap">
+    <h2 class="sec-title">📈 2단계: <span id="targetDateTitle"></span> 방문객 예측 &amp; 해결 전략 수립</h2>
+    <div class="split">
+
+      <!-- 좌측: 그래프 -->
+      <div class="panel">
+        <h3>🖐️ 빨간 점을 드래그해 방문객 수를 예측하세요</h3>
+        <p class="help" id="chartHelp">검은 선은 예전 기준(고정), <b>빨간 선</b>이 여러분의 예측입니다. 빨간 점을 위아래로 움직여 보세요. (양 끝 0명 점은 고정)</p>
+        <div class="chart-box"><canvas id="chart"></canvas></div>
+
+        <table class="live" id="liveTable" aria-label="연령대별 방문객 수 실시간 표">
+          <thead><tr><th>연령대</th><th>예전 기준</th><th>내 예측</th><th>증감</th></tr></thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="btn-row">
+          <button type="button" id="resetBtn" class="btn ghost">↩️ 처음 값으로 되돌리기</button>
+          <button type="button" id="dlBtn" class="btn secondary">📊 새 그래프 이미지 다운로드</button>
+        </div>
+      </div>
+
+      <!-- 우측: 전략 빌더 -->
+      <div class="panel">
+        <div class="summary">
+          <div class="lbl">1단계 진단 요약</div>
+          <div id="summaryBox"></div>
+        </div>
+
+        <label class="block" for="strategy">✍️ 돌발 상황을 극복하기 위한 자체 해결 전략 1~2가지를 작성하세요.</label>
+        <textarea id="strategy" placeholder="예) 노트북 작업 손님을 위한 공유 오피스형 테이블 구역과 대화 구역을 분리하고 야간 든든 세트를 출시한다."></textarea>
+
+        <div class="hint" id="hintBox">
+          <button type="button" class="hint-toggle" id="hintToggle" aria-expanded="false">
+            <span>❓ 전략이 생각이 안 난다면? 힌트 도움받기 ▼</span><span class="lock" id="hintLockIcon">🔒</span>
+          </button>
+          <div class="hint-lock" id="hintLock" hidden>
+            <p>🔒 힌트는 잠겨 있어요. <b>선생님에게 비밀번호를 물어보세요!</b><br>
+               <small>먼저 스스로 전략을 1가지 이상 떠올려 본 뒤, 손을 들어 선생님을 불러 주세요.</small></p>
+            <div class="pw-row">
+              <input type="password" id="hintPw" inputmode="numeric" maxlength="12" placeholder="비밀번호 입력" autocomplete="off" aria-label="힌트 비밀번호">
+              <button type="button" id="hintPwBtn" class="btn primary">확인</button>
+            </div>
+            <p class="err" id="hintPwErr" hidden>❌ 비밀번호가 틀렸어요. 선생님께 다시 확인해 보세요.</p>
+          </div>
+          <div class="hint-grid" id="hintGrid" hidden></div>
+        </div>
+
+        <button type="button" id="buildBtn" class="btn primary big">🚀 제출용 자료 만들기 (전략 확정)</button>
+
+        <div id="promptArea" hidden>
+          <h3>🤖 AI 젬스 입력용 최종 프롬프트</h3>
+          <p class="help">아래 내용을 복사해서 본사 젬스에 붙여 넣으세요.</p>
+          <textarea id="promptBox" readonly></textarea>
+          <div class="btn-row">
+            <button type="button" id="copyBtn" class="btn secondary">📋 프롬프트 복사하기</button>
+            <a id="gemsLink" class="btn primary" href="#" target="_blank" rel="noopener">🤖 달콤베이커리 본사 젬스로 연결하기 ➡️</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>달콤베이커리 경영 시뮬레이션 · 중학교 1학년 수학 「자료의 정리와 해석」 활동</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   ★ 지점별로 바꿀 부분은 이 CONFIG 하나만 수정하면 됩니다 ★
+   ===================================================================== */
+const CONFIG = {
+  branch: "달콤베이커리 오피스점",
+  targetDate: "오늘(돌발 당일)",
+  newsTitle: "[사회] 사내 게시판 '지하 1층 야근 귀신' 괴담 일파만파... 공포의 직장인들 단체 탈출",
+  newsBody:
+`테크노밸리 대기업 사옥 지하 창고에서 "야근 중 혼자 타이핑되는 키보드 소리를 들었다"는 직장인 괴담이 직장인 커뮤니티에 올라오며 입주 건물 전체가 술렁이고 있다. 해가 지기도 전부터 겁에 질린 30~50대 직장인들이 사무실을 뛰쳐나와 인근에서 가장 밝고 안전한 지상 1층 달콤베이커리로 대피해 노트북을 펴고 일하거나 수다를 떠는 기현상이 발생하고 있다.`,
+
+  // 도수분포다각형: 계급값(가로축) 8개. 양 끝(5, 75)은 도수 0인 고정점.
+  xMarks:    [5, 15, 25, 35, 45, 55, 65, 75],
+  ageLabels: ["10대", "20대", "30대", "40대", "50대", "60대 이상"],   // xMarks[1]~[6]에 대응
+  baseLabel:   "7월 21일 (휴가철) · 예전 기준",
+  base:        [0, 2, 18, 40, 25, 10, 5, 0],
+  recentLabel: "오늘 예상 (시작값: 11/15 평일)",
+  recent:      [0, 5, 45, 90, 100, 50, 10, 0],
+  yMax: 150,          // 세로축 최대 (드래그로 올릴 공간)
+  yStep: 10,
+
+  gemsUrl: "https://gemini.google.com/gem/1Ju-GW0akq092VlP8Cwka58b-Z2v2Yojo?usp=sharing",
+
+  hintPassword: "20261111",   // 힌트 아코디언 잠금 비밀번호 (선생님만 알려주기)
+
+  hints: [
+    "노트북 작업존과 대화·휴식존 좌석 분리 운영",
+    "멀티탭 대여 및 1인석 테이블 추가 확보",
+    "30~50대 직장인 맞춤 '야근 탈출 커피+든든 빵 세트' 출시",
+    "장시간 이용 시 시간당 추가 음료·디저트 주문 안내",
+    "팀 단위 직장인을 위한 단체 간식 박스 예약 판매",
+    "포장 전용 패스트트랙(빠른 결제대) 운영",
+    "저녁 시간대 매장 조명 밝게 유지 및 아르바이트 추가 배치",
+    "사원증 제시 시 포장 할인으로 테이크아웃 유도"
+  ]
+};
+
+/* ===================== 공통 유틸 ===================== */
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const Q2_MAP = { "오를 것이다": "오를 것으로", "유지될 것이다": "유지될 것으로", "내려갈 것이다": "내려갈 것으로" };
+function ro(word) {                       // '로/으로' 조사 자동 선택
+  const ch = word.trim().slice(-1).charCodeAt(0);
+  if (ch < 0xAC00 || ch > 0xD7A3) return "로";
+  const jong = (ch - 0xAC00) % 28;
+  return (jong === 0 || jong === 8) ? "로" : "으로";   // 받침 없음 또는 ㄹ받침 → '로'
+}
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+}
+function ageName(i) { return (i >= 1 && i <= CONFIG.ageLabels.length) ? CONFIG.ageLabels[i - 1] : "끝점(고정)"; }
+const isDraggable = (i) => i >= 1 && i <= CONFIG.xMarks.length - 2;
+
+/* ===================== 상태 ===================== */
+let diag = { q1: "", q2: "", q3: "", q4: "" };
+let current = [...CONFIG.recent];           // 학생이 드래그로 바꾸는 값
+let chart = null;
+
+/* ===================== 섹션 1 초기화 ===================== */
+$("#branchName").textContent = CONFIG.branch;
+$("#branchName2").textContent = CONFIG.branch;
+$("#newsTitle").textContent = CONFIG.newsTitle;
+$("#newsBody").textContent = CONFIG.newsBody;
+$("#targetDateTitle").textContent = CONFIG.targetDate;
+$("#nextBtn").textContent = `다음 단계: ${CONFIG.targetDate} 방문객 예측하기 ⬇️`;
+$("#gemsLink").href = CONFIG.gemsUrl;
+document.title = `달콤베이커리 본사 긴급 경영 속보 - ${CONFIG.branch}`;
+
+const radioVal = (name) => (document.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
+
+$("#nextBtn").addEventListener("click", () => {
+  diag = { q1: $("#q1Input").value.trim(), q2: radioVal("q2"), q3: radioVal("q3"), q4: radioVal("q4") };
+  let ok = true;
+  ["q1", "q2", "q3", "q4"].forEach((k) => {
+    const bad = !diag[k];
+    $("#" + k).classList.toggle("invalid", bad);
+    if (bad) ok = false;
+  });
+  $("#formErr").hidden = ok;
+  if (!ok) { document.querySelector(".q.invalid").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+
+  renderSummary();
+  const sec2 = $("#sec2");
+  const firstTime = sec2.hidden;
+  sec2.hidden = false;
+  if (!chart) initChart();
+  else chart.resize();
+  renderTable();
+  setTimeout(() => sec2.scrollIntoView({ behavior: "smooth", block: "start" }), firstTime ? 60 : 0);
+});
+
+// 입력하면 빨간 표시 해제
+$("#diagForm").addEventListener("input", (e) => {
+  const q = e.target.closest(".q"); if (q) q.classList.remove("invalid");
+});
+
+function summaryText(plain = false) {
+  const m = plain ? (s) => s : (s) => `<mark>${s}</mark>`;
+  return `우리 매장은 ${m(diag.q1)}${ro(diag.q1)} 인해 매출이 ${m(Q2_MAP[diag.q2] || diag.q2)} 예상되며, `
+       + `${m(diag.q3)} 손님이 크게 변하여 ${m("'" + diag.q4 + "'")} 위기에 처해 있습니다.`;
+}
+function renderSummary() {
+  $("#summaryBox").innerHTML = summaryText(false);
+  $("#chartHelp").innerHTML =
+    `검은 선은 예전 기준(고정), <b>빨간 선</b>이 여러분의 예측입니다. 진단에서 고른 <b>${diag.q3}</b> 점부터 움직여 보세요. (양 끝 0명 점은 고정)`;
+}
+
+/* ===================== 섹션 2 : 그래프 ===================== */
+const toPoints = (arr) => CONFIG.xMarks.map((x, i) => ({ x, y: arr[i] }));
+
+function initChart() {
+  const canvas = $("#chart");
+  const whiteBg = {                               // PNG 저장 시 흰 배경
+    id: "whiteBg",
+    beforeDraw(c) {
+      const ctx = c.ctx; ctx.save();
+      ctx.globalCompositeOperation = "destination-over";
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.restore();
+    }
+  };
+
+  chart = new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [
+        { label: CONFIG.baseLabel, data: toPoints(CONFIG.base),
+          borderColor: "#222", backgroundColor: "#222", borderWidth: 2.5,
+          pointRadius: 5, pointHoverRadius: 6, pointHitRadius: 4, order: 2 },
+        { label: CONFIG.recentLabel, data: toPoints(current),
+          borderColor: "#e63946", backgroundColor: "#e63946", borderWidth: 4,
+          pointRadius: (ctx) => isDraggable(ctx.dataIndex) ? 9 : 5,
+          pointHoverRadius: 12, pointHitRadius: 28, pointBorderColor: "#fff", pointBorderWidth: 2, order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: "nearest", intersect: true },
+      layout: { padding: { right: 12, top: 4 } },
+      scales: {
+        x: { type: "linear", min: 0, max: 80,
+             ticks: { stepSize: 10, font: { size: 14, weight: "bold" } },
+             title: { display: true, text: "나이(세)", font: { size: 15, weight: "bold" } },
+             grid: { color: "#dcdcdc" } },
+        y: { min: 0, max: CONFIG.yMax,
+             ticks: { stepSize: CONFIG.yStep, font: { size: 14, weight: "bold" } },
+             title: { display: true, text: "방문객 수(명)", font: { size: 15, weight: "bold" } },
+             grid: { color: "#dcdcdc" } }
+      },
+      plugins: {
+        title: { display: true, text: `${CONFIG.branch} 방문객 도수분포다각형`, font: { size: 18, weight: "bold" }, padding: { bottom: 6 } },
+        legend: { position: "top", onClick: () => {}, labels: { font: { size: 14, weight: "bold" }, boxWidth: 30 } },
+        tooltip: {
+          displayColors: false,
+          callbacks: {
+            title: (items) => `${ageName(items[0].dataIndex)} (계급값 ${items[0].parsed.x}세)`,
+            label: (item) => `${item.dataset.label.split(" (")[0]}: ${item.parsed.y}명`
+          }
+        }
+      }
+    },
+    plugins: [whiteBg]
+  });
+
+  /* ---- 드래그: Pointer Events 직접 구현 (마우스·터치·펜 공통) ---- */
+  let dragIdx = null;
+  const hitDraggable = (e) => {
+    const els = chart.getElementsAtEventForMode(e, "nearest", { intersect: true }, false);
+    const hit = els.find((el) => el.datasetIndex === 1 && isDraggable(el.index));
+    return hit ? hit.index : null;
+  };
+  canvas.addEventListener("pointerdown", (e) => {
+    const idx = hitDraggable(e);
+    if (idx === null) return;
+    dragIdx = idx;
+    canvas.setPointerCapture(e.pointerId);
+    canvas.classList.add("dragging");
+    e.preventDefault();
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (dragIdx === null) { canvas.classList.toggle("grab", hitDraggable(e) !== null); return; }
+    const rect = canvas.getBoundingClientRect();
+    const raw = chart.scales.y.getValueForPixel(e.clientY - rect.top);
+    const v = clamp(Math.round(raw), 0, CONFIG.yMax);            // 정수 스냅
+    if (v !== current[dragIdx]) {
+      current[dragIdx] = v;
+      chart.data.datasets[1].data[dragIdx].y = v;
+      chart.update("none");
+      renderTable();
+    }
+    e.preventDefault();
+  });
+  const endDrag = () => { dragIdx = null; canvas.classList.remove("dragging"); };
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+  canvas.addEventListener("lostpointercapture", endDrag);
+}
+
+function renderTable() {
+  const tb = $("#liveTable tbody");
+  let rows = "", sumBase = 0, sumNow = 0;
+  for (let i = 1; i <= CONFIG.ageLabels.length; i++) {
+    const b = CONFIG.base[i], n = current[i], d = n - b;
+    sumBase += b; sumNow += n;
+    const cls = d > 0 ? "up" : d < 0 ? "down" : "same";
+    const sign = d > 0 ? `▲ ${d}` : d < 0 ? `▼ ${-d}` : "–";
+    rows += `<tr><td>${CONFIG.ageLabels[i - 1]}</td><td>${b}명</td><td class="now">${n}명</td><td class="${cls}">${sign}</td></tr>`;
+  }
+  const td = sumNow - sumBase;
+  rows += `<tr class="total"><td>합계</td><td>${sumBase}명</td><td class="now">${sumNow}명</td><td class="${td > 0 ? "up" : td < 0 ? "down" : "same"}">${td > 0 ? "▲ " + td : td < 0 ? "▼ " + (-td) : "–"}</td></tr>`;
+  tb.innerHTML = rows;
+}
+
+$("#resetBtn").addEventListener("click", () => {
+  current = [...CONFIG.recent];
+  chart.data.datasets[1].data = toPoints(current);
+  chart.update("none");
+  renderTable();
+  toast("처음 값으로 되돌렸어요");
+});
+
+$("#dlBtn").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = chart.toBase64Image("image/png", 1);
+  a.download = `${CONFIG.branch}_${CONFIG.targetDate.replace(/\s/g, "")}_예상그래프.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("그래프 이미지를 저장했어요");
+});
+
+/* ===================== 섹션 2 : 전략 빌더 ===================== */
+const strategy = $("#strategy");
+const hintGrid = $("#hintGrid");
+
+/* --- 힌트 잠금 (비밀번호) --- */
+let hintUnlocked = false;
+const hintBox = $("#hintBox"), hintLock = $("#hintLock"), hintPw = $("#hintPw"), hintPwErr = $("#hintPwErr");
+$("#hintToggle").addEventListener("click", () => {
+  const toggle = $("#hintToggle");
+  if (!hintUnlocked) {
+    const open = hintLock.hidden;           // 지금 닫혀 있으면 열기
+    hintLock.hidden = !open;
+    hintBox.classList.toggle("open", open);
+    toggle.setAttribute("aria-expanded", open);
+    if (open) setTimeout(() => hintPw.focus(), 50);
+  } else {
+    const open = hintGrid.hidden;
+    hintGrid.hidden = !open;
+    hintBox.classList.toggle("open", open);
+    toggle.setAttribute("aria-expanded", open);
+  }
+});
+function tryUnlock() {
+  if (hintPw.value.trim() === CONFIG.hintPassword) {
+    hintUnlocked = true;
+    hintLock.hidden = true;
+    hintGrid.hidden = false;
+    hintBox.classList.add("open");
+    $("#hintLockIcon").textContent = "🔓";
+    toast("힌트가 열렸어요! 참고해서 전략을 완성해 보세요");
+  } else {
+    hintPwErr.hidden = false;
+    hintPw.value = "";
+    hintBox.classList.remove("shake"); void hintBox.offsetWidth; hintBox.classList.add("shake");
+    hintPw.focus();
+  }
+}
+$("#hintPwBtn").addEventListener("click", tryUnlock);
+hintPw.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); tryUnlock(); } });
+hintPw.addEventListener("input", () => { hintPwErr.hidden = true; });
+CONFIG.hints.forEach((h) => {
+  const b = document.createElement("button"); b.type = "button"; b.textContent = h;
+  b.addEventListener("click", () => {
+    if (strategy.value.includes(h)) { toast("이미 추가된 전략이에요"); return; }
+    strategy.value += (strategy.value && !strategy.value.endsWith("\n") ? "\n" : "") + `• ${h}: `;
+    b.classList.add("used");
+    strategy.focus();
+    strategy.setSelectionRange(strategy.value.length, strategy.value.length);
+  });
+  hintGrid.appendChild(b);
+});
+
+function buildPrompt() {
+  const lines = [];
+  let sumBase = 0, sumNow = 0;
+  for (let i = 1; i <= CONFIG.ageLabels.length; i++) {
+    const b = CONFIG.base[i], n = current[i], d = n - b;
+    sumBase += b; sumNow += n;
+    lines.push(`- ${CONFIG.ageLabels[i - 1]}: ${b}명 → ${n}명 (${d >= 0 ? "+" : ""}${d})`);
+  }
+  lines.push(`- 합계: ${sumBase}명 → ${sumNow}명 (${sumNow - sumBase >= 0 ? "+" : ""}${sumNow - sumBase})`);
+
+  return `[달콤베이커리 본사 제출용 경영 전략 보고서]
+
+■ 지점명
+${CONFIG.branch}
+
+■ 돌발 상황 (속보 제목)
+${CONFIG.newsTitle}
+
+■ 1단계 위기 진단 요약
+${summaryText(true)}
+
+■ 2단계 ${CONFIG.targetDate} 예상 방문객 수 (도수분포다각형, 예전 기준 → 우리 팀 예측, 단위: 명)
+${lines.join("\n")}
+
+■ 3단계 우리 팀의 자체 해결 전략
+${strategy.value.trim()}
+
+■ 본사 젬스에 요청하는 것
+위 돌발 상황과 비교하여 (1) 연령대별 예상 방문객 수 변화가 타당한지, (2) 해결 전략이 예상 문제(${diag.q4})를 해결하는 데 적절한지 평가해 주세요.
+잘한 점 2가지, 보완할 점 2가지를 중학교 1학년이 이해할 수 있는 말로 알려 주고, 마지막에 10점 만점 점수를 매겨 주세요.`;
+}
+
+$("#buildBtn").addEventListener("click", () => {
+  if (!strategy.value.trim()) {
+    strategy.style.borderColor = "#e63946"; strategy.focus();
+    toast("해결 전략을 먼저 작성해 주세요"); return;
+  }
+  strategy.style.borderColor = "";
+  $("#promptBox").value = buildPrompt();
+  $("#promptArea").hidden = false;
+  setTimeout(() => $("#promptArea").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+});
+
+$("#copyBtn").addEventListener("click", async () => {
+  const box = $("#promptBox");
+  try {
+    await navigator.clipboard.writeText(box.value);
+    toast("프롬프트를 복사했어요 ✅");
+  } catch (err) {                                   // file:// 또는 구형 브라우저 폴백
+    box.focus(); box.select();
+    const ok = document.execCommand && document.execCommand("copy");
+    toast(ok ? "프롬프트를 복사했어요 ✅" : "길게 눌러 직접 복사해 주세요");
+  }
+});
+</script>
+</body>
+</html>
+
