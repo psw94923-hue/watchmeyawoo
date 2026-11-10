@@ -215,7 +215,7 @@ export default function BakeryOpenClassHubPage() {
                       </code>
                     </div>
 
-                    <h3 className="text-base sm:text-xl font-extrabold text-slate-900 mb-1.5 leading-snug">
+                    <h3 className="text-base sm:text-xl font-extrabold text-slate-900 mb-2.5 leading-snug">
                       <a
                         href={branch.urlPath}
                         className="hover:text-[#e63946] hover:underline transition-colors"
@@ -223,10 +223,6 @@ export default function BakeryOpenClassHubPage() {
                         [{branch.name}] {branch.newsTitle}
                       </a>
                     </h3>
-
-                    <p className="text-xs sm:text-sm text-slate-600 mb-2.5 leading-relaxed">
-                      {branch.newsSummary}
-                    </p>
 
                     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                       <span className="px-2.5 py-1 rounded-lg bg-slate-100 font-semibold text-slate-700">
