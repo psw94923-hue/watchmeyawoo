@@ -35,6 +35,7 @@ export default function Navbar({
 
   const navItems = [
     { id: 'bakery', label: '공개수업(베이커리)', href: '/bakery', emoji: '🥐', highlight: true },
+    { id: 'voice', label: '보이스 패드', href: '/voice.html', emoji: '📢' },
     { id: 'all', label: '전체 홈', href: '/', emoji: '🏠' },
     { id: 'grade1', label: '중1 수학', href: '/grade1', emoji: '🌸' },
     { id: 'grade2', label: '중2 수학', href: '/grade2', emoji: '🔮' },
